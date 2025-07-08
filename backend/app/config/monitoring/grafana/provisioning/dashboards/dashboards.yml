@@ -1,0 +1,15 @@
+# EzzDay Backend - Grafana Dashboard Provisioning
+# Auto-provision dashboards from JSON files
+
+apiVersion: 1
+
+providers:
+  - name: 'EzzDay Dashboards'
+    orgId: 1
+    folder: 'EzzDay'
+    type: file
+    disableDeletion: true
+    updateIntervalSeconds: 10
+    allowUiUpdates: false
+    options:
+      path: /etc/grafana/provisioning/dashboards

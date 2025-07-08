@@ -1,0 +1,1808 @@
+"""
+Identity Domain Service Interfaces
+
+Contracts for external services and infrastructure dependencies.
+These interfaces define the ports in our hexagonal architecture.
+"""
+
+from abc import ABC, abstractmethod
+from typing import Dict, Any, List, Optional, Tuple, Union, BinaryIO
+from uuid import UUID
+from datetime import datetime
+
+from ..value_objects.password_hash import PasswordHash
+from ..value_objects.ip_address import IpAddress
+from ..enums import RiskLevel, MFAMethod
+
+
+# =============================================================================
+# Core Authentication & Security Ports
+# =============================================================================
+
+class IPasswordHasher(ABC):
+    """Port for password hashing operations."""
+    
+    @abstractmethod
+    async def hash_password(
+        self, 
+        password: str, 
+        user_context: Optional[Dict[str, Any]] = None
+    ) -> PasswordHash:
+        """
+        Hash a password using secure algorithm.
+        
+        Args:
+            password: Plain text password to hash
+            user_context: Optional context for salt generation
+            
+        Returns:
+            PasswordHash value object containing hash and metadata
+            
+        Raises:
+            ValueError: If password doesn't meet minimum requirements
+        """
+        pass
+    
+    @abstractmethod
+    async def verify_password(
+        self, 
+        password: str, 
+        password_hash: PasswordHash
+    ) -> bool:
+        """
+        Verify password against hash.
+        
+        Args:
+            password: Plain text password to verify
+            password_hash: PasswordHash to verify against
+            
+        Returns:
+            True if password matches, False otherwise
+        """
+        pass
+    
+    @abstractmethod
+    async def needs_rehash(self, password_hash: PasswordHash) -> bool:
+        """
+        Check if password hash needs to be updated.
+        
+        Args:
+            password_hash: Current password hash
+            
+        Returns:
+            True if rehashing is recommended
+        """
+        pass
+    
+    @abstractmethod
+    async def validate_password_strength(
+        self, 
+        password: str, 
+        user_context: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
+        """
+        Validate password strength against policy.
+        
+        Args:
+            password: Password to validate
+            user_context: User context for validation (name, email, etc.)
+            
+        Returns:
+            Dict containing:
+                - is_valid: bool
+                - score: float (0.0 to 1.0)
+                - violations: List of policy violations
+                - suggestions: List of improvement suggestions
+        """
+        pass
+
+
+class ITokenGenerator(ABC):
+    """Port for token generation and validation."""
+    
+    @abstractmethod
+    async def generate_access_token(
+        self, 
+        user_id: UUID, 
+        claims: Dict[str, Any],
+        expires_in: Optional[int] = None
+    ) -> str:
+        """
+        Generate access token.
+        
+        Args:
+            user_id: User identifier
+            claims: Additional JWT claims
+            expires_in: Token lifetime in seconds (None for default)
+            
+        Returns:
+            JWT access token string
+            
+        Raises:
+            TokenGenerationError: If token generation fails
+        """
+        pass
+    
+    @abstractmethod
+    async def generate_refresh_token(
+        self, 
+        user_id: UUID,
+        device_id: Optional[str] = None
+    ) -> str:
+        """
+        Generate refresh token.
+        
+        Args:
+            user_id: User identifier
+            device_id: Optional device identifier for token binding
+            
+        Returns:
+            Refresh token string
+        """
+        pass
+    
+    @abstractmethod
+    async def validate_token(
+        self, 
+        token: str, 
+        token_type: str = "access"
+    ) -> Dict[str, Any]:
+        """
+        Validate token and return claims.
+        
+        Args:
+            token: Token to validate
+            token_type: Type of token (access/refresh)
+            
+        Returns:
+            Dict containing token claims and metadata
+            
+        Raises:
+            TokenValidationError: If token is invalid or expired
+        """
+        pass
+    
+    @abstractmethod
+    async def revoke_token(self, token: str) -> None:
+        """
+        Revoke a specific token.
+        
+        Args:
+            token: Token to revoke
+            
+        Raises:
+            TokenNotFoundError: If token doesn't exist
+        """
+        pass
+    
+    @abstractmethod
+    async def revoke_user_tokens(
+        self, 
+        user_id: UUID,
+        token_type: Optional[str] = None
+    ) -> int:
+        """
+        Revoke all tokens for a user.
+        
+        Args:
+            user_id: User identifier
+            token_type: Optional type filter (access/refresh)
+            
+        Returns:
+            Number of tokens revoked
+        """
+        pass
+    
+    @abstractmethod
+    async def refresh_token_pair(
+        self, 
+        refresh_token: str
+    ) -> Tuple[str, str]:
+        """
+        Generate new token pair from refresh token.
+        
+        Args:
+            refresh_token: Valid refresh token
+            
+        Returns:
+            Tuple of (new_access_token, new_refresh_token)
+            
+        Raises:
+            TokenValidationError: If refresh token is invalid
+            TokenReusedError: If refresh token was already used
+        """
+        pass
+
+
+class IMFAService(ABC):
+    """Port for multi-factor authentication operations."""
+    
+    @abstractmethod
+    async def generate_totp_secret(self, user_id: UUID) -> Dict[str, Any]:
+        """
+        Generate TOTP secret for user.
+        
+        Args:
+            user_id: User identifier
+            
+        Returns:
+            Dict containing:
+                - secret: Base32 encoded secret
+                - qr_code: QR code data URL
+                - backup_codes: List of backup codes
+        """
+        pass
+    
+    @abstractmethod
+    async def verify_totp_code(self, user_id: UUID, code: str) -> bool:
+        """
+        Verify TOTP code.
+        
+        Args:
+            user_id: User identifier
+            code: 6-digit TOTP code
+            
+        Returns:
+            True if code is valid
+        """
+        pass
+    
+    @abstractmethod
+    async def generate_backup_codes(
+        self, 
+        user_id: UUID, 
+        count: int = 10
+    ) -> List[str]:
+        """
+        Generate backup codes.
+        
+        Args:
+            user_id: User identifier
+            count: Number of codes to generate
+            
+        Returns:
+            List of backup codes
+        """
+        pass
+    
+    @abstractmethod
+    async def verify_backup_code(self, user_id: UUID, code: str) -> bool:
+        """
+        Verify and consume backup code.
+        
+        Args:
+            user_id: User identifier
+            code: Backup code to verify
+            
+        Returns:
+            True if code is valid (code is consumed)
+        """
+        pass
+    
+    @abstractmethod
+    async def send_sms_code(
+        self, 
+        user_id: UUID, 
+        phone: str,
+        purpose: str = "login"
+    ) -> str:
+        """
+        Send SMS verification code.
+        
+        Args:
+            user_id: User identifier
+            phone: Phone number
+            purpose: Purpose of code (login/verification)
+            
+        Returns:
+            Code identifier for verification
+            
+        Raises:
+            SMSDeliveryError: If SMS fails to send
+        """
+        pass
+    
+    @abstractmethod
+    async def verify_sms_code(self, code_id: str, code: str) -> bool:
+        """
+        Verify SMS code.
+        
+        Args:
+            code_id: Code identifier from send_sms_code
+            code: User provided code
+            
+        Returns:
+            True if code is valid
+        """
+        pass
+    
+    @abstractmethod
+    async def send_email_code(
+        self, 
+        user_id: UUID, 
+        email: str,
+        purpose: str = "login"
+    ) -> str:
+        """
+        Send email verification code.
+        
+        Args:
+            user_id: User identifier
+            email: Email address
+            purpose: Purpose of code
+            
+        Returns:
+            Code identifier for verification
+        """
+        pass
+    
+    @abstractmethod
+    async def verify_email_code(self, code_id: str, code: str) -> bool:
+        """
+        Verify email code.
+        
+        Args:
+            code_id: Code identifier
+            code: User provided code
+            
+        Returns:
+            True if code is valid
+        """
+        pass
+    
+    @abstractmethod
+    async def get_available_methods(self, user_id: UUID) -> List[Dict[str, Any]]:
+        """
+        Get available MFA methods for user.
+        
+        Args:
+            user_id: User identifier
+            
+        Returns:
+            List of available methods with metadata
+        """
+        pass
+
+
+class IBiometricService(ABC):
+    """Port for biometric authentication."""
+    
+    @abstractmethod
+    async def register_biometric(
+        self,
+        user_id: UUID,
+        biometric_type: str,
+        biometric_data: bytes
+    ) -> str:
+        """
+        Register biometric data.
+        
+        Args:
+            user_id: User identifier
+            biometric_type: Type of biometric (fingerprint/face/voice)
+            biometric_data: Encrypted biometric template
+            
+        Returns:
+            Registration identifier
+            
+        Raises:
+            BiometricRegistrationError: If registration fails
+        """
+        pass
+    
+    @abstractmethod
+    async def verify_biometric(
+        self,
+        user_id: UUID,
+        biometric_type: str,
+        biometric_data: bytes
+    ) -> bool:
+        """
+        Verify biometric data.
+        
+        Args:
+            user_id: User identifier
+            biometric_type: Type of biometric
+            biometric_data: Biometric data to verify
+            
+        Returns:
+            True if biometric matches
+        """
+        pass
+    
+    @abstractmethod
+    async def delete_biometric(
+        self,
+        user_id: UUID,
+        biometric_type: str
+    ) -> bool:
+        """
+        Delete biometric registration.
+        
+        Args:
+            user_id: User identifier
+            biometric_type: Type to delete
+            
+        Returns:
+            True if deleted successfully
+        """
+        pass
+    
+    @abstractmethod
+    async def get_registered_biometrics(self, user_id: UUID) -> List[str]:
+        """
+        Get list of registered biometric types.
+        
+        Args:
+            user_id: User identifier
+            
+        Returns:
+            List of biometric types registered
+        """
+        pass
+
+
+# =============================================================================
+# Risk & Security Assessment Ports
+# =============================================================================
+
+class IRiskAssessmentService(ABC):
+    """Port for risk assessment operations."""
+    
+    @abstractmethod
+    async def assess_login_risk(
+        self, 
+        user_id: UUID,
+        ip_address: IpAddress,
+        user_agent: str,
+        device_fingerprint: Optional[str] = None
+    ) -> Tuple[RiskLevel, float, Dict[str, Any]]:
+        """
+        Assess risk for login attempt.
+        
+        Args:
+            user_id: User identifier
+            ip_address: Client IP address
+            user_agent: Client user agent string
+            device_fingerprint: Optional device fingerprint
+            
+        Returns:
+            Tuple of (risk_level, risk_score, risk_factors)
+        """
+        pass
+    
+    @abstractmethod
+    async def assess_transaction_risk(
+        self,
+        user_id: UUID,
+        transaction_type: str,
+        transaction_data: Dict[str, Any]
+    ) -> Tuple[RiskLevel, float, Dict[str, Any]]:
+        """
+        Assess risk for transaction.
+        
+        Args:
+            user_id: User identifier
+            transaction_type: Type of transaction
+            transaction_data: Transaction details
+            
+        Returns:
+            Tuple of (risk_level, risk_score, risk_factors)
+        """
+        pass
+    
+    @abstractmethod
+    async def update_risk_profile(
+        self,
+        user_id: UUID,
+        factors: Dict[str, Any],
+        event_type: str
+    ) -> None:
+        """
+        Update user risk profile.
+        
+        Args:
+            user_id: User identifier
+            factors: Risk factors to update
+            event_type: Type of event triggering update
+        """
+        pass
+    
+    @abstractmethod
+    async def get_risk_recommendations(
+        self,
+        user_id: UUID,
+        risk_score: float
+    ) -> List[Dict[str, Any]]:
+        """
+        Get risk mitigation recommendations.
+        
+        Args:
+            user_id: User identifier
+            risk_score: Current risk score
+            
+        Returns:
+            List of recommendations with priorities
+        """
+        pass
+    
+    @abstractmethod
+    async def calculate_adaptive_thresholds(
+        self,
+        user_id: UUID
+    ) -> Dict[str, float]:
+        """
+        Calculate adaptive risk thresholds.
+        
+        Args:
+            user_id: User identifier
+            
+        Returns:
+            Dict of threshold values by risk type
+        """
+        pass
+
+
+class IGeolocationService(ABC):
+    """Port for geolocation services."""
+    
+    @abstractmethod
+    async def get_location_info(self, ip_address: IpAddress) -> Dict[str, Any]:
+        """
+        Get location information for IP address.
+        
+        Args:
+            ip_address: IP address to lookup
+            
+        Returns:
+            Dict containing:
+                - country: Country code
+                - city: City name
+                - region: Region/state
+                - latitude: Latitude
+                - longitude: Longitude
+                - timezone: Timezone
+                - is_vpn: VPN detection
+                - is_tor: Tor exit node detection
+        """
+        pass
+    
+    @abstractmethod
+    async def is_suspicious_location(
+        self, 
+        user_id: UUID, 
+        ip_address: IpAddress
+    ) -> Tuple[bool, Dict[str, Any]]:
+        """
+        Check if location is suspicious for user.
+        
+        Args:
+            user_id: User identifier
+            ip_address: IP address to check
+            
+        Returns:
+            Tuple of (is_suspicious, details)
+        """
+        pass
+    
+    @abstractmethod
+    async def update_known_locations(
+        self,
+        user_id: UUID,
+        location_info: Dict[str, Any]
+    ) -> None:
+        """
+        Update user's known locations.
+        
+        Args:
+            user_id: User identifier
+            location_info: Location details to add
+        """
+        pass
+
+
+class ISecurityService(ABC):
+    """Port for security monitoring and threat detection."""
+    
+    @abstractmethod
+    async def detect_anomalies(
+        self, 
+        user_id: UUID, 
+        activity_data: Dict[str, Any]
+    ) -> List[Dict[str, Any]]:
+        """
+        Detect anomalous behavior.
+        
+        Args:
+            user_id: User identifier
+            activity_data: Recent activity data
+            
+        Returns:
+            List of detected anomalies with severity
+        """
+        pass
+    
+    @abstractmethod
+    async def check_ip_reputation(self, ip_address: IpAddress) -> Dict[str, Any]:
+        """
+        Check IP address reputation.
+        
+        Args:
+            ip_address: IP to check
+            
+        Returns:
+            Dict containing:
+                - reputation_score: float (0.0 to 1.0)
+                - is_blocklisted: bool
+                - threat_categories: List[str]
+                - last_seen_malicious: Optional[datetime]
+        """
+        pass
+    
+    @abstractmethod
+    async def scan_for_threats(self, data: Dict[str, Any]) -> List[Dict[str, Any]]:
+        """
+        Scan data for security threats.
+        
+        Args:
+            data: Data to scan
+            
+        Returns:
+            List of detected threats
+        """
+        pass
+    
+    @abstractmethod
+    async def report_security_incident(
+        self,
+        incident_type: str,
+        details: Dict[str, Any]
+    ) -> str:
+        """
+        Report security incident.
+        
+        Args:
+            incident_type: Type of incident
+            details: Incident details
+            
+        Returns:
+            Incident ID for tracking
+        """
+        pass
+
+
+class IDeviceService(ABC):
+    """Port for device management operations."""
+    
+    @abstractmethod
+    async def register_device(
+        self,
+        user_id: UUID,
+        device_info: Dict[str, Any]
+    ) -> UUID:
+        """
+        Register new device.
+        
+        Args:
+            user_id: User identifier
+            device_info: Device details
+            
+        Returns:
+            Device ID
+        """
+        pass
+    
+    @abstractmethod
+    async def trust_device(
+        self,
+        device_id: UUID,
+        trust_duration: Optional[int] = None
+    ) -> None:
+        """
+        Mark device as trusted.
+        
+        Args:
+            device_id: Device identifier
+            trust_duration: Trust duration in days (None for permanent)
+        """
+        pass
+    
+    @abstractmethod
+    async def is_device_trusted(self, device_id: UUID) -> bool:
+        """
+        Check if device is trusted.
+        
+        Args:
+            device_id: Device identifier
+            
+        Returns:
+            True if device is trusted
+        """
+        pass
+    
+    @abstractmethod
+    async def revoke_device_trust(self, device_id: UUID) -> bool:
+        """
+        Revoke device trust.
+        
+        Args:
+            device_id: Device identifier
+            
+        Returns:
+            True if revoked successfully
+        """
+        pass
+    
+    @abstractmethod
+    async def get_user_devices(self, user_id: UUID) -> List[Dict[str, Any]]:
+        """
+        Get all user devices.
+        
+        Args:
+            user_id: User identifier
+            
+        Returns:
+            List of device information
+        """
+        pass
+    
+    @abstractmethod
+    async def update_device_info(
+        self,
+        device_id: UUID,
+        device_info: Dict[str, Any]
+    ) -> bool:
+        """
+        Update device information.
+        
+        Args:
+            device_id: Device identifier
+            device_info: Updated device details
+            
+        Returns:
+            True if updated successfully
+        """
+        pass
+
+
+# =============================================================================
+# Identity-Scoped Compliance Port
+# =============================================================================
+
+class IComplianceService(ABC):
+    """Port for identity-specific compliance operations."""
+    
+    @abstractmethod
+    async def validate_data_collection_consent(
+        self,
+        user_id: UUID,
+        data_types: List[str]
+    ) -> Tuple[bool, List[str]]:
+        """
+        Validate consent for data collection.
+        
+        Args:
+            user_id: User identifier
+            data_types: Types of data to collect
+            
+        Returns:
+            Tuple of (has_consent, missing_consents)
+        """
+        pass
+    
+    @abstractmethod
+    async def check_user_data_retention(
+        self,
+        user_id: UUID,
+        data_type: str
+    ) -> Tuple[bool, datetime]:
+        """
+        Check data retention policy.
+        
+        Args:
+            user_id: User identifier
+            data_type: Type of data
+            
+        Returns:
+            Tuple of (should_retain, expiry_date)
+        """
+        pass
+    
+    @abstractmethod
+    async def anonymize_user_data(
+        self,
+        user_id: UUID,
+        retention_policy: str
+    ) -> Dict[str, Any]:
+        """
+        Anonymize user data per retention policy.
+        
+        Args:
+            user_id: User identifier
+            retention_policy: Policy to apply
+            
+        Returns:
+            Summary of anonymized data
+        """
+        pass
+    
+    @abstractmethod
+    async def generate_user_data_export(
+        self,
+        user_id: UUID,
+        format: str = "json"
+    ) -> str:
+        """
+        Generate user data export.
+        
+        Args:
+            user_id: User identifier
+            format: Export format (json/csv/xml)
+            
+        Returns:
+            Export file path or data
+        """
+        pass
+    
+    @abstractmethod
+    async def validate_user_consent_changes(
+        self,
+        user_id: UUID,
+        consent_changes: Dict[str, bool]
+    ) -> bool:
+        """
+        Validate consent changes.
+        
+        Args:
+            user_id: User identifier
+            consent_changes: Consent updates
+            
+        Returns:
+            True if changes are valid
+        """
+        pass
+    
+    @abstractmethod
+    async def log_compliance_event(
+        self,
+        user_id: UUID,
+        event_type: str,
+        details: Dict[str, Any]
+    ) -> None:
+        """
+        Log compliance-related event.
+        
+        Args:
+            user_id: User identifier
+            event_type: Type of compliance event
+            details: Event details
+        """
+        pass
+
+
+# =============================================================================
+# Communication Ports
+# =============================================================================
+
+class INotificationService(ABC):
+    """Port for notification operations."""
+    
+    @abstractmethod
+    async def send_email(
+        self,
+        to: str,
+        subject: str,
+        template: str,
+        data: Dict[str, Any],
+        priority: str = "normal"
+    ) -> str:
+        """
+        Send email notification.
+        
+        Args:
+            to: Recipient email
+            subject: Email subject
+            template: Template name
+            data: Template data
+            priority: Email priority (low/normal/high)
+            
+        Returns:
+            Message ID for tracking
+        """
+        pass
+    
+    @abstractmethod
+    async def send_sms(
+        self,
+        phone: str,
+        message: str,
+        template: Optional[str] = None
+    ) -> str:
+        """
+        Send SMS notification.
+        
+        Args:
+            phone: Phone number
+            message: Message text
+            template: Optional template name
+            
+        Returns:
+            Message ID
+        """
+        pass
+    
+    @abstractmethod
+    async def send_push_notification(
+        self,
+        device_tokens: Union[str, List[str]],
+        title: str,
+        body: str,
+        data: Dict[str, Any] = None
+    ) -> Dict[str, Any]:
+        """
+        Send push notification.
+        
+        Args:
+            device_tokens: Single token or list
+            title: Notification title
+            body: Notification body
+            data: Additional data payload
+            
+        Returns:
+            Dict with delivery results
+        """
+        pass
+    
+    @abstractmethod
+    async def send_bulk_email(
+        self,
+        recipients: List[Dict[str, Any]],
+        template: str,
+        common_data: Dict[str, Any] = None
+    ) -> str:
+        """
+        Send bulk email.
+        
+        Args:
+            recipients: List of recipient data
+            template: Template name
+            common_data: Common template data
+            
+        Returns:
+            Batch ID
+        """
+        pass
+    
+    @abstractmethod
+    async def get_delivery_status(self, message_id: str) -> Dict[str, Any]:
+        """
+        Get message delivery status.
+        
+        Args:
+            message_id: Message identifier
+            
+        Returns:
+            Delivery status information
+        """
+        pass
+    
+    @abstractmethod
+    async def handle_delivery_webhook(
+        self,
+        provider: str,
+        webhook_data: Dict[str, Any]
+    ) -> bool:
+        """
+        Handle delivery status webhook.
+        
+        Args:
+            provider: Webhook provider name
+            webhook_data: Webhook payload
+            
+        Returns:
+            True if processed successfully
+        """
+        pass
+
+
+# =============================================================================
+# Infrastructure Ports
+# =============================================================================
+
+class IFileStoragePort(ABC):
+    """Port for file storage operations."""
+    
+    @abstractmethod
+    async def store_avatar(
+        self,
+        user_id: UUID,
+        file_data: BinaryIO,
+        content_type: str
+    ) -> Dict[str, str]:
+        """
+        Store user avatar.
+        
+        Args:
+            user_id: User identifier
+            file_data: Avatar file data
+            content_type: MIME type
+            
+        Returns:
+            Dict with file URLs and metadata
+        """
+        pass
+    
+    @abstractmethod
+    async def delete_avatar(self, user_id: UUID) -> bool:
+        """
+        Delete user avatar.
+        
+        Args:
+            user_id: User identifier
+            
+        Returns:
+            True if deleted successfully
+        """
+        pass
+    
+    @abstractmethod
+    async def generate_avatar_url(
+        self,
+        user_id: UUID,
+        size: Optional[int] = None
+    ) -> str:
+        """
+        Generate avatar URL.
+        
+        Args:
+            user_id: User identifier
+            size: Optional size parameter
+            
+        Returns:
+            Avatar URL
+        """
+        pass
+    
+    @abstractmethod
+    async def process_avatar_thumbnails(
+        self,
+        user_id: UUID,
+        original_path: str
+    ) -> List[str]:
+        """
+        Process avatar thumbnails.
+        
+        Args:
+            user_id: User identifier
+            original_path: Path to original image
+            
+        Returns:
+            List of thumbnail URLs
+        """
+        pass
+
+
+class ICachePort(ABC):
+    """Port for caching operations."""
+    
+    @abstractmethod
+    async def get_session(self, session_id: str) -> Optional[Dict[str, Any]]:
+        """
+        Get session from cache.
+        
+        Args:
+            session_id: Session identifier
+            
+        Returns:
+            Session data if found
+        """
+        pass
+    
+    @abstractmethod
+    async def store_session(
+        self,
+        session_id: str,
+        data: Dict[str, Any],
+        ttl: int
+    ) -> bool:
+        """
+        Store session in cache.
+        
+        Args:
+            session_id: Session identifier
+            data: Session data
+            ttl: Time to live in seconds
+            
+        Returns:
+            True if stored successfully
+        """
+        pass
+    
+    @abstractmethod
+    async def delete_session(self, session_id: str) -> bool:
+        """
+        Delete session from cache.
+        
+        Args:
+            session_id: Session identifier
+            
+        Returns:
+            True if deleted
+        """
+        pass
+    
+    @abstractmethod
+    async def get_user_cache(
+        self,
+        user_id: UUID,
+        key: str
+    ) -> Optional[Any]:
+        """
+        Get user-specific cache value.
+        
+        Args:
+            user_id: User identifier
+            key: Cache key
+            
+        Returns:
+            Cached value if found
+        """
+        pass
+    
+    @abstractmethod
+    async def set_user_cache(
+        self,
+        user_id: UUID,
+        key: str,
+        value: Any,
+        ttl: Optional[int] = None
+    ) -> bool:
+        """
+        Set user-specific cache value.
+        
+        Args:
+            user_id: User identifier
+            key: Cache key
+            value: Value to cache
+            ttl: Optional TTL in seconds
+            
+        Returns:
+            True if cached successfully
+        """
+        pass
+    
+    @abstractmethod
+    async def invalidate_user_cache(self, user_id: UUID) -> None:
+        """
+        Invalidate all user cache entries.
+        
+        Args:
+            user_id: User identifier
+        """
+        pass
+    
+    @abstractmethod
+    async def increment_counter(
+        self,
+        key: str,
+        amount: int = 1
+    ) -> int:
+        """
+        Increment counter atomically.
+        
+        Args:
+            key: Counter key
+            amount: Increment amount
+            
+        Returns:
+            New counter value
+        """
+        pass
+
+
+class ITaskQueuePort(ABC):
+    """Port for task queue operations."""
+    
+    @abstractmethod
+    async def queue_email_verification(
+        self,
+        user_id: UUID,
+        email: str,
+        token: str
+    ) -> str:
+        """
+        Queue email verification task.
+        
+        Args:
+            user_id: User identifier
+            email: Email to verify
+            token: Verification token
+            
+        Returns:
+            Task ID
+        """
+        pass
+    
+    @abstractmethod
+    async def queue_welcome_email(self, user_id: UUID) -> str:
+        """
+        Queue welcome email task.
+        
+        Args:
+            user_id: User identifier
+            
+        Returns:
+            Task ID
+        """
+        pass
+    
+    @abstractmethod
+    async def queue_password_reset_email(
+        self,
+        user_id: UUID,
+        reset_token: str
+    ) -> str:
+        """
+        Queue password reset email.
+        
+        Args:
+            user_id: User identifier
+            reset_token: Reset token
+            
+        Returns:
+            Task ID
+        """
+        pass
+    
+    @abstractmethod
+    async def queue_security_alert(
+        self,
+        user_id: UUID,
+        alert_type: str,
+        context: Dict[str, Any]
+    ) -> str:
+        """
+        Queue security alert.
+        
+        Args:
+            user_id: User identifier
+            alert_type: Type of alert
+            context: Alert context
+            
+        Returns:
+            Task ID
+        """
+        pass
+    
+    @abstractmethod
+    async def queue_profile_completion_check(self, user_id: UUID) -> str:
+        """
+        Queue profile completion check.
+        
+        Args:
+            user_id: User identifier
+            
+        Returns:
+            Task ID
+        """
+        pass
+    
+    @abstractmethod
+    async def queue_avatar_processing(
+        self,
+        user_id: UUID,
+        file_path: str
+    ) -> str:
+        """
+        Queue avatar processing task.
+        
+        Args:
+            user_id: User identifier
+            file_path: Path to avatar file
+            
+        Returns:
+            Task ID
+        """
+        pass
+    
+    @abstractmethod
+    async def get_task_status(self, task_id: str) -> Dict[str, Any]:
+        """
+        Get task execution status.
+        
+        Args:
+            task_id: Task identifier
+            
+        Returns:
+            Task status information
+        """
+        pass
+
+
+class IEventPublisherPort(ABC):
+    """Port for domain event publishing."""
+    
+    @abstractmethod
+    async def publish_user_registered(self, user_data: Dict[str, Any]) -> None:
+        """
+        Publish user registered event.
+        
+        Args:
+            user_data: User registration data
+        """
+        pass
+    
+    @abstractmethod
+    async def publish_user_activated(self, user_data: Dict[str, Any]) -> None:
+        """
+        Publish user activated event.
+        
+        Args:
+            user_data: User activation data
+        """
+        pass
+    
+    @abstractmethod
+    async def publish_user_deactivated(self, user_data: Dict[str, Any]) -> None:
+        """
+        Publish user deactivated event.
+        
+        Args:
+            user_data: User deactivation data
+        """
+        pass
+    
+    @abstractmethod
+    async def publish_profile_completed(self, user_data: Dict[str, Any]) -> None:
+        """
+        Publish profile completed event.
+        
+        Args:
+            user_data: Profile completion data
+        """
+        pass
+    
+    @abstractmethod
+    async def publish_security_alert(
+        self,
+        user_id: UUID,
+        alert_data: Dict[str, Any]
+    ) -> None:
+        """
+        Publish security alert event.
+        
+        Args:
+            user_id: User identifier
+            alert_data: Alert details
+        """
+        pass
+    
+    @abstractmethod
+    async def publish_password_changed(
+        self,
+        user_id: UUID,
+        change_context: Dict[str, Any]
+    ) -> None:
+        """
+        Publish password changed event.
+        
+        Args:
+            user_id: User identifier
+            change_context: Change context (forced, expired, etc.)
+        """
+        pass
+
+
+class IConfigurationPort(ABC):
+    """Port for configuration management."""
+    
+    @abstractmethod
+    async def get_password_policy(self) -> Dict[str, Any]:
+        """
+        Get password policy configuration.
+        
+        Returns:
+            Password policy settings
+        """
+        pass
+    
+    @abstractmethod
+    async def get_session_config(self) -> Dict[str, Any]:
+        """
+        Get session configuration.
+        
+        Returns:
+            Session settings
+        """
+        pass
+    
+    @abstractmethod
+    async def get_mfa_config(self) -> Dict[str, Any]:
+        """
+        Get MFA configuration.
+        
+        Returns:
+            MFA settings
+        """
+        pass
+    
+    @abstractmethod
+    async def get_rate_limit_config(self, endpoint: str) -> Dict[str, Any]:
+        """
+        Get rate limit configuration for endpoint.
+        
+        Args:
+            endpoint: API endpoint
+            
+        Returns:
+            Rate limit settings
+        """
+        pass
+    
+    @abstractmethod
+    async def is_feature_enabled(
+        self,
+        feature: str,
+        user_id: Optional[UUID] = None
+    ) -> bool:
+        """
+        Check if feature is enabled.
+        
+        Args:
+            feature: Feature name
+            user_id: Optional user for A/B testing
+            
+        Returns:
+            True if feature is enabled
+        """
+        pass
+    
+    @abstractmethod
+    async def get_compliance_settings(self) -> Dict[str, Any]:
+        """
+        Get compliance settings.
+        
+        Returns:
+            Compliance configuration
+        """
+        pass
+
+
+# =============================================================================
+# Audit & Monitoring Ports
+# =============================================================================
+
+class IAuditService(ABC):
+    """Port for audit operations."""
+    
+    @abstractmethod
+    async def log_event(
+        self,
+        user_id: Optional[UUID],
+        actor_id: Optional[UUID],
+        action: str,
+        resource_type: str,
+        resource_id: Optional[str] = None,
+        details: Dict[str, Any] = None,
+        ip_address: Optional[str] = None,
+        user_agent: Optional[str] = None,
+        session_id: Optional[UUID] = None
+    ) -> UUID:
+        """
+        Log audit event.
+        
+        Args:
+            user_id: Affected user
+            actor_id: User performing action
+            action: Action performed
+            resource_type: Type of resource
+            resource_id: Resource identifier
+            details: Additional details
+            ip_address: Client IP
+            user_agent: Client user agent
+            session_id: Session identifier
+            
+        Returns:
+            Audit log entry ID
+        """
+        pass
+    
+    @abstractmethod
+    async def create_audit_trail(
+        self,
+        entity_type: str,
+        entity_id: str,
+        changes: Dict[str, Any],
+        actor_id: Optional[UUID] = None
+    ) -> UUID:
+        """
+        Create audit trail for entity changes.
+        
+        Args:
+            entity_type: Type of entity
+            entity_id: Entity identifier
+            changes: Field changes
+            actor_id: User making changes
+            
+        Returns:
+            Audit trail ID
+        """
+        pass
+    
+    @abstractmethod
+    async def query_audit_logs(
+        self,
+        filters: Dict[str, Any],
+        page: int = 1,
+        page_size: int = 50
+    ) -> Dict[str, Any]:
+        """
+        Query audit logs.
+        
+        Args:
+            filters: Query filters
+            page: Page number
+            page_size: Items per page
+            
+        Returns:
+            Paginated audit logs
+        """
+        pass
+    
+    @abstractmethod
+    async def get_user_activity_summary(
+        self,
+        user_id: UUID,
+        start_date: datetime,
+        end_date: datetime
+    ) -> Dict[str, Any]:
+        """
+        Get user activity summary.
+        
+        Args:
+            user_id: User identifier
+            start_date: Period start
+            end_date: Period end
+            
+        Returns:
+            Activity summary statistics
+        """
+        pass
+    
+    @abstractmethod
+    async def export_audit_logs(
+        self,
+        filters: Dict[str, Any],
+        format: str = "csv"
+    ) -> str:
+        """
+        Export audit logs.
+        
+        Args:
+            filters: Export filters
+            format: Export format (csv/json/xlsx)
+            
+        Returns:
+            Export file path
+        """
+        pass
+
+
+class IAnalyticsPort(ABC):
+    """Port for analytics tracking."""
+    
+    @abstractmethod
+    async def track_user_event(
+        self,
+        event_name: str,
+        user_id: Optional[UUID] = None,
+        properties: Optional[Dict[str, Any]] = None
+    ) -> None:
+        """
+        Track user event.
+        
+        Args:
+            event_name: Event name
+            user_id: User identifier
+            properties: Event properties
+        """
+        pass
+    
+    @abstractmethod
+    async def track_authentication_attempt(
+        self,
+        user_id: Optional[UUID],
+        success: bool,
+        method: str,
+        context: Dict[str, Any]
+    ) -> None:
+        """
+        Track authentication attempt.
+        
+        Args:
+            user_id: User identifier
+            success: Whether attempt succeeded
+            method: Authentication method
+            context: Additional context
+        """
+        pass
+    
+    @abstractmethod
+    async def track_profile_completion(
+        self,
+        user_id: UUID,
+        completion_percentage: float
+    ) -> None:
+        """
+        Track profile completion progress.
+        
+        Args:
+            user_id: User identifier
+            completion_percentage: Completion percentage (0-100)
+        """
+        pass
+    
+    @abstractmethod
+    async def track_security_event(
+        self,
+        event_type: str,
+        user_id: Optional[UUID],
+        severity: str,
+        context: Dict[str, Any]
+    ) -> None:
+        """
+        Track security event.
+        
+        Args:
+            event_type: Type of security event
+            user_id: Affected user
+            severity: Event severity (low/medium/high/critical)
+            context: Event context
+        """
+        pass
+
+
+class IRateLimitPort(ABC):
+    """Port for rate limiting operations."""
+    
+    @abstractmethod
+    async def check_rate_limit(
+        self,
+        identifier: str,
+        rule: str,
+        window_seconds: int,
+        max_requests: int
+    ) -> Dict[str, Any]:
+        """
+        Check rate limit.
+        
+        Args:
+            identifier: Client identifier (IP, user ID, etc.)
+            rule: Rate limit rule name
+            window_seconds: Time window in seconds
+            max_requests: Maximum requests allowed
+            
+        Returns:
+            Dict containing:
+                - allowed: bool
+                - remaining: int
+                - reset_at: datetime
+                - retry_after: Optional[int]
+        """
+        pass
+    
+    @abstractmethod
+    async def increment_usage(
+        self,
+        identifier: str,
+        rule: str,
+        amount: int = 1
+    ) -> int:
+        """
+        Increment rate limit usage.
+        
+        Args:
+            identifier: Client identifier
+            rule: Rate limit rule
+            amount: Increment amount
+            
+        Returns:
+            New usage count
+        """
+        pass
+    
+    @abstractmethod
+    async def reset_rate_limit(
+        self,
+        identifier: str,
+        rule: str
+    ) -> bool:
+        """
+        Reset rate limit counter.
+        
+        Args:
+            identifier: Client identifier
+            rule: Rate limit rule
+            
+        Returns:
+            True if reset successfully
+        """
+        pass
+    
+    @abstractmethod
+    async def get_rate_limit_status(
+        self,
+        identifier: str,
+        rule: str
+    ) -> Dict[str, Any]:
+        """
+        Get current rate limit status.
+        
+        Args:
+            identifier: Client identifier
+            rule: Rate limit rule
+            
+        Returns:
+            Current limit status
+        """
+        pass
+
+
+# =============================================================================
+# Additional Threat Intelligence Port
+# =============================================================================
+
+class IThreatIntelligenceService(ABC):
+    """Port for threat intelligence operations."""
+    
+    @abstractmethod
+    async def check_compromised_credentials(
+        self,
+        email: str,
+        password_hash: str
+    ) -> bool:
+        """
+        Check if credentials are compromised.
+        
+        Args:
+            email: User email
+            password_hash: Hashed password
+            
+        Returns:
+            True if credentials found in breach databases
+        """
+        pass
+    
+    @abstractmethod
+    async def get_threat_indicators(
+        self,
+        ip_address: IpAddress
+    ) -> List[Dict[str, Any]]:
+        """
+        Get threat indicators for IP address.
+        
+        Args:
+            ip_address: IP to check
+            
+        Returns:
+            List of threat indicators
+        """
+        pass
+    
+    @abstractmethod
+    async def report_security_incident(
+        self,
+        incident_type: str,
+        details: Dict[str, Any]
+    ) -> str:
+        """
+        Report security incident.
+        
+        Args:
+            incident_type: Type of incident
+            details: Incident details
+            
+        Returns:
+            Incident report ID
+        """
+        pass

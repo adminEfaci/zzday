@@ -1,0 +1,38 @@
+# EzzDay Backend - Grafana Dashboard Provisioning Configuration
+# Automatically provision dashboards from the filesystem
+
+apiVersion: 1
+
+providers:
+  - name: 'ezzday-dashboards'
+    orgId: 1
+    folder: 'EzzDay'
+    folderUid: 'ezzday'
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 30
+    allowUiUpdates: true
+    options:
+      path: /etc/grafana/provisioning/dashboards
+
+  - name: 'ezzday-infrastructure'
+    orgId: 1
+    folder: 'Infrastructure'
+    folderUid: 'infrastructure'
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 30
+    allowUiUpdates: true
+    options:
+      path: /etc/grafana/provisioning/dashboards
+
+  - name: 'ezzday-security'
+    orgId: 1
+    folder: 'Security'
+    folderUid: 'security'
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 30
+    allowUiUpdates: true
+    options:
+      path: /etc/grafana/provisioning/dashboards

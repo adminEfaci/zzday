@@ -1,0 +1,71 @@
+# OS specific
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDE specific files
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.temp
+
+# Backup files
+*.bak
+*.backup
+*~
+*.orig
+
+# AI tools
+.aider*
+.llm-context/
+.kilocode/
+.cursorrules
+
+# Local folders
+.Trash/
+.cache/
+.local/
+.config/
+
+# Python backend specific (delegated to backend/.gitignore)
+backend/__pycache__/
+backend/.mypy_cache/
+backend/.pytest_cache/
+backend/.ruff_cache/
+backend/.venv/
+backend/venv/
+backend/.env
+backend/*.db
+backend/*.sqlite
+
+# Frontend specific (if you add frontend later)
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/build/
+frontend/dist/
+
+# Documentation
+*.md
+!README.md
+!docs/**/*.md

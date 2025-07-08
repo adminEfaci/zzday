@@ -1,0 +1,167 @@
+# EzzDay Backend - CI/CD Dockerfile with Security Scanning
+# Includes vulnerability scanning and image optimization
+
+# Build stage
+FROM python:3.12-slim as builder
+
+# Set environment variables
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1
+
+# Install system dependencies for building
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    libpq-dev \
+    libssl-dev \
+    libffi-dev \
+    curl \
+    git \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install UV package manager
+RUN pip install uv
+
+# Create application directory
+WORKDIR /app
+
+# Copy dependency files
+COPY app/config/requirements/requirements.txt .
+COPY app/config/requirements/prod.txt .
+
+# Install Python dependencies using UV
+RUN uv pip install --system -r prod.txt
+
+# Copy application code for scanning
+COPY app/ ./app/
+
+# Dependency scanning stage
+FROM python:3.12-slim as dependency-scanner
+
+# Install safety for Python dependency scanning
+RUN pip install safety
+
+# Copy installed packages
+COPY --from=builder /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
+
+# Run safety check
+RUN safety check --json || \
+    (echo "Vulnerable dependencies found!" && exit 1)
+
+# Code scanning stage
+FROM python:3.12-slim as code-scanner
+
+# Install security scanning tools
+RUN pip install bandit semgrep
+
+# Copy application code
+COPY app/ /app/
+
+# Run Bandit security scan
+RUN bandit -r /app -f json -o /tmp/bandit-report.json || \
+    (echo "Security issues found in code!" && cat /tmp/bandit-report.json && exit 1)
+
+# Run Semgrep scan
+RUN semgrep --config=auto /app --json -o /tmp/semgrep-report.json || \
+    (echo "Code quality issues found!" && cat /tmp/semgrep-report.json && exit 1)
+
+# Image scanning stage
+FROM aquasec/trivy:latest as image-scanner
+
+# Copy the filesystem for scanning
+COPY --from=builder / /scan
+
+# Run Trivy scan with detailed output
+RUN trivy filesystem \
+    --no-progress \
+    --severity HIGH,CRITICAL \
+    --exit-code 1 \
+    --format json \
+    --output /tmp/trivy-report.json \
+    /scan || \
+    (echo "Security vulnerabilities found in image!" && cat /tmp/trivy-report.json && exit 1)
+
+# Production stage
+FROM python:3.12-slim as production
+
+# Add labels for better tracking
+LABEL maintainer="EzzDay Team <team@ezzday.com>" \
+      version="${BUILD_VERSION:-latest}" \
+      description="EzzDay Backend API" \
+      org.opencontainers.image.source="https://github.com/ezzday/backend" \
+      org.opencontainers.image.vendor="EzzDay" \
+      org.opencontainers.image.licenses="MIT"
+
+# Set environment variables
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PATH="/app/.local/bin:$PATH" \
+    ENVIRONMENT=production
+
+# Install runtime dependencies (minimal)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libpq5 \
+    curl \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get clean
+
+# Create non-root user
+RUN groupadd -r ezzday && useradd -r -g ezzday -d /app -s /sbin/nologin ezzday
+
+# Create application directory
+WORKDIR /app
+
+# Copy Python packages from builder stage
+COPY --from=builder /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
+COPY --from=builder /usr/local/bin /usr/local/bin
+
+# Copy application code
+COPY app/ ./app/
+COPY app/config/docker/scripts/entrypoint.sh ./entrypoint.sh
+COPY app/config/docker/scripts/health-check.sh ./health-check.sh
+
+# Copy scan reports for CI/CD artifacts
+COPY --from=image-scanner /tmp/trivy-report.json /tmp/
+COPY --from=code-scanner /tmp/bandit-report.json /tmp/
+COPY --from=code-scanner /tmp/semgrep-report.json /tmp/
+
+# Create required directories with proper permissions
+RUN mkdir -p /app/logs /app/storage /app/tmp \
+    && chown -R ezzday:ezzday /app \
+    && chmod +x ./entrypoint.sh ./health-check.sh \
+    && chmod 755 /app/logs /app/storage /app/tmp
+
+# Security hardening
+RUN find /app -name "*.pyc" -delete \
+    && find /app -name "__pycache__" -delete \
+    && find /app -name ".git*" -delete \
+    && find /app -name "*.md" -delete \
+    && find /app -name "test_*" -delete \
+    && find /app -name "*_test.py" -delete
+
+# Remove scan reports after CI/CD extracts them
+RUN rm -f /tmp/*.json
+
+# Switch to non-root user
+USER ezzday
+
+# Expose port
+EXPOSE 8000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD ["./health-check.sh"]
+
+# Set entrypoint
+ENTRYPOINT ["./entrypoint.sh"]
+
+# Default command with security headers
+CMD ["uvicorn", "app.main:app", \
+     "--host", "0.0.0.0", \
+     "--port", "8000", \
+     "--workers", "4", \
+     "--loop", "uvloop", \
+     "--access-log", \
+     "--log-config", "/app/config/logging/production.json"]

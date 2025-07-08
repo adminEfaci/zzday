@@ -1,0 +1,129 @@
+# EzzDay Backend - Prometheus Targets Configuration
+# Service discovery and target configuration for different environments
+
+# Development Targets
+- targets:
+    - 'localhost:8000'    # Main application
+    - 'localhost:8001'    # Application replica (if running)
+  labels:
+    env: 'development'
+    service: 'ezzday-backend'
+    team: 'backend'
+    version: '1.0.0'
+
+- targets:
+    - 'localhost:5555'    # Flower (Celery monitoring)
+  labels:
+    env: 'development'
+    service: 'flower'
+    team: 'backend'
+
+- targets:
+    - 'localhost:5432'    # PostgreSQL
+  labels:
+    env: 'development'
+    service: 'postgresql'
+    team: 'infrastructure'
+
+- targets:
+    - 'localhost:6379'    # Redis
+  labels:
+    env: 'development'
+    service: 'redis'
+    team: 'infrastructure'
+
+- targets:
+    - 'localhost:15672'   # RabbitMQ Management
+  labels:
+    env: 'development'
+    service: 'rabbitmq'
+    team: 'infrastructure'
+
+# Staging Targets (when running in staging)
+- targets:
+    - 'staging-app:8000'
+    - 'staging-app-2:8000'
+  labels:
+    env: 'staging'
+    service: 'ezzday-backend'
+    team: 'backend'
+    version: '1.0.0'
+
+- targets:
+    - 'staging-flower:5555'
+  labels:
+    env: 'staging'
+    service: 'flower'
+    team: 'backend'
+
+- targets:
+    - 'staging-db:5432'
+  labels:
+    env: 'staging'
+    service: 'postgresql'
+    team: 'infrastructure'
+
+- targets:
+    - 'staging-redis:6379'
+  labels:
+    env: 'staging'
+    service: 'redis'
+    team: 'infrastructure'
+
+- targets:
+    - 'staging-rabbitmq:15672'
+  labels:
+    env: 'staging'
+    service: 'rabbitmq'
+    team: 'infrastructure'
+
+# Production Targets (when running in production)
+- targets:
+    - 'prod-app-1:8000'
+    - 'prod-app-2:8000'
+    - 'prod-app-3:8000'
+    - 'prod-app-4:8000'
+  labels:
+    env: 'production'
+    service: 'ezzday-backend'
+    team: 'backend'
+    version: '1.0.0'
+    region: 'us-west-2'
+
+- targets:
+    - 'prod-flower:5555'
+  labels:
+    env: 'production'
+    service: 'flower'
+    team: 'backend'
+    region: 'us-west-2'
+
+- targets:
+    - 'prod-db-primary:5432'
+    - 'prod-db-replica-1:5432'
+    - 'prod-db-replica-2:5432'
+  labels:
+    env: 'production'
+    service: 'postgresql'
+    team: 'infrastructure'
+    region: 'us-west-2'
+
+- targets:
+    - 'prod-redis-1:6379'
+    - 'prod-redis-2:6379'
+    - 'prod-redis-3:6379'
+  labels:
+    env: 'production'
+    service: 'redis'
+    team: 'infrastructure'
+    region: 'us-west-2'
+
+- targets:
+    - 'prod-rabbitmq-1:15672'
+    - 'prod-rabbitmq-2:15672'
+    - 'prod-rabbitmq-3:15672'
+  labels:
+    env: 'production'
+    service: 'rabbitmq'
+    team: 'infrastructure'
+    region: 'us-west-2'

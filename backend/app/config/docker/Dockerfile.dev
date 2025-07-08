@@ -1,0 +1,88 @@
+# EzzDay Backend - Development Dockerfile
+# Optimized for development with hot reload and debugging
+
+FROM python:3.12-slim
+
+# Set environment variables
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    ENVIRONMENT=development
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    libpq-dev \
+    libssl-dev \
+    libffi-dev \
+    curl \
+    git \
+    vim \
+    less \
+    procps \
+    postgresql-client \
+    redis-tools \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install UV package manager
+RUN pip install uv
+
+# Create application directory
+WORKDIR /app
+
+# Copy dependency files first (for better layer caching)
+COPY app/config/requirements/requirements.txt .
+COPY app/config/requirements/dev.txt .
+
+# Install Python dependencies using UV
+RUN uv pip install --system -r dev.txt
+
+# Install development tools
+RUN uv pip install --system \
+    black \
+    isort \
+    flake8 \
+    mypy \
+    pytest \
+    pytest-asyncio \
+    pytest-cov \
+    pre-commit \
+    ipdb \
+    debugpy
+
+# Copy application code
+COPY app/ ./app/
+COPY app/config/docker/scripts/entrypoint.sh ./entrypoint.sh
+COPY app/config/docker/scripts/health-check.sh ./health-check.sh
+COPY app/config/docker/scripts/wait-for-it.sh ./wait-for-it.sh
+
+# Create required directories
+RUN mkdir -p /app/logs /app/storage /app/tmp /app/test_results
+
+# Make scripts executable
+RUN chmod +x ./entrypoint.sh ./health-check.sh ./wait-for-it.sh
+
+# Create non-root user for development
+RUN groupadd -r ezzday && useradd -r -g ezzday -d /app -s /bin/bash ezzday \
+    && chown -R ezzday:ezzday /app
+
+# Install pre-commit hooks (as root)
+COPY .pre-commit-config.yaml /app/.pre-commit-config.yaml
+RUN cd /app && pre-commit install || true
+
+# Switch to non-root user
+USER ezzday
+
+# Expose ports
+EXPOSE 8000 5678
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
+    CMD ["./health-check.sh"]
+
+# Set entrypoint
+ENTRYPOINT ["./entrypoint.sh"]
+
+# Default command for development (with auto-reload)
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload", "--reload-dir", "app"]

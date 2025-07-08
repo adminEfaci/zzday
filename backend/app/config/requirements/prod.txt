@@ -1,0 +1,88 @@
+# EzzDay Backend - Production Dependencies
+# Optimized production dependencies with specific versions
+
+-r base.txt
+
+# Production ASGI Server
+gunicorn==22.0.0
+
+# Production Monitoring
+sentry-sdk[fastapi]==2.1.1
+newrelic==9.8.0
+
+# Production Caching
+redis[hiredis]==5.0.4
+
+# Cloud Storage
+boto3==1.34.118
+botocore==1.34.118
+
+# Email Production
+sendgrid==6.11.0
+
+# SMS Production
+twilio==9.1.0
+
+# Push Notifications
+pyfcm==1.5.4
+
+# Production Database Drivers
+psycopg2-binary==2.9.9
+
+# Monitoring & Metrics
+statsd==4.0.1
+datadog==0.49.1
+
+# Production Logging
+python-json-logger==2.0.7
+
+# Security
+authlib==1.3.1
+
+# Performance
+orjson==3.10.3  # Faster JSON serialization
+ujson==5.10.0   # Alternative JSON library
+
+# Production Configuration
+pyyaml==6.0.1
+
+# Health Checks
+healthcheck==1.3.3
+
+# Rate Limiting
+slowapi==0.1.9
+
+# Backup & Recovery
+pg_dump==0.0.1
+
+# Production Utilities
+supervisor==4.2.5  # Process management
+
+# SSL/TLS
+certifi==2024.6.2
+
+# Production Testing (minimal)
+pytest==8.2.1      # For health checks
+httpx==0.27.0       # For internal testing
+
+# Cloud Provider SDKs (Optional - uncomment as needed)
+# google-cloud-storage==2.17.0
+# azure-storage-blob==12.20.0
+
+# Backup Solutions
+# django-dbbackup==4.1.0  # If using Django-style backups
+
+# Message Queue Production
+# kombu==5.3.6  # Already included with celery
+
+# Production Cache
+# pymemcache==4.0.0  # If using Memcached
+
+# Production Search (if needed)
+# elasticsearch==8.13.2
+
+# Production Analytics (if needed)
+# mixpanel==4.10.1
+
+# Production Feature Flags (if needed)
+# flagsmith==3.8.0

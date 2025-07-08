@@ -1,0 +1,127 @@
+# EzzDay Backend - Test Dependencies
+# Dependencies specifically for testing environments
+
+-r base.txt
+
+# Core Testing Framework
+pytest==8.2.1
+pytest-asyncio==0.23.7
+pytest-cov==5.0.0
+pytest-mock==3.14.0
+pytest-xdist==3.6.0
+pytest-benchmark==4.0.0
+pytest-env==1.1.3
+pytest-html==4.1.1
+pytest-json-report==1.5.0
+
+# Test Data Generation
+factory-boy==3.3.0
+faker==25.3.0
+
+# HTTP Testing
+httpx==0.27.0
+respx==0.21.1
+responses==0.25.0
+
+# Database Testing
+pytest-postgresql==6.0.0
+aiosqlite==0.20.0
+
+# Mock Services
+pytest-httpserver==1.0.10
+
+# Test Coverage
+coverage==7.5.3
+
+# Performance Testing
+pytest-benchmark==4.0.0
+locust==2.28.0
+
+# Test Utilities
+freezegun==1.5.1  # Freeze time in tests
+pytest-deadfixtures==2.2.1  # Find unused fixtures
+pytest-clarity==1.0.1  # Better test failure output
+
+# Memory Testing
+pytest-leaks==0.3.2
+memory-profiler==0.61.0
+
+# Test Data Validation
+hypothesis==6.103.0  # Property-based testing
+pydantic==2.7.1  # Already in base, but ensuring it's available
+
+# Test Configuration
+pytest-env==1.1.3
+python-dotenv==1.0.1
+
+# Async Testing
+pytest-asyncio==0.23.7
+asynctest==0.13.0
+
+# Test Fixtures
+pytest-factoryboy==2.7.0
+
+# Test Reporting
+pytest-html==4.1.1
+pytest-json-report==1.5.0
+pytest-cov==5.0.0
+
+# Security Testing
+bandit==1.7.8
+safety==3.2.3
+
+# Load Testing
+locust==2.28.0
+
+# API Testing
+tavern==2.11.0  # REST API testing
+
+# Database Testing Utilities
+sqlalchemy-utils==0.41.2
+
+# Test Isolation
+pytest-isolate==0.1.2
+
+# Snapshot Testing
+syrupy==4.6.1
+
+# Contract Testing
+pact-python==2.2.1
+
+# End-to-End Testing
+playwright==1.44.0
+selenium==4.21.0
+
+# Visual Testing
+selenium-screenshot==0.1.2
+
+# Test Monitoring
+pytest-monitor==1.6.6
+
+# Mutation Testing
+mutmut==2.4.4
+
+# Test Fixtures and Factories
+mimesis==15.1.0  # Alternative to Faker
+
+# CLI Testing
+click-testing==0.1.3
+
+# Email Testing
+aiosmtpd==1.4.5
+
+# Time Testing
+freezegun==1.5.1
+
+# Test Organization
+pytest-describe==2.2.0
+pytest-bdd==7.1.2
+
+# Property Testing
+hypothesis==6.103.0
+
+# Parallel Testing
+pytest-xdist==3.6.0
+
+# Test Cleanup
+pytest-cleanuptrap==0.1.1

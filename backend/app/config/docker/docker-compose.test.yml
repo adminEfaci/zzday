@@ -1,0 +1,244 @@
+# EzzDay Backend - Test Environment Docker Compose
+# Lightweight stack optimized for automated testing
+
+version: '3.8'
+
+services:
+  # Test Database
+  test_db:
+    image: postgres:15-alpine
+    container_name: ezzday-postgres-test
+    environment:
+      POSTGRES_DB: ezzday_test
+      POSTGRES_USER: ezzday_test
+      POSTGRES_PASSWORD: test_password
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --lc-collate=C --lc-ctype=C"
+    ports:
+      - "5432:5432"
+    volumes:
+      - test_postgres_data:/var/lib/postgresql/data
+    networks:
+      - ezzday-test-network
+    restart: "no"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ezzday_test -d ezzday_test"]
+      interval: 5s
+      timeout: 3s
+      retries: 3
+    tmpfs:
+      - /var/lib/postgresql/data:size=100M
+
+  # Test Redis
+  test_redis:
+    image: redis:7-alpine
+    container_name: ezzday-redis-test
+    ports:
+      - "6379:6379"
+    networks:
+      - ezzday-test-network
+    restart: "no"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 3
+    tmpfs:
+      - /data:size=50M
+
+  # Test Application
+  test_app:
+    build:
+      context: ../../..
+      dockerfile: app/config/docker/Dockerfile.dev
+      target: builder
+    container_name: ezzday-app-test
+    env_file:
+      - ../environments/.env.test
+    environment:
+      - TESTING=true
+      - DATABASE_URL=postgresql+asyncpg://ezzday_test:test_password@test_db:5432/ezzday_test
+      - REDIS_URL=redis://test_redis:6379/10
+    volumes:
+      - ../../../app:/app/app:ro
+      - ../../../tests:/app/tests:ro
+      - test_results:/app/test_results
+      - test_coverage:/app/coverage
+    depends_on:
+      test_db:
+        condition: service_healthy
+      test_redis:
+        condition: service_healthy
+    networks:
+      - ezzday-test-network
+    restart: "no"
+    command: >
+      sh -c "
+        ./wait-for-it.sh test_db:5432 --timeout=30 -- 
+        ./wait-for-it.sh test_redis:6379 --timeout=30 -- 
+        python -m pytest tests/ -v --cov=app --cov-report=html:/app/coverage/html --cov-report=xml:/app/coverage/coverage.xml --cov-report=term-missing --junit-xml=/app/test_results/junit.xml
+      "
+
+  # Integration Test Runner
+  integration_tests:
+    build:
+      context: ../../..
+      dockerfile: app/config/docker/Dockerfile.dev
+      target: builder
+    container_name: ezzday-integration-test
+    env_file:
+      - ../environments/.env.test
+    environment:
+      - TESTING=true
+      - PYTEST_MARKERS=integration
+      - DATABASE_URL=postgresql+asyncpg://ezzday_test:test_password@test_db:5432/ezzday_test
+      - REDIS_URL=redis://test_redis:6379/10
+    volumes:
+      - ../../../app:/app/app:ro
+      - ../../../tests:/app/tests:ro
+      - test_results:/app/test_results
+      - test_coverage:/app/coverage
+    depends_on:
+      test_db:
+        condition: service_healthy
+      test_redis:
+        condition: service_healthy
+    networks:
+      - ezzday-test-network
+    restart: "no"
+    profiles:
+      - integration
+    command: >
+      sh -c "
+        ./wait-for-it.sh test_db:5432 --timeout=30 -- 
+        ./wait-for-it.sh test_redis:6379 --timeout=30 -- 
+        python -m pytest tests/ -v -m integration --cov=app --cov-report=html:/app/coverage/integration --junit-xml=/app/test_results/integration-junit.xml
+      "
+
+  # Unit Test Runner
+  unit_tests:
+    build:
+      context: ../../..
+      dockerfile: app/config/docker/Dockerfile.dev
+      target: builder
+    container_name: ezzday-unit-test
+    env_file:
+      - ../environments/.env.test
+    environment:
+      - TESTING=true
+      - PYTEST_MARKERS=unit
+    volumes:
+      - ../../../app:/app/app:ro
+      - ../../../tests:/app/tests:ro
+      - test_results:/app/test_results
+      - test_coverage:/app/coverage
+    networks:
+      - ezzday-test-network
+    restart: "no"
+    profiles:
+      - unit
+    command: >
+      sh -c "
+        python -m pytest tests/ -v -m 'unit or not integration' --cov=app --cov-report=html:/app/coverage/unit --junit-xml=/app/test_results/unit-junit.xml
+      "
+
+  # Performance Test Runner
+  performance_tests:
+    build:
+      context: ../../..
+      dockerfile: app/config/docker/Dockerfile.dev
+      target: builder
+    container_name: ezzday-performance-test
+    env_file:
+      - ../environments/.env.test
+    environment:
+      - TESTING=true
+      - PYTEST_MARKERS=performance
+      - DATABASE_URL=postgresql+asyncpg://ezzday_test:test_password@test_db:5432/ezzday_test
+      - REDIS_URL=redis://test_redis:6379/10
+    volumes:
+      - ../../../app:/app/app:ro
+      - ../../../tests:/app/tests:ro
+      - test_results:/app/test_results
+    depends_on:
+      test_db:
+        condition: service_healthy
+      test_redis:
+        condition: service_healthy
+    networks:
+      - ezzday-test-network
+    restart: "no"
+    profiles:
+      - performance
+    command: >
+      sh -c "
+        ./wait-for-it.sh test_db:5432 --timeout=30 -- 
+        ./wait-for-it.sh test_redis:6379 --timeout=30 -- 
+        python -m pytest tests/ -v -m performance --junit-xml=/app/test_results/performance-junit.xml
+      "
+
+  # Security Test Runner
+  security_tests:
+    build:
+      context: ../../..
+      dockerfile: app/config/docker/Dockerfile.dev
+      target: builder
+    container_name: ezzday-security-test
+    env_file:
+      - ../environments/.env.test
+    environment:
+      - TESTING=true
+      - PYTEST_MARKERS=security
+      - DATABASE_URL=postgresql+asyncpg://ezzday_test:test_password@test_db:5432/ezzday_test
+      - REDIS_URL=redis://test_redis:6379/10
+    volumes:
+      - ../../../app:/app/app:ro
+      - ../../../tests:/app/tests:ro
+      - test_results:/app/test_results
+    depends_on:
+      test_db:
+        condition: service_healthy
+      test_redis:
+        condition: service_healthy
+    networks:
+      - ezzday-test-network
+    restart: "no"
+    profiles:
+      - security
+    command: >
+      sh -c "
+        ./wait-for-it.sh test_db:5432 --timeout=30 -- 
+        ./wait-for-it.sh test_redis:6379 --timeout=30 -- 
+        python -m pytest tests/ -v -m security --junit-xml=/app/test_results/security-junit.xml
+      "
+
+  # Test Report Generator
+  test_reporter:
+    image: alpine:latest
+    container_name: ezzday-test-reporter
+    volumes:
+      - test_results:/test_results
+      - test_coverage:/coverage
+      - ../../../scripts:/scripts:ro
+    networks:
+      - ezzday-test-network
+    restart: "no"
+    profiles:
+      - report
+    command: >
+      sh -c "
+        apk add --no-cache python3 py3-pip && 
+        pip3 install coverage jinja2 && 
+        /scripts/generate-test-report.sh
+      "
+
+volumes:
+  test_postgres_data:
+  test_results:
+  test_coverage:
+
+networks:
+  ezzday-test-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.21.0.0/16

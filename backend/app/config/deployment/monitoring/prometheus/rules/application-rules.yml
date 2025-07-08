@@ -1,0 +1,202 @@
+# EzzDay Backend - Application Monitoring Rules
+# Prometheus alerting rules for application-specific metrics
+
+groups:
+  - name: ezzday-application
+    rules:
+      # API Response Time Alerts
+      - alert: HighAPIResponseTime
+        expr: histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[5m])) by (le)) > 1
+        for: 2m
+        labels:
+          severity: warning
+          service: ezzday-backend
+        annotations:
+          summary: "High API response time detected"
+          description: "95th percentile response time is {{ $value }} seconds"
+
+      - alert: VeryHighAPIResponseTime
+        expr: histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[5m])) by (le)) > 3
+        for: 1m
+        labels:
+          severity: critical
+          service: ezzday-backend
+        annotations:
+          summary: "Very high API response time detected"
+          description: "95th percentile response time is {{ $value }} seconds"
+
+      # Error Rate Alerts
+      - alert: HighErrorRate
+        expr: sum(rate(http_requests_total{status=~"5.."}[5m])) / sum(rate(http_requests_total[5m])) > 0.05
+        for: 2m
+        labels:
+          severity: warning
+          service: ezzday-backend
+        annotations:
+          summary: "High error rate detected"
+          description: "Error rate is {{ $value | humanizePercentage }} of total requests"
+
+      - alert: VeryHighErrorRate
+        expr: sum(rate(http_requests_total{status=~"5.."}[5m])) / sum(rate(http_requests_total[5m])) > 0.15
+        for: 1m
+        labels:
+          severity: critical
+          service: ezzday-backend
+        annotations:
+          summary: "Very high error rate detected"
+          description: "Error rate is {{ $value | humanizePercentage }} of total requests"
+
+      # Authentication Failures
+      - alert: HighAuthenticationFailures
+        expr: sum(rate(authentication_failures_total[5m])) > 10
+        for: 2m
+        labels:
+          severity: warning
+          service: ezzday-backend
+        annotations:
+          summary: "High authentication failure rate"
+          description: "{{ $value }} authentication failures per second"
+
+      # Database Connection Issues
+      - alert: DatabaseConnectionPool
+        expr: database_connections_active / database_connections_max > 0.8
+        for: 2m
+        labels:
+          severity: warning
+          service: ezzday-backend
+        annotations:
+          summary: "Database connection pool nearly exhausted"
+          description: "{{ $value | humanizePercentage }} of database connections in use"
+
+      - alert: DatabaseConnectionPoolCritical
+        expr: database_connections_active / database_connections_max > 0.95
+        for: 1m
+        labels:
+          severity: critical
+          service: ezzday-backend
+        annotations:
+          summary: "Database connection pool critically low"
+          description: "{{ $value | humanizePercentage }} of database connections in use"
+
+      # Celery Queue Monitoring
+      - alert: HighCeleryQueueSize
+        expr: celery_queue_size > 1000
+        for: 5m
+        labels:
+          severity: warning
+          service: ezzday-backend
+        annotations:
+          summary: "High Celery queue size"
+          description: "Celery queue has {{ $value }} pending tasks"
+
+      - alert: CeleryWorkerDown
+        expr: celery_workers_active == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: ezzday-backend
+        annotations:
+          summary: "No active Celery workers"
+          description: "All Celery workers appear to be down"
+
+      # Memory Usage
+      - alert: HighMemoryUsage
+        expr: (process_resident_memory_bytes / 1024 / 1024) > 500
+        for: 5m
+        labels:
+          severity: warning
+          service: ezzday-backend
+        annotations:
+          summary: "High memory usage"
+          description: "Process using {{ $value }}MB of memory"
+
+      - alert: VeryHighMemoryUsage
+        expr: (process_resident_memory_bytes / 1024 / 1024) > 1000
+        for: 2m
+        labels:
+          severity: critical
+          service: ezzday-backend
+        annotations:
+          summary: "Very high memory usage"
+          description: "Process using {{ $value }}MB of memory"
+
+  - name: ezzday-business-logic
+    rules:
+      # User Registration Monitoring
+      - alert: HighUserRegistrationFailures
+        expr: sum(rate(user_registration_failures_total[5m])) > 5
+        for: 3m
+        labels:
+          severity: warning
+          service: ezzday-backend
+        annotations:
+          summary: "High user registration failure rate"
+          description: "{{ $value }} user registration failures per second"
+
+      # Task Processing Monitoring
+      - alert: TaskProcessingBacklog
+        expr: tasks_pending_total > 10000
+        for: 10m
+        labels:
+          severity: warning
+          service: ezzday-backend
+        annotations:
+          summary: "High task processing backlog"
+          description: "{{ $value }} tasks pending processing"
+
+      # Integration Health
+      - alert: IntegrationFailures
+        expr: sum(rate(integration_failures_total[5m])) > 2
+        for: 5m
+        labels:
+          severity: warning
+          service: ezzday-backend
+        annotations:
+          summary: "High integration failure rate"
+          description: "{{ $value }} integration failures per second"
+
+      # Notification Delivery
+      - alert: NotificationDeliveryFailures
+        expr: sum(rate(notification_delivery_failures_total[5m])) > 5
+        for: 3m
+        labels:
+          severity: warning
+          service: ezzday-backend
+        annotations:
+          summary: "High notification delivery failure rate"
+          description: "{{ $value }} notification delivery failures per second"
+
+  - name: ezzday-security
+    rules:
+      # Security Event Monitoring
+      - alert: SuspiciousActivity
+        expr: sum(rate(security_events_total{type="suspicious"}[5m])) > 10
+        for: 1m
+        labels:
+          severity: warning
+          service: ezzday-backend
+        annotations:
+          summary: "Suspicious activity detected"
+          description: "{{ $value }} suspicious security events per second"
+
+      # Rate Limiting
+      - alert: HighRateLimitHits
+        expr: sum(rate(rate_limit_hits_total[5m])) > 100
+        for: 2m
+        labels:
+          severity: warning
+          service: ezzday-backend
+        annotations:
+          summary: "High rate limit hits"
+          description: "{{ $value }} rate limit hits per second"
+
+      # Failed Login Attempts
+      - alert: HighFailedLoginAttempts
+        expr: sum(rate(login_failures_total[5m])) > 20
+        for: 2m
+        labels:
+          severity: warning
+          service: ezzday-backend
+        annotations:
+          summary: "High failed login attempt rate"
+          description: "{{ $value }} failed login attempts per second"

@@ -1,0 +1,243 @@
+# EzzDay Backend - Prometheus Alert Rules
+# Production monitoring alerts
+
+groups:
+  - name: api_alerts
+    interval: 30s
+    rules:
+      # High error rate
+      - alert: HighAPIErrorRate
+        expr: |
+          (
+            sum(rate(http_requests_total{status=~"5.."}[5m])) by (service)
+            /
+            sum(rate(http_requests_total[5m])) by (service)
+          ) > 0.05
+        for: 5m
+        labels:
+          severity: critical
+          team: backend
+        annotations:
+          summary: "High error rate on {{ $labels.service }}"
+          description: "Error rate is {{ $value | humanizePercentage }} for service {{ $labels.service }}"
+
+      # High response time
+      - alert: HighAPIResponseTime
+        expr: |
+          histogram_quantile(0.95, 
+            sum(rate(http_request_duration_seconds_bucket[5m])) by (le, service)
+          ) > 1
+        for: 10m
+        labels:
+          severity: warning
+          team: backend
+        annotations:
+          summary: "High API response time on {{ $labels.service }}"
+          description: "95th percentile response time is {{ $value }}s for service {{ $labels.service }}"
+
+      # API down
+      - alert: APIDown
+        expr: up{job="ezzday-backend"} == 0
+        for: 2m
+        labels:
+          severity: critical
+          team: backend
+        annotations:
+          summary: "API instance {{ $labels.instance }} is down"
+          description: "API instance {{ $labels.instance }} has been down for more than 2 minutes"
+
+  - name: database_alerts
+    interval: 30s
+    rules:
+      # Database connection pool exhausted
+      - alert: DatabaseConnectionPoolExhausted
+        expr: |
+          (
+            sqlalchemy_pool_size - sqlalchemy_pool_checked_in
+          ) / sqlalchemy_pool_size > 0.9
+        for: 5m
+        labels:
+          severity: warning
+          team: backend
+        annotations:
+          summary: "Database connection pool nearly exhausted"
+          description: "{{ $value | humanizePercentage }} of database connections are in use"
+
+      # Slow database queries
+      - alert: SlowDatabaseQueries
+        expr: |
+          histogram_quantile(0.95,
+            sum(rate(database_query_duration_seconds_bucket[5m])) by (le, query_type)
+          ) > 5
+        for: 10m
+        labels:
+          severity: warning
+          team: backend
+        annotations:
+          summary: "Slow database queries detected"
+          description: "95th percentile query time for {{ $labels.query_type }} is {{ $value }}s"
+
+  - name: redis_alerts
+    interval: 30s
+    rules:
+      # Redis down
+      - alert: RedisDown
+        expr: redis_up == 0
+        for: 2m
+        labels:
+          severity: critical
+          team: backend
+        annotations:
+          summary: "Redis instance {{ $labels.instance }} is down"
+          description: "Redis {{ $labels.role }} has been down for more than 2 minutes"
+
+      # High Redis memory usage
+      - alert: HighRedisMemoryUsage
+        expr: |
+          (
+            redis_memory_used_bytes / redis_memory_max_bytes
+          ) > 0.9
+        for: 10m
+        labels:
+          severity: warning
+          team: backend
+        annotations:
+          summary: "High Redis memory usage on {{ $labels.instance }}"
+          description: "Redis memory usage is {{ $value | humanizePercentage }}"
+
+      # Redis replication lag
+      - alert: RedisReplicationLag
+        expr: redis_replication_lag_seconds > 10
+        for: 5m
+        labels:
+          severity: warning
+          team: backend
+        annotations:
+          summary: "Redis replication lag detected"
+          description: "Replication lag is {{ $value }}s"
+
+  - name: celery_alerts
+    interval: 30s
+    rules:
+      # High Celery queue depth
+      - alert: HighCeleryQueueDepth
+        expr: celery_queue_length > 1000
+        for: 10m
+        labels:
+          severity: warning
+          team: backend
+        annotations:
+          summary: "High Celery queue depth for {{ $labels.queue }}"
+          description: "Queue {{ $labels.queue }} has {{ $value }} pending tasks"
+
+      # Celery worker offline
+      - alert: CeleryWorkerOffline
+        expr: celery_worker_online == 0
+        for: 5m
+        labels:
+          severity: critical
+          team: backend
+        annotations:
+          summary: "Celery worker {{ $labels.hostname }} is offline"
+          description: "Worker has been offline for more than 5 minutes"
+
+      # High task failure rate
+      - alert: HighCeleryTaskFailureRate
+        expr: |
+          (
+            sum(rate(celery_task_failed_total[5m])) by (task)
+            /
+            sum(rate(celery_task_sent_total[5m])) by (task)
+          ) > 0.1
+        for: 10m
+        labels:
+          severity: warning
+          team: backend
+        annotations:
+          summary: "High failure rate for task {{ $labels.task }}"
+          description: "Task failure rate is {{ $value | humanizePercentage }}"
+
+  - name: resource_alerts
+    interval: 30s
+    rules:
+      # High CPU usage
+      - alert: HighCPUUsage
+        expr: |
+          (
+            1 - avg(rate(container_cpu_usage_seconds_total[5m])) by (service)
+          ) > 0.8
+        for: 10m
+        labels:
+          severity: warning
+          team: infrastructure
+        annotations:
+          summary: "High CPU usage for {{ $labels.service }}"
+          description: "CPU usage is {{ $value | humanizePercentage }}"
+
+      # High memory usage
+      - alert: HighMemoryUsage
+        expr: |
+          (
+            container_memory_working_set_bytes
+            / container_spec_memory_limit_bytes
+          ) > 0.9
+        for: 10m
+        labels:
+          severity: warning
+          team: infrastructure
+        annotations:
+          summary: "High memory usage for {{ $labels.service }}"
+          description: "Memory usage is {{ $value | humanizePercentage }} of limit"
+
+      # Disk space low
+      - alert: DiskSpaceLow
+        expr: |
+          (
+            node_filesystem_avail_bytes{mountpoint="/"}
+            / node_filesystem_size_bytes{mountpoint="/"}
+          ) < 0.1
+        for: 10m
+        labels:
+          severity: critical
+          team: infrastructure
+        annotations:
+          summary: "Low disk space on {{ $labels.instance }}"
+          description: "Only {{ $value | humanizePercentage }} disk space remaining"
+
+  - name: security_alerts
+    interval: 60s
+    rules:
+      # SSL certificate expiring
+      - alert: SSLCertificateExpiringSoon
+        expr: probe_ssl_earliest_cert_expiry - time() < 7 * 24 * 60 * 60
+        for: 1h
+        labels:
+          severity: warning
+          team: infrastructure
+        annotations:
+          summary: "SSL certificate expiring soon for {{ $labels.instance }}"
+          description: "Certificate expires in {{ $value | humanizeDuration }}"
+
+      # Authentication failures spike
+      - alert: HighAuthenticationFailureRate
+        expr: |
+          sum(rate(authentication_failures_total[5m])) > 10
+        for: 5m
+        labels:
+          severity: warning
+          team: security
+        annotations:
+          summary: "High authentication failure rate"
+          description: "{{ $value }} authentication failures per second"
+
+      # Suspicious activity
+      - alert: SuspiciousAPIActivity
+        expr: |
+          sum(rate(http_requests_total{status="429"}[5m])) by (client_ip) > 50
+        for: 5m
+        labels:
+          severity: warning
+          team: security
+        annotations:
+          summary: "Rate limiting triggered for {{ $labels.client_ip }}"
+          description: "Client {{ $labels.client_ip }} is being rate limited"

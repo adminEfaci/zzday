@@ -15,12 +15,6 @@ from uuid import UUID, uuid4
 
 from app.core.domain.base import AggregateRoot
 
-# Import enums from consolidated location
-from ..enums import AccountType, UserStatus, RiskLevel
-
-# Import value objects
-from ..value_objects import Email, PhoneNumber, Username
-
 # Import events from existing location
 from ..entities.user.user_events import (
     UserActivated,
@@ -38,6 +32,12 @@ from ..entities.user.user_events import (
     UserSuspended,
     UserUnlocked,
 )
+
+# Import enums from consolidated location
+from ..enums import AccountType, UserStatus
+
+# Import value objects
+from ..value_objects import Email, PhoneNumber, Username
 
 
 @dataclass
@@ -112,16 +112,16 @@ class User(AggregateRoot):
         """Validate domain invariants - NO EVENT EMISSION."""
         # Core identity validation
         if not isinstance(self.email, Email):
-            raise ValueError("Email must be an Email value object")
+            raise TypeError("Email must be an Email value object")
         
         if not isinstance(self.username, Username):
-            raise ValueError("Username must be a Username value object")
+            raise TypeError("Username must be a Username value object")
         
         if not isinstance(self.status, UserStatus):
-            raise ValueError("Status must be a UserStatus enum")
+            raise TypeError("Status must be a UserStatus enum")
         
         if not isinstance(self.account_type, AccountType):
-            raise ValueError("Account type must be an AccountType enum")
+            raise TypeError("Account type must be an AccountType enum")
 
         # Business rule validation
         if self.failed_login_count < 0:
@@ -131,9 +131,8 @@ class User(AggregateRoot):
             raise ValueError("Login count cannot be negative")
         
         # Temporal validation
-        if hasattr(self, 'updated_at') and hasattr(self, 'created_at'):
-            if self.updated_at < self.created_at:
-                raise ValueError("Updated timestamp cannot be before created timestamp")
+        if hasattr(self, 'updated_at') and hasattr(self, 'created_at') and self.updated_at < self.created_at:
+            raise ValueError("Updated timestamp cannot be before created timestamp")
         
         # Status consistency
         if self.status == UserStatus.DELETED and not self.deleted_at:
@@ -238,10 +237,9 @@ class User(AggregateRoot):
             self.failed_login_count += 1
             self.last_failed_login = datetime.now(UTC)
             
-            # Check if account should be locked (complex logic in service)
-            should_lock, duration = auth_service.should_lock_account(self)
-            if should_lock:
-                self.lock(duration)
+            # Apply domain rule: Lock after 5 failed attempts
+            if self.failed_login_count >= 5:
+                self.lock(timedelta(minutes=15))  # 15 minute lockout
         
         self._touch()
 

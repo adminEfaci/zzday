@@ -37,6 +37,11 @@ from app.modules.identity.domain.value_objects.security_stamp import SecuritySta
 from app.modules.identity.infrastructure.models.user_model import UserModel
 from app.shared.domain.events.event_dispatcher import EventDispatcher
 
+# Test data builders - ADDED: Eliminate hardcoded test data
+from app.tests.builders import UserBuilder, SessionBuilder, EmailBuilder
+from app.tests.builders.user_builder import UserMother
+from app.tests.builders.session_builder import SessionMother
+
 # Test Database Configuration
 TEST_DATABASE_URL = (
     "postgresql+asyncpg://ezzday_test:test_password@localhost:5432/ezzday_test"
@@ -120,20 +125,11 @@ async def async_client(test_app) -> AsyncGenerator[AsyncClient, None]:
         yield client
 
 
-# Authentication Fixtures
-@pytest_asyncio.fixture
-async def test_user(db_session: AsyncSession) -> User:
-    """Create a test user entity."""
-    return User(
-        id=uuid.uuid4(),
-        email=Email("test@example.com"),
-        password_hash=PasswordHash.create_from_password("test_password123"),
-        security_stamp=SecurityStamp.generate_initial(),
-        is_active=True,
-        is_verified=True,
-        created_at=datetime.now(timezone.utc),
-        updated_at=datetime.now(timezone.utc),
-    )
+# Authentication Fixtures - FIXED: No hardcoded test data
+@pytest.fixture
+def test_user() -> User:
+    """Create a test user entity with unique data."""
+    return UserMother.active_verified_user()
 
 
 @pytest_asyncio.fixture
@@ -157,20 +153,10 @@ async def test_user_model(db_session: AsyncSession, test_user: User) -> UserMode
     return user_model
 
 
-@pytest_asyncio.fixture
-async def admin_user(db_session: AsyncSession) -> User:
-    """Create a test admin user."""
-    return User(
-        id=uuid.uuid4(),
-        email=Email("admin@example.com"),
-        password_hash=PasswordHash.create_from_password("admin_password123"),
-        security_stamp=SecurityStamp.generate_initial(),
-        is_active=True,
-        is_verified=True,
-        is_admin=True,
-        created_at=datetime.now(timezone.utc),
-        updated_at=datetime.now(timezone.utc),
-    )
+@pytest.fixture
+def admin_user() -> User:
+    """Create a test admin user with unique data."""
+    return UserMother.admin_user()
 
 
 @pytest.fixture
@@ -280,38 +266,35 @@ def mock_event_dispatcher():
     return mock
 
 
-# Data Factory Fixtures
+# Test Data Builder Fixtures - FIXED: Use proper builders
 @pytest.fixture
-def user_factory():
-    """Factory for creating test users."""
-
-    def _create_user(**kwargs):
-        defaults = {
-            "id": uuid.uuid4(),
-            "email": Email(f"user{uuid.uuid4().hex[:8]}@example.com"),
-            "password_hash": PasswordHash.create_from_password("test_password123"),
-            "security_stamp": SecurityStamp.generate_initial(),
-            "is_active": True,
-            "is_verified": True,
-            "created_at": datetime.now(timezone.utc),
-            "updated_at": datetime.now(timezone.utc),
-        }
-        defaults.update(kwargs)
-        return User(**defaults)
-
-    return _create_user
+def user_builder():
+    """Provide UserBuilder for test customization."""
+    return UserBuilder
 
 
 @pytest.fixture
-def email_factory():
-    """Factory for creating test emails."""
+def session_builder():
+    """Provide SessionBuilder for test customization."""
+    return SessionBuilder
 
-    def _create_email(local_part: str | None = None, domain: str = "example.com"):
-        if local_part is None:
-            local_part = f"test{uuid.uuid4().hex[:8]}"
-        return Email(f"{local_part}@{domain}")
 
-    return _create_email
+@pytest.fixture
+def email_builder():
+    """Provide EmailBuilder for unique emails."""
+    return EmailBuilder
+
+
+@pytest.fixture
+def user_mother():
+    """Provide UserMother for common scenarios."""
+    return UserMother
+
+
+@pytest.fixture
+def session_mother():
+    """Provide SessionMother for common scenarios."""
+    return SessionMother
 
 
 @pytest.fixture

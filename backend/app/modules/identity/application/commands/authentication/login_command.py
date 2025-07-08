@@ -12,15 +12,12 @@ from uuid import UUID
 from app.core.cqrs import Command, CommandHandler
 from app.core.events import EventBus
 from app.core.infrastructure import UnitOfWork
-from app.modules.identity.application.contracts.ports import (
-    ICacheService,
-    IDeviceFingerprintService,
-    IGeolocationService,
-    ILoginAttemptRepository,
-    IMFADeviceRepository,
-    ISessionRepository,
-    IUserRepository,
-)
+from app.modules.identity.domain.interfaces.repositories.user_repository import IUserRepository
+from app.modules.identity.domain.interfaces.repositories.session_repository import ISessionRepository
+from app.modules.identity.domain.interfaces.repositories.login_attempt_repository import ILoginAttemptRepository
+from app.modules.identity.domain.interfaces.repositories.mfa_device_repository import IMFADeviceRepository
+from app.modules.identity.domain.interfaces.services.infrastructure.cache_port import ICachePort as ICacheService
+from app.modules.identity.domain.interfaces.services.security.geolocation_service import IGeolocationService
 from app.modules.identity.application.decorators import (
     audit_action,
     rate_limit,
@@ -174,7 +171,7 @@ class LoginCommandHandler(CommandHandler[LoginCommand, LoginResponse]):
             await self._check_login_attempts(command.ip_address)
             
             # 2. Find user by email
-            user = await self._user_repository.get_by_email(command.email.lower())
+            user = await self._user_repository.find_by_email(command.email.lower())
             
             if not user:
                 # Log failed attempt without revealing user existence

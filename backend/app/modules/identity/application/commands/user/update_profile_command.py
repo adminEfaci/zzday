@@ -11,11 +11,9 @@ from uuid import UUID
 from app.core.cqrs import Command, CommandHandler
 from app.core.events import EventBus
 from app.core.infrastructure import UnitOfWork
-from app.modules.identity.application.contracts.ports import (
-    ICacheService,
-    IUserProfileRepository,
-    IUserRepository,
-)
+from app.modules.identity.domain.interfaces.repositories.user_repository import IUserRepository
+from app.modules.identity.domain.interfaces.repositories.user_profile_repository import IUserProfileRepository
+from app.modules.identity.domain.interfaces.services.infrastructure.cache_port import ICachePort as ICacheService
 from app.modules.identity.application.decorators import (
     audit_action,
     rate_limit,
@@ -127,14 +125,14 @@ class UpdateProfileCommandHandler(CommandHandler[UpdateProfileCommand, UserProfi
         """
         async with self._unit_of_work:
             # 1. Load user and ensure exists
-            user = await self._user_repository.get_by_id(command.target_user_id)
+            user = await self._user_repository.find_by_id(command.target_user_id)
             if not user:
                 raise UserNotFoundError(
                     f"User {command.target_user_id} not found"
                 )
             
             # 2. Load or create profile
-            profile = await self._profile_repository.get_by_user_id(user.id)
+            profile = await self._profile_repository.find_by_user_id(user.id)
             if not profile:
                 profile = UserProfile.create(user_id=user.id)
                 await self._profile_repository.add(profile)

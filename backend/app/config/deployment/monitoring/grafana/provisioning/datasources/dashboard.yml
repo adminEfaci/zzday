@@ -1,0 +1,96 @@
+# EzzDay Backend - Grafana Datasource Provisioning Configuration
+# Automatically configure datasources for monitoring
+
+apiVersion: 1
+
+datasources:
+  # Prometheus - Main metrics datasource
+  - name: Prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: true
+    editable: true
+    jsonData:
+      httpMethod: POST
+      manageAlerts: true
+      prometheusType: Prometheus
+      prometheusVersion: 2.40.0
+      cacheLevel: 'High'
+      disableRecordingRules: false
+      incrementalQueryOverlapWindow: 10m
+    secureJsonData: {}
+
+  # Loki - Log aggregation datasource
+  - name: Loki
+    type: loki
+    access: proxy
+    url: http://loki:3100
+    editable: true
+    jsonData:
+      maxLines: 1000
+      derivedFields:
+        - datasourceUid: prometheus-uid
+          matcherRegex: "(?:logger=)(\\w+)"
+          name: "ServiceLogs"
+          url: "/explore?orgId=1&left=[\"now-1h\",\"now\",\"Prometheus\",{\"expr\":\"rate(log_messages_total{service=\\\"${__value.raw}\\\"}[5m])\"},{\"ui\":[true,true,true,\"none\"]}]"
+
+  # Jaeger - Distributed tracing datasource
+  - name: Jaeger
+    type: jaeger
+    access: proxy
+    url: http://jaeger:16686
+    editable: true
+    jsonData:
+      tracesToLogs:
+        datasourceUid: loki-uid
+        tags: ['job', 'instance', 'pod', 'namespace']
+        mappedTags: [
+          {
+            key: 'service.name',
+            value: 'service'
+          }
+        ]
+        mapTagNamesEnabled: false
+        spanStartTimeShift: '1h'
+        spanEndTimeShift: '1h'
+        filterByTraceID: false
+        filterBySpanID: false
+
+  # Redis datasource (if Redis monitoring is enabled)
+  - name: Redis
+    type: redis-datasource
+    access: proxy
+    url: redis://redis:6379
+    editable: true
+    jsonData:
+      client: standalone
+      poolSize: 5
+      timeout: 10
+      pingInterval: 0
+      pipelineWindow: 0
+
+  # PostgreSQL datasource (for database metrics)
+  - name: PostgreSQL
+    type: postgres
+    access: proxy
+    url: postgres:5432
+    database: ezzday_monitoring
+    user: grafana_reader
+    editable: true
+    jsonData:
+      sslmode: disable
+      maxOpenConns: 0
+      maxIdleConns: 2
+      connMaxLifetime: 14400
+      postgresVersion: 1500
+      timescaledb: false
+    secureJsonData:
+      password: grafana_password
+
+  # TestData datasource (for testing dashboards)
+  - name: TestData
+    type: testdata
+    access: proxy
+    editable: true
+    isDefault: false

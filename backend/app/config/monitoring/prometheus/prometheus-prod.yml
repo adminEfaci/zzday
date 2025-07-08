@@ -1,0 +1,220 @@
+# EzzDay Backend - Production Prometheus Configuration
+# Enhanced monitoring with multi-replica support and high availability
+
+global:
+  scrape_interval: 30s
+  evaluation_interval: 30s
+  scrape_timeout: 10s
+  external_labels:
+    environment: 'production'
+    service: 'ezzday-backend'
+    datacenter: '${DATACENTER:-dc1}'
+    replica: '${PROMETHEUS_REPLICA:-0}'
+
+# Alerting configuration
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+          - 'alertmanager-1:9093'
+          - 'alertmanager-2:9093'
+      path_prefix: '/alertmanager'
+
+# Rule files for alerts
+rule_files:
+  - '/etc/prometheus/rules/*.yml'
+
+# Scrape configurations
+scrape_configs:
+  # Prometheus self-monitoring
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+        labels:
+          service: 'prometheus'
+          replica: '${PROMETHEUS_REPLICA:-0}'
+
+  # FastAPI application metrics (multiple instances)
+  - job_name: 'ezzday-backend'
+    metrics_path: '/metrics'
+    scrape_interval: 15s
+    dns_sd_configs:
+      - names:
+        - 'app'
+        type: 'A'
+        port: 8000
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        regex: '([^:]+):.*'
+        replacement: '${1}'
+      - source_labels: [__meta_dns_name]
+        target_label: container_id
+    metric_relabel_configs:
+      # Add container labels
+      - source_labels: [instance]
+        target_label: container
+        regex: 'app-([0-9]+)'
+        replacement: '${1}'
+
+  # Nginx metrics with SSL verification
+  - job_name: 'nginx'
+    scheme: https
+    tls_config:
+      insecure_skip_verify: false
+    static_configs:
+      - targets: ['nginx-exporter:9113']
+        labels:
+          service: 'nginx'
+          tier: 'frontend'
+
+  # Redis cluster monitoring
+  - job_name: 'redis-master'
+    static_configs:
+      - targets: ['redis-exporter-master:9121']
+        labels:
+          service: 'redis'
+          role: 'master'
+          tier: 'cache'
+
+  - job_name: 'redis-replica'
+    static_configs:
+      - targets: ['redis-exporter-replica:9121']
+        labels:
+          service: 'redis'
+          role: 'replica'
+          tier: 'cache'
+
+  - job_name: 'redis-sentinel'
+    static_configs:
+      - targets: ['redis-sentinel:26379']
+        labels:
+          service: 'redis'
+          role: 'sentinel'
+          tier: 'cache'
+
+  # PostgreSQL with connection pooling metrics
+  - job_name: 'postgresql'
+    static_configs:
+      - targets: ['postgres-exporter:9187']
+        labels:
+          service: 'postgresql'
+          tier: 'database'
+    params:
+      auth_module: ['postgres']
+
+  # Celery detailed metrics
+  - job_name: 'celery'
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['flower:5555']
+        labels:
+          service: 'celery'
+          tier: 'workers'
+    metric_relabel_configs:
+      # Aggregate by queue
+      - source_labels: [queue]
+        target_label: celery_queue
+
+  # System metrics with node exporter
+  - job_name: 'node'
+    static_configs:
+      - targets: 
+        - 'node-exporter-app:9100'
+        - 'node-exporter-db:9100'
+        - 'node-exporter-cache:9100'
+    relabel_configs:
+      - source_labels: [__address__]
+        regex: 'node-exporter-(.+):9100'
+        target_label: node_type
+        replacement: '${1}'
+
+  # Container metrics
+  - job_name: 'cadvisor'
+    scrape_interval: 30s
+    static_configs:
+      - targets: ['cadvisor:8080']
+        labels:
+          service: 'containers'
+    metric_relabel_configs:
+      # Keep only essential metrics
+      - source_labels: [__name__]
+        regex: 'container_(cpu_usage_seconds_total|memory_usage_bytes|memory_working_set_bytes|network_receive_bytes_total|network_transmit_bytes_total|fs_usage_bytes|fs_limit_bytes)'
+        action: keep
+      # Add namespace labels
+      - source_labels: [container_label_com_docker_compose_service]
+        target_label: service_name
+
+  # API endpoint monitoring
+  - job_name: 'blackbox-http'
+    metrics_path: /probe
+    params:
+      module: [http_2xx]
+    scrape_interval: 60s
+    static_configs:
+      - targets:
+        - 'https://api.ezzday.com/health'
+        - 'https://api.ezzday.com/v1/user/health'
+        - 'https://api.ezzday.com/v1/food/health'
+        - 'https://api.ezzday.com/v1/exercise/health'
+        - 'https://api.ezzday.com/docs'
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: blackbox-exporter:9115
+
+  # SSL certificate monitoring
+  - job_name: 'blackbox-ssl'
+    metrics_path: /probe
+    params:
+      module: [tcp_tls_connect]
+    scrape_interval: 300s
+    static_configs:
+      - targets:
+        - 'api.ezzday.com:443'
+        - 'monitoring.ezzday.com:443'
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: blackbox-exporter:9115
+
+# Storage configuration
+storage:
+  tsdb:
+    retention.time: 90d
+    retention.size: 50GB
+    out_of_order_time_window: 30m
+
+# Remote storage for long-term retention
+remote_write:
+  - url: "${PROMETHEUS_REMOTE_WRITE_URL}"
+    bearer_token: "${PROMETHEUS_REMOTE_WRITE_TOKEN}"
+    queue_config:
+      capacity: 10000
+      max_shards: 30
+      min_shards: 1
+      max_samples_per_send: 5000
+      batch_send_deadline: 5s
+      min_backoff: 30ms
+      max_backoff: 100ms
+    write_relabel_configs:
+      # Drop debug metrics
+      - source_labels: [__name__]
+        regex: '(prometheus_|go_|process_).*'
+        action: drop
+      # Keep only production metrics
+      - source_labels: [environment]
+        regex: 'production'
+        action: keep
+
+# Remote read for querying historical data
+remote_read:
+  - url: "${PROMETHEUS_REMOTE_READ_URL}"
+    bearer_token: "${PROMETHEUS_REMOTE_READ_TOKEN}"
+    read_recent: true

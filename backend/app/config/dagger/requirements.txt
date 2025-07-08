@@ -1,0 +1,20 @@
+# Dagger CI/CD Pipeline Requirements
+# Core Dagger SDK
+dagger-io>=0.9.0
+
+# Additional utilities
+pyyaml>=6.0
+click>=8.1.0
+python-dotenv>=1.0.0
+jinja2>=3.1.0
+
+# Development and testing tools
+pytest>=7.4.0
+pytest-asyncio>=0.21.0
+
+# Security and analysis
+safety>=3.0.0
+bandit>=1.7.0
+
+# Performance monitoring
+psutil>=5.9.0

@@ -1,0 +1,192 @@
+{
+  "model": "claude-3-5-sonnet-20241022",
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit|MultiEdit|FileWrite",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/Users/neuro/workspace2/app-codebase/ezzday/backend/app/smart-lint.sh",
+            "description": "Run comprehensive linting and type checking",
+            "continueOnError": false,
+            "timeout": 30000
+          }
+        ]
+      },
+      {
+        "matcher": "WriteFile.*\\.py$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd /Users/neuro/workspace2/app-codebase/ezzday/backend && python -m py_compile {file}",
+            "description": "Syntax check Python files",
+            "continueOnError": true,
+            "timeout": 5000
+          },
+          {
+            "type": "command",
+            "command": "cd /Users/neuro/workspace2/app-codebase/ezzday/backend && python -m mypy {file} --no-error-summary",
+            "description": "Type check individual Python file",
+            "continueOnError": true,
+            "timeout": 10000
+          }
+        ]
+      },
+      {
+        "matcher": "WriteFile.*requirements.*\\.txt$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd /Users/neuro/workspace2/app-codebase/ezzday/backend && pip-audit --requirement {file} --format=text",
+            "description": "Security audit for requirements",
+            "continueOnError": true,
+            "timeout": 15000
+          }
+        ]
+      },
+      {
+        "matcher": "WriteFile.*docker-compose.*\\.ya?ml$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd /Users/neuro/workspace2/app-codebase/ezzday/backend && docker-compose config --quiet",
+            "description": "Validate Docker Compose syntax",
+            "continueOnError": true,
+            "timeout": 10000
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd /Users/neuro/workspace2/app-codebase/ezzday/backend && git status --porcelain",
+            "description": "Check git status before modifications",
+            "continueOnError": true,
+            "timeout": 5000
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd /Users/neuro/workspace2/app-codebase/ezzday/backend && echo '🚀 Starting EzzDay Backend Development Session' && python --version && which python",
+            "description": "Development session initialization",
+            "continueOnError": true,
+            "timeout": 5000
+          },
+          {
+            "type": "command", 
+            "command": "cd /Users/neuro/workspace2/app-codebase/ezzday/backend && git branch --show-current",
+            "description": "Show current git branch",
+            "continueOnError": true,
+            "timeout": 5000
+          }
+        ]
+      }
+    ]
+  },
+  "preferences": {
+    "codeStyle": {
+      "language": "python",
+      "framework": "fastapi",
+      "architecture": "ddd-hexagonal",
+      "linting": {
+        "tools": ["ruff", "mypy", "black", "isort", "bandit"],
+        "strictMode": true,
+        "autoFix": true
+      },
+      "testing": {
+        "framework": "pytest",
+        "coverage": {
+          "minimum": 90,
+          "exclude": ["tests/*", "migrations/*", "__pycache__/*"]
+        }
+      }
+    },
+    "development": {
+      "autoSave": true,
+      "formatOnSave": true,
+      "lintOnSave": true,
+      "typeCheckOnSave": true,
+      "enforceHooks": true,
+      "blockOnLintErrors": true
+    },
+    "ai": {
+      "contextWindow": "large",
+      "codeGeneration": {
+        "includeTypeHints": true,
+        "includeDocstrings": true,
+        "followArchitecture": true,
+        "preferComposition": true
+      }
+    }
+  },
+  "environmentVariables": {
+    "PYTHONPATH": "/Users/neuro/workspace2/app-codebase/ezzday/backend",
+    "PROJECT_ROOT": "/Users/neuro/workspace2/app-codebase/ezzday/backend",
+    "ENVIRONMENT": "development"
+  },
+  "shortcuts": {
+    "commands": {
+      "runTests": "cd /Users/neuro/workspace2/app-codebase/ezzday/backend && python -m pytest",
+      "runLinting": "cd /Users/neuro/workspace2/app-codebase/ezzday/backend && make lint",
+      "runTypeCheck": "cd /Users/neuro/workspace2/app-codebase/ezzday/backend && make type-check",
+      "startDocker": "cd /Users/neuro/workspace2/app-codebase/ezzday/backend && docker-compose up -d",
+      "stopDocker": "cd /Users/neuro/workspace2/app-codebase/ezzday/backend && docker-compose down",
+      "migrate": "cd /Users/neuro/workspace2/app-codebase/ezzday/backend && alembic upgrade head",
+      "formatCode": "cd /Users/neuro/workspace2/app-codebase/ezzday/backend && make format"
+    }
+  },
+  "notifications": {
+    "hookFailures": {
+      "enabled": true,
+      "level": "error",
+      "showInConsole": true
+    },
+    "lintingIssues": {
+      "enabled": true,
+      "level": "warning",
+      "autoShow": true
+    },
+    "testFailures": {
+      "enabled": true,
+      "level": "error",
+      "showDetails": true
+    }
+  },
+  "integrations": {
+    "docker": {
+      "autoStart": false,
+      "healthCheck": true,
+      "containerPrefix": "ezzday"
+    },
+    "database": {
+      "autoMigrate": false,
+      "validateSchema": true,
+      "seedData": false
+    },
+    "git": {
+      "autoCommit": false,
+      "enforceConventionalCommits": true,
+      "preCommitHooks": true
+    }
+  },
+  "monitoring": {
+    "performance": {
+      "trackHookTiming": true,
+      "warnSlowOperations": true,
+      "thresholdMs": 5000
+    },
+    "quality": {
+      "trackLintingTrends": true,
+      "trackCoverageChanges": true,
+      "trackTypeErrors": true
+    }

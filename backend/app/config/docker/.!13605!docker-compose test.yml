@@ -1,0 +1,36 @@
+# EzzDay Backend - Test Docker Compose
+# Optimized for running automated tests in CI/CD
+
+version: '3.8'
+
+services:
+  # Test runner
+  test-runner:
+    build:
+      context: ../../..
+      dockerfile: app/config/docker/Dockerfile.dev
+    container_name: ezzday-test-runner
+    environment:
+      - DATABASE_URL=postgresql://ezzday_test:test_password@test-db:5432/ezzday_test
+      - REDIS_URL=redis://test-redis:6379/0
+      - RABBITMQ_URL=amqp://ezzday_test:test_password@test-rabbitmq:5672/ezzday_test
+      - ENVIRONMENT=test
+      - SECRET_KEY=test-secret-key-not-for-production
+      - PYTHONPATH=/app
+    volumes:
+      - ../../../app:/app/app:delegated
+      - test_results:/app/test-results:rw
+    depends_on:
+      test-db:
+        condition: service_healthy
+      test-redis:
+        condition: service_healthy
+      test-rabbitmq:
+        condition: service_healthy
+    networks:
+      - test-network
+    command: >
+      sh -c "
+        ./wait-for-it.sh test-db:5432 --timeout=60 -- 
+        ./wait-for-it.sh test-redis:6379 --timeout=30 -- 
+        ./wait-for-it.sh test-rabbitmq:5672 --timeout=30 -- 

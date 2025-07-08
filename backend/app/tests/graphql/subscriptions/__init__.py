@@ -1,0 +1,1 @@
+"""GraphQL subscription tests."""

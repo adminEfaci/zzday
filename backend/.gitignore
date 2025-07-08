@@ -1,0 +1,156 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Environment variables
+.env
+.env.*
+!.env.example
+*.env
+!*.env.example
+
+# IDE specific files
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+*.sublime-workspace
+*.sublime-project
+
+# OS specific
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Testing
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+.pytest_cache/
+cover/
+*.cover
+*.py,cover
+.hypothesis/
+nosetests.xml
+coverage.xml
+*.coveragerc
+htmlcov/
+
+# Type checking
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.pyre/
+.pytype/
+cython_debug/
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+instance/
+
+# Logs
+*.log
+logs/
+*.log.*
+
+# Documentation builds
+docs/_build/
+docs/.doctrees
+
+# Jupyter Notebook
+.ipynb_checkpoints
+*.ipynb
+
+# FastAPI specific
+.pytest_cache
+.ruff_cache/
+
+# LLM and AI tools
+.aider*
+.llm-context/
+.kilocode/
+
+# Local development
+local_settings.py
+*.local
+
+# Secrets and credentials
+secrets/
+credentials/
+*.pem
+*.key
+*.cert
+*.crt
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.temp
+
+# Backup files
+*.bak
+*.backup
+*~
+*.orig
+
+# Package managers
+pip-log.txt
+pip-delete-this-directory.txt
+
+# UV package manager
+uv.lock
+
+# Alembic
+alembic/versions/*.pyc
+
+# Other
+.cursorrules
+EXTRACTION_REPORT.md
+PROGRESS.md
+*.md
+!README.md
+!docs/*.md

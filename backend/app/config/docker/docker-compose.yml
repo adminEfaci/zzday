@@ -1,0 +1,279 @@
+# EzzDay Backend - Development Docker Compose
+# Complete development stack with all services
+
+version: '3.8'
+
+services:
+  # Main application
+  app:
+    build:
+      context: ../../..
+      dockerfile: app/config/docker/Dockerfile.dev
+    container_name: ezzday-backend-dev
+    ports:
+      - "8000:8000"
+      - "5678:5678"  # Debugger port
+    env_file:
+      - ../environments/.env.dev
+    volumes:
+      - ../../../app:/app/app:delegated
+      - ../../../docs:/app/docs:delegated
+      - ../../../tests:/app/tests:delegated
+      - app_logs:/app/logs
+      - app_storage:/app/storage
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - ezzday-network
+    restart: unless-stopped
+    command: >
+      sh -c "
+        ./wait-for-it.sh db:5432 -- 
+        ./wait-for-it.sh redis:6379 -- 
+        ./wait-for-it.sh rabbitmq:5672 -- 
+        uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload --reload-dir app
+      "
+
+  # PostgreSQL Database
+  db:
+    image: postgres:15-alpine
+    container_name: ezzday-postgres-dev
+    environment:
+      POSTGRES_DB: ezzday_dev
+      POSTGRES_USER: ezzday_dev
+      POSTGRES_PASSWORD: dev_password
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --lc-collate=C --lc-ctype=C"
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/init-db.sh:/docker-entrypoint-initdb.d/init-db.sh
+    networks:
+      - ezzday-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ezzday_dev -d ezzday_dev"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Test Database
+  db_test:
+    image: postgres:15-alpine
+    container_name: ezzday-postgres-test
+    environment:
+      POSTGRES_DB: ezzday_test
+      POSTGRES_USER: ezzday_test
+      POSTGRES_PASSWORD: test_password
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --lc-collate=C --lc-ctype=C"
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_test_data:/var/lib/postgresql/data
+    networks:
+      - ezzday-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ezzday_test -d ezzday_test"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis for caching and sessions
+  redis:
+    image: redis:7-alpine
+    container_name: ezzday-redis-dev
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+      - ./config/redis.conf:/etc/redis/redis.conf
+    networks:
+      - ezzday-network
+    restart: unless-stopped
+    command: redis-server /etc/redis/redis.conf
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # RabbitMQ for Celery
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: ezzday-rabbitmq-dev
+    environment:
+      RABBITMQ_DEFAULT_USER: ezzday
+      RABBITMQ_DEFAULT_PASS: dev_password
+      RABBITMQ_DEFAULT_VHOST: ezzday
+    ports:
+      - "5672:5672"
+      - "15672:15672"  # Management UI
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - ezzday-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # Celery Worker
+  celery_worker:
+    build:
+      context: ../../..
+      dockerfile: app/config/docker/Dockerfile.dev
+    container_name: ezzday-celery-worker-dev
+    env_file:
+      - ../environments/.env.dev
+    volumes:
+      - ../../../app:/app/app:delegated
+      - app_logs:/app/logs
+      - app_storage:/app/storage
+    depends_on:
+      - redis
+      - rabbitmq
+      - db
+    networks:
+      - ezzday-network
+    restart: unless-stopped
+    command: >
+      sh -c "
+        ./wait-for-it.sh redis:6379 -- 
+        ./wait-for-it.sh rabbitmq:5672 -- 
+        celery -A app.core.celery worker --loglevel=info --concurrency=2
+      "
+
+  # Celery Beat (Scheduler)
+  celery_beat:
+    build:
+      context: ../../..
+      dockerfile: app/config/docker/Dockerfile.dev
+    container_name: ezzday-celery-beat-dev
+    env_file:
+      - ../environments/.env.dev
+    volumes:
+      - ../../../app:/app/app:delegated
+      - app_logs:/app/logs
+      - celery_beat_data:/app/celerybeat-schedule
+    depends_on:
+      - redis
+      - rabbitmq
+      - db
+    networks:
+      - ezzday-network
+    restart: unless-stopped
+    command: >
+      sh -c "
+        ./wait-for-it.sh redis:6379 -- 
+        ./wait-for-it.sh rabbitmq:5672 -- 
+        celery -A app.core.celery beat --loglevel=info --schedule=/app/celerybeat-schedule/celerybeat-schedule
+      "
+
+  # Flower (Celery monitoring)
+  flower:
+    build:
+      context: ../../..
+      dockerfile: app/config/docker/Dockerfile.dev
+    container_name: ezzday-flower-dev
+    ports:
+      - "5555:5555"
+    env_file:
+      - ../environments/.env.dev
+    depends_on:
+      - redis
+      - rabbitmq
+    networks:
+      - ezzday-network
+    restart: unless-stopped
+    command: >
+      sh -c "
+        ./wait-for-it.sh redis:6379 -- 
+        ./wait-for-it.sh rabbitmq:5672 -- 
+        celery -A app.core.celery flower --port=5555
+      "
+
+  # Prometheus for metrics
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: ezzday-prometheus-dev
+    ports:
+      - "9090:9090"
+    volumes:
+      - ../monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    networks:
+      - ezzday-network
+    restart: unless-stopped
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+      - '--web.enable-lifecycle'
+
+  # Grafana for dashboards
+  grafana:
+    image: grafana/grafana:latest
+    container_name: ezzday-grafana-dev
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: dev_password
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ../monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards
+      - ../monitoring/grafana/provisioning:/etc/grafana/provisioning
+    networks:
+      - ezzday-network
+    restart: unless-stopped
+
+  # Jaeger for distributed tracing
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    container_name: ezzday-jaeger-dev
+    ports:
+      - "16686:16686"  # Web UI
+      - "14268:14268"  # HTTP collector
+      - "6831:6831/udp"  # UDP agent
+    environment:
+      COLLECTOR_OTLP_ENABLED: true
+    networks:
+      - ezzday-network
+    restart: unless-stopped
+
+  # MailHog for email testing
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: ezzday-mailhog-dev
+    ports:
+      - "1025:1025"  # SMTP
+      - "8025:8025"  # Web UI
+    networks:
+      - ezzday-network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  postgres_test_data:
+  redis_data:
+  rabbitmq_data:
+  app_logs:
+  app_storage:
+  celery_beat_data:
+  prometheus_data:
+  grafana_data:
+
+networks:
+  ezzday-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16

@@ -1,0 +1,190 @@
+[project]
+name = "ezzday-backend"
+version = "0.1.0"
+description = "EzzDay Backend API - Waste Management Platform"
+readme = "README.md"
+requires-python = ">=3.11"
+authors = [
+  { name = "Bishop Eface", email = "bishop.efaci@gmail.com" }
+]
+dependencies = [
+  # Core Framework
+  "fastapi>=0.104.0",
+  "strawberry-graphql[fastapi]>=0.220.0",
+  "sqlalchemy[asyncio]>=2.0.0",
+  "sqlmodel>=0.0.8",
+  "alembic>=1.13.0",
+  "asyncpg>=0.28.0",
+  "redis[hiredis]>=5.0.0",
+  "pydantic>=2.6.0",
+  "pydantic-settings>=2.1.0",
+  
+  # Security & Authentication
+  "python-jose[cryptography]>=3.3.0",
+  "passlib[argon2]>=1.7.4",
+  "python-multipart>=0.0.9",
+  
+  # HTTP & Communication
+  "httpx>=0.25.0",
+  "celery[redis]>=5.3.0",
+  "aio-pika>=9.0.0",
+  "uvicorn[standard]>=0.23.0",
+  
+  # Monitoring & Observability
+  "prometheus-client>=0.19.0",
+  "structlog>=24.0.0",
+  "opentelemetry-api>=1.20.0",
+  "opentelemetry-sdk>=1.20.0",
+  "opentelemetry-instrumentation-fastapi>=0.40b0",
+  
+  # Date & Time
+  "python-dateutil>=2.8.0",
+  "pytz>=2023.3",
+  
+  # Configuration & Environment
+  "python-dotenv>=1.0.0",  # Fixed syntax error
+  
+  # Validation utilities
+  "email-validator>=2.1.0",
+  "phonenumbers>=8.13.0",
+  "zxcvbn>=4.4.28",               # Password strength validation
+  
+  # Text processing utilities  
+  "bleach>=6.0.0",               # HTML sanitization (security critical)
+  "unidecode>=1.3.0",            # Unicode transliteration
+  "nltk>=3.8.0",                 # Natural language processing
+  
+  # Serialization utilities
+  "orjson>=3.9.0",               # Fast JSON serialization
+  "msgpack>=1.0.0",              # Binary serialization
+  
+  # Internationalization
+  "babel>=2.12.0",               # Locale-aware formatting
+  
+  # Caching & Performance
+  "tenacity>=8.2.0",
+  "aiocache[redis]>=0.12.0",
+]
+
+[project.optional-dependencies]
+dev = [
+  # Testing Framework
+  "pytest>=8.0.0",
+  "pytest-asyncio>=0.23.0",
+  "pytest-cov>=5.0.0",
+  "pytest-mock>=3.14.0",
+  
+  # Test Data Generation
+  "factory-boy>=3.3.0",
+  "faker>=24.0.0",
+  "hypothesis>=6.0.0",           # Property-based testing
+  
+  # Code Quality & Formatting
+  "ruff>=0.4.0",
+  "mypy>=1.10.0",
+  "black>=24.0.0",
+  "isort>=5.13.0",
+  "pre-commit>=3.7.0",
+  
+  # Type Stubs
+  "types-redis>=4.6.0",
+  "types-python-dateutil>=2.9.0",
+  "types-pytz>=2024.1.0",
+  "types-bleach>=6.0.0",         # Type stubs for bleach
+]
+
+[tool.ruff]
+line-length = 88
+target-version = "py311"
+
+[tool.ruff.lint]
+select = [
+  "E", "F", "I", "B", "C90", "N", "UP", "YTT", "S",
+  "A", "C4", "T10", "ISC", "ICN", "PIE", "PT",
+  "RET", "SIM", "TID", "ERA", "PD", "PGH", "PL",
+  "TRY", "NPY", "RUF"
+]
+ignore = [
+  "E501",    # Line too long (handled by black)
+  "B008",    # Do not perform function calls in argument defaults
+  "C901",    # Too complex
+  "S101",    # Use of assert detected
+  "PLR2004", # Magic value used in comparison
+  "TRY003",  # Avoid specifying long messages outside the exception class (will fix manually)
+  "TID252",  # Relative imports (needed for module structure)
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["S101", "PLR2004", "S105", "S106"] # Allow assert and magic values in tests
+"alembic/*" = ["INP001", "S608", "S605"] # Allow SQL in migrations
+"**/__init__.py" = ["F401", "F403"] # Allow unused imports in __init__ files
+
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+strict_optional = true
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+addopts = "-ra -q --strict-markers --cov=app --cov-report=term-missing --cov-report=html"
+testpaths = ["app/tests"]
+python_files = ["test_*.py", "*_test.py"]
+asyncio_mode = "auto"
+
+[tool.coverage.run]
+source = ["app"]
+omit = ["*/tests/*", "*/alembic/*"]
+
+[tool.coverage.report]
+precision = 2
+show_missing = true
+skip_covered = false
+exclude_lines = [
+  "pragma: no cover",
+  "def __repr__",
+  "raise AssertionError",
+  "raise NotImplementedError",
+  "if __name__ == .__main__.:",
+  "if TYPE_CHECKING:",
+  "@abstractmethod"
+]
+
+[tool.isort]
+profile = "black"
+multi_line_output = 3
+include_trailing_comma = true
+force_grid_wrap = 0
+use_parentheses = true
+ensure_newline_before_comments = true
+line_length = 88
+known_first_party = ["app"]
+skip_glob = ["*/migrations/*", "*/alembic/*"]
+
+[tool.black]
+line-length = 88
+target-version = ['py311']
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+  # directories
+  \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | _build
+  | buck-out
+  | build
+  | dist
+  | alembic
+)/
+'''

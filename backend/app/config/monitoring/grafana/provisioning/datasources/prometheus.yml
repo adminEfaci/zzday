@@ -1,0 +1,44 @@
+# EzzDay Backend - Grafana Datasource Configuration
+# Prometheus datasource for metrics
+
+apiVersion: 1
+
+datasources:
+  - name: Prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: true
+    jsonData:
+      timeInterval: "30s"
+      queryTimeout: "60s"
+      httpMethod: "POST"
+    editable: false
+
+  - name: Prometheus-LongTerm
+    type: prometheus
+    access: proxy
+    url: "${PROMETHEUS_REMOTE_READ_URL}"
+    jsonData:
+      timeInterval: "5m"
+      queryTimeout: "300s"
+      httpMethod: "POST"
+      customQueryParameters: "max_source_resolution=5m"
+      oauthPassThru: true
+    secureJsonData:
+      httpHeaderValue1: "Bearer ${PROMETHEUS_REMOTE_READ_TOKEN}"
+    editable: false
+
+  - name: Loki
+    type: loki
+    access: proxy
+    url: http://loki:3100
+    jsonData:
+      maxLines: 1000
+    editable: false
+
+  - name: Jaeger
+    type: jaeger
+    access: proxy
+    url: http://jaeger:16686
+    editable: false

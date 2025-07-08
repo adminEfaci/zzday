@@ -9,7 +9,7 @@ from typing import Any
 from uuid import UUID
 
 from sqlmodel import Session
-from app.modules.identity.application.contracts.ports import IMFADeviceRepository
+from app.modules.identity.domain.interfaces.repositories.mfa_device_repository import IMFADeviceRepository
 from app.modules.identity.domain.entities.admin.mfa_device import MFADevice, DeviceName, MFASecret
 from app.modules.identity.domain.enums import MFAMethod
 from app.modules.identity.infrastructure.repositories.mfa_repository import SQLMFARepository

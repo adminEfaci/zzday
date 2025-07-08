@@ -10,12 +10,9 @@ from uuid import UUID
 from app.core.cqrs import Command, CommandHandler
 from app.core.events import EventBus
 from app.core.infrastructure import UnitOfWork
-from app.modules.identity.application.contracts.ports import (
-    ICacheService,
-    INotificationService,
-    ISessionRepository,
-    ITokenBlocklistService,
-)
+from app.modules.identity.domain.interfaces.services.infrastructure.cache_port import ICachePort as ICacheService
+from app.modules.identity.domain.interfaces.services.communication.notification_service import INotificationService
+from app.modules.identity.domain.interfaces.repositories.session_repository import ISessionRepository
 from app.modules.identity.application.decorators import (
     audit_action,
     rate_limit,
@@ -114,7 +111,7 @@ class RevokeSessionCommandHandler(CommandHandler[RevokeSessionCommand, BaseRespo
         """
         async with self._unit_of_work:
             # 1. Load session
-            session = await self._session_repository.get_by_id(command.session_id)
+            session = await self._session_repository.find_by_id(command.session_id)
             
             if not session:
                 raise SessionNotFoundError(f"Session {command.session_id} not found")

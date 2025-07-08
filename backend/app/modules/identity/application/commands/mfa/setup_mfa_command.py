@@ -15,13 +15,11 @@ import qrcode
 from app.core.cqrs import Command, CommandHandler
 from app.core.events import EventBus
 from app.core.infrastructure import UnitOfWork
-from app.modules.identity.application.contracts.ports import (
-    ICacheService,
-    IEmailService,
-    IMFADeviceRepository,
-    ISMSService,
-    IUserRepository,
-)
+from app.modules.identity.domain.interfaces.services.infrastructure.cache_port import ICachePort as ICacheService
+from app.modules.identity.domain.interfaces.services.communication.notification_service import IEmailService
+from app.modules.identity.domain.interfaces.repositories.mfa_device_repository import IMFADeviceRepository
+from app.modules.identity.domain.interfaces.services.communication.notification_service import ISMSService
+from app.modules.identity.domain.interfaces.repositories.user_repository import IUserRepository
 from app.modules.identity.application.decorators import (
     audit_action,
     rate_limit,
@@ -122,7 +120,7 @@ class SetupMFACommandHandler(CommandHandler[SetupMFACommand, MFASetupResponse]):
         """
         async with self._unit_of_work:
             # 1. Load user
-            user = await self._user_repository.get_by_id(command.user_id)
+            user = await self._user_repository.find_by_id(command.user_id)
             
             if not user:
                 raise UserNotFoundError(f"User {command.user_id} not found")

@@ -10,14 +10,12 @@ from uuid import UUID
 from app.core.cqrs import Command, CommandHandler
 from app.core.events import EventBus
 from app.core.infrastructure import UnitOfWork
-from app.modules.identity.application.contracts.ports import (
-    ICacheService,
-    IMFAChallengeRepository,
-    IMFADeviceRepository,
-    INotificationService,
-    ISessionRepository,
-    IUserRepository,
-)
+from app.modules.identity.domain.interfaces.services.infrastructure.cache_port import ICachePort as ICacheService
+from app.modules.identity.domain.interfaces.repositories.mfa_challenge_repository import IMFAChallengeRepository
+from app.modules.identity.domain.interfaces.repositories.mfa_device_repository import IMFADeviceRepository
+from app.modules.identity.domain.interfaces.services.communication.notification_service import INotificationService
+from app.modules.identity.domain.interfaces.repositories.session_repository import ISessionRepository
+from app.modules.identity.domain.interfaces.repositories.user_repository import IUserRepository
 from app.modules.identity.application.decorators import (
     audit_action,
     rate_limit,
@@ -140,7 +138,7 @@ class VerifyMFAChallengeCommandHandler(CommandHandler[VerifyMFAChallengeCommand,
         """
         async with self._unit_of_work:
             # 1. Load MFA session
-            session = await self._session_repository.get_by_id(command.session_id)
+            session = await self._session_repository.find_by_id(command.session_id)
             
             if not session:
                 raise SessionNotFoundError("Session not found")
@@ -157,7 +155,7 @@ class VerifyMFAChallengeCommandHandler(CommandHandler[VerifyMFAChallengeCommand,
                 raise MFAChallengeExpiredError("MFA challenge has expired")
             
             # 4. Load user
-            user = await self._user_repository.get_by_id(session.user_id)
+            user = await self._user_repository.find_by_id(session.user_id)
             
             if not user or not user.is_active:
                 raise InvalidOperationError("User account is not active")
@@ -286,7 +284,7 @@ class VerifyMFAChallengeCommandHandler(CommandHandler[VerifyMFAChallengeCommand,
         """Get MFA device for verification."""
         if device_id:
             # Get specific device
-            device = await self._mfa_device_repository.get_by_id(device_id)
+            device = await self._mfa_device_repository.find_by_id(device_id)
             
             if device and device.user_id == user_id and device.is_verified:
                 return device

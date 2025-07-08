@@ -5,7 +5,7 @@ from datetime import UTC, datetime
 
 from app.core.cqrs import Query, QueryHandler
 from app.core.infrastructure import UnitOfWork
-from app.modules.identity.application.contracts.ports import IUserRepository
+from app.modules.identity.domain.interfaces.repositories.user_repository import IUserRepository
 from app.modules.identity.application.decorators import (
     rate_limit,
     require_permission,
@@ -37,7 +37,7 @@ class GetRolePermissionsQueryHandler(QueryHandler[GetRolePermissionsQuery, RoleP
         """Handle role permissions query."""
         
         async with self.uow:
-            permissions = await self.user_repository.get_role_permissions(query.role_name)
+            permissions = await self.user_repository.find_by_role(query.role_name)
             
             hierarchy = None
             if query.include_hierarchy:

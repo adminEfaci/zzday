@@ -14,15 +14,9 @@ from uuid import UUID
 from app.core.cqrs import Command, CommandHandler
 from app.core.events import EventBus
 from app.core.infrastructure import UnitOfWork
-from app.modules.identity.application.contracts.ports import (
-    IAuditService,
-    IEmailService,
-    IHttpService,
-    INotificationService,
-    IUserRepository,
-    IWebhookDeliveryRepository,
-    IWebhookRepository,
-)
+from app.modules.identity.domain.interfaces.services.communication.notification_service import IEmailService
+from app.modules.identity.domain.interfaces.services.communication.notification_service import INotificationService
+from app.modules.identity.domain.interfaces.repositories.user_repository import IUserRepository
 from app.modules.identity.application.decorators import (
     audit_action,
     rate_limit,
@@ -208,7 +202,7 @@ class WebhookManagementCommandHandler(CommandHandler[WebhookManagementCommand, W
         is_new = True
         
         if command.webhook_id:
-            webhook = await self._webhook_repository.get_by_id(command.webhook_id)
+            webhook = await self._webhook_repository.find_by_id(command.webhook_id)
             if webhook:
                 is_new = False
             else:
@@ -328,7 +322,7 @@ class WebhookManagementCommandHandler(CommandHandler[WebhookManagementCommand, W
     async def _handle_webhook_delivery(self, command: WebhookManagementCommand) -> WebhookManagementResponse:
         """Handle webhook payload delivery."""
         # 1. Load webhook configuration
-        webhook = await self._webhook_repository.get_by_id(command.webhook_id)
+        webhook = await self._webhook_repository.find_by_id(command.webhook_id)
         if not webhook:
             raise WebhookConfigurationError(f"Webhook {command.webhook_id} not found")
         
@@ -686,7 +680,7 @@ class WebhookManagementCommandHandler(CommandHandler[WebhookManagementCommand, W
     
     async def _handle_webhook_test(self, command: WebhookManagementCommand) -> WebhookManagementResponse:
         """Handle webhook test operation."""
-        webhook = await self._webhook_repository.get_by_id(command.webhook_id)
+        webhook = await self._webhook_repository.find_by_id(command.webhook_id)
         if not webhook:
             raise WebhookConfigurationError(f"Webhook {command.webhook_id} not found")
         
@@ -716,7 +710,7 @@ class WebhookManagementCommandHandler(CommandHandler[WebhookManagementCommand, W
     
     async def _handle_webhook_disable(self, command: WebhookManagementCommand) -> WebhookManagementResponse:
         """Handle webhook disable operation."""
-        webhook = await self._webhook_repository.get_by_id(command.webhook_id)
+        webhook = await self._webhook_repository.find_by_id(command.webhook_id)
         if not webhook:
             raise WebhookConfigurationError(f"Webhook {command.webhook_id} not found")
         
@@ -753,7 +747,7 @@ class WebhookManagementCommandHandler(CommandHandler[WebhookManagementCommand, W
     
     async def _handle_webhook_deletion(self, command: WebhookManagementCommand) -> WebhookManagementResponse:
         """Handle webhook deletion operation."""
-        webhook = await self._webhook_repository.get_by_id(command.webhook_id)
+        webhook = await self._webhook_repository.find_by_id(command.webhook_id)
         if not webhook:
             raise WebhookConfigurationError(f"Webhook {command.webhook_id} not found")
         
@@ -795,7 +789,7 @@ class WebhookManagementCommandHandler(CommandHandler[WebhookManagementCommand, W
         retry_results = []
         for delivery in failed_deliveries:
             try:
-                webhook = await self._webhook_repository.get_by_id(delivery.webhook_id)
+                webhook = await self._webhook_repository.find_by_id(delivery.webhook_id)
                 if webhook and webhook.active:
                     # Retry delivery
                     result = await self._make_webhook_request(

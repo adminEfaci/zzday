@@ -11,17 +11,12 @@ from uuid import UUID
 from app.core.cqrs import Command, CommandHandler
 from app.core.events import EventBus
 from app.core.infrastructure import UnitOfWork
-from app.modules.identity.application.contracts.ports import (
-    IAuditService,
-    IBackupService,
-    IDeviceRepository,
-    IEmailService,
-    INotificationService,
-    ISessionRepository,
-    ISMSService,
-    ITokenRepository,
-    IUserRepository,
-)
+from app.modules.identity.domain.interfaces.repositories.device_registration_repository import IDeviceRepository
+from app.modules.identity.domain.interfaces.services.communication.notification_service import IEmailService
+from app.modules.identity.domain.interfaces.services.communication.notification_service import INotificationService
+from app.modules.identity.domain.interfaces.repositories.session_repository import ISessionRepository
+from app.modules.identity.domain.interfaces.services.communication.notification_service import ISMSService
+from app.modules.identity.domain.interfaces.repositories.user_repository import IUserRepository
 from app.modules.identity.application.decorators import (
     audit_action,
     rate_limit,
@@ -176,12 +171,12 @@ class RevokeDeviceCommandHandler(CommandHandler[RevokeDeviceCommand, DeviceRevoc
         """
         async with self._unit_of_work:
             # 1. Load device
-            device = await self._device_repository.get_by_id(command.device_id)
+            device = await self._device_repository.find_by_id(command.device_id)
             if not device:
                 raise DeviceNotFoundError(f"Device {command.device_id} not found")
             
             # 2. Load user
-            user = await self._user_repository.get_by_id(device.user_id)
+            user = await self._user_repository.find_by_id(device.user_id)
             if not user:
                 raise DeviceNotFoundError(f"User {device.user_id} not found")
             

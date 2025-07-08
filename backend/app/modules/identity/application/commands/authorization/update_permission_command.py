@@ -11,14 +11,10 @@ from uuid import UUID
 from app.core.cqrs import Command, CommandHandler
 from app.core.events import EventBus
 from app.core.infrastructure import UnitOfWork
-from app.modules.identity.application.contracts.ports import (
-    IAuditService,
-    INotificationService,
-    IPermissionRepository,
-    IRoleRepository,
-    ISessionRepository,
-    IUserPermissionRepository,
-)
+from app.modules.identity.domain.interfaces.services.communication.notification_service import INotificationService
+from app.modules.identity.domain.interfaces.repositories.permission_repository import IPermissionRepository
+from app.modules.identity.domain.interfaces.repositories.role_repository import IRoleRepository
+from app.modules.identity.domain.interfaces.repositories.session_repository import ISessionRepository
 from app.modules.identity.application.decorators import (
     audit_action,
     rate_limit,
@@ -143,7 +139,7 @@ class UpdatePermissionCommandHandler(CommandHandler[UpdatePermissionCommand, Per
         """
         async with self._unit_of_work:
             # 1. Load permission
-            permission = await self._permission_repository.get_by_id(command.permission_id)
+            permission = await self._permission_repository.find_by_id(command.permission_id)
             if not permission:
                 raise PermissionNotFoundError(f"Permission {command.permission_id} not found")
             
@@ -428,7 +424,7 @@ class UpdatePermissionCommandHandler(CommandHandler[UpdatePermissionCommand, Per
             if perm_id == permission.id:
                 raise InvalidOperationError("Permission cannot imply itself")
             
-            implied_perm = await self._permission_repository.get_by_id(perm_id)
+            implied_perm = await self._permission_repository.find_by_id(perm_id)
             if not implied_perm:
                 raise InvalidOperationError(f"Permission {perm_id} not found")
             
@@ -460,7 +456,7 @@ class UpdatePermissionCommandHandler(CommandHandler[UpdatePermissionCommand, Per
             if perm_id not in current_implies:
                 continue  # Skip if not implied
             
-            implied_perm = await self._permission_repository.get_by_id(perm_id)
+            implied_perm = await self._permission_repository.find_by_id(perm_id)
             if implied_perm:
                 permissions.append(implied_perm)
         
@@ -484,7 +480,7 @@ class UpdatePermissionCommandHandler(CommandHandler[UpdatePermissionCommand, Per
             if perm_id == permission.id:
                 raise InvalidOperationError("Permission cannot exclude itself")
             
-            exclusive_perm = await self._permission_repository.get_by_id(perm_id)
+            exclusive_perm = await self._permission_repository.find_by_id(perm_id)
             if not exclusive_perm:
                 raise InvalidOperationError(f"Permission {perm_id} not found")
             
@@ -505,7 +501,7 @@ class UpdatePermissionCommandHandler(CommandHandler[UpdatePermissionCommand, Per
             if perm_id not in current_exclusions:
                 continue  # Skip if not exclusive
             
-            exclusive_perm = await self._permission_repository.get_by_id(perm_id)
+            exclusive_perm = await self._permission_repository.find_by_id(perm_id)
             if exclusive_perm:
                 permissions.append(exclusive_perm)
         
@@ -587,7 +583,7 @@ class UpdatePermissionCommandHandler(CommandHandler[UpdatePermissionCommand, Per
         reason = f"Permission '{permission.name}' updated - reauthentication required"
         
         for user_id in user_ids:
-            sessions = await self._session_repository.get_active_sessions(user_id)
+            sessions = await self._session_repository.find_active_by_user(user_id)
             for session in sessions:
                 # Only revoke if user actually uses this permission
                 if await self._session_uses_permission(session, permission):
@@ -639,7 +635,7 @@ class UpdatePermissionCommandHandler(CommandHandler[UpdatePermissionCommand, Per
         
         # Notify role administrators
         for role_id in affected_entities["roles"]:
-            role = await self._role_repository.get_by_id(role_id)
+            role = await self._role_repository.find_by_id(role_id)
             if role:
                 await self._notification_service.notify_role_admins(
                     role_id,

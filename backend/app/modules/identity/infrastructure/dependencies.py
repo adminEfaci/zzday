@@ -155,7 +155,7 @@ async def configure_identity_dependencies(container: Container) -> None:
     
     # MFA device repository
     try:
-        from app.modules.identity.application.contracts.ports import IMFADeviceRepository
+        from app.modules.identity.domain.interfaces.repositories.user.mfa_device_repository import IMFADeviceRepository
         from app.modules.identity.infrastructure.repositories.mfa_device_repository import SQLMFADeviceRepository
         
         await container.register(RegistrationRequest(
@@ -163,7 +163,7 @@ async def configure_identity_dependencies(container: Container) -> None:
             implementation=SQLMFADeviceRepository,
             lifetime=ServiceLifetime.SCOPED,
             name="mfa_device_repository",
-            description="MFA device repository implementation for application layer"
+            description="MFA device repository implementation"
         ))
     except ImportError:
         await container.register(RegistrationRequest(
@@ -175,7 +175,7 @@ async def configure_identity_dependencies(container: Container) -> None:
     
     # MFA challenge repository
     try:
-        from app.modules.identity.application.contracts.ports import IMFAChallengeRepository
+        from app.modules.identity.domain.interfaces.repositories.user.mfa_challenge_repository import IMFAChallengeRepository
         from app.modules.identity.infrastructure.repositories.mfa_challenge_repository import CacheMFAChallengeRepository
         
         await container.register(RegistrationRequest(

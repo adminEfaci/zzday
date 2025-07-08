@@ -4,15 +4,17 @@ import base64
 import hashlib
 import secrets
 from dataclasses import dataclass
-from datetime import UTC, datetime, timedelta
 from typing import Any
 
 import argon2
 import bcrypt
 
 from app.core.logging import logger
-from app.modules.identity.domain.contracts.interfaces import IPasswordHasher
-from app.modules.identity.domain.value_objects import HashedPassword
+from app.modules.identity.domain.interfaces.services.authentication.password_hasher import (
+    IPasswordHasher,
+)
+from app.modules.identity.domain.value_objects import PasswordHash
+from app.modules.identity.domain.value_objects.password_hash import HashAlgorithm
 
 
 @dataclass
@@ -55,13 +57,13 @@ class PasswordHasherService(IPasswordHasher):
         
         logger.info(f"PasswordHasherService initialized with algorithm: {self.algorithm}")
     
-    async def hash_password(self, password: str) -> HashedPassword:
+    async def hash_password(self, password: str, user_context: dict[str, Any] | None = None) -> PasswordHash:
         """Hash a password using the configured algorithm."""
         try:
             # Validate password against policy
             validation_result = await self.validate_password_strength(password)
             if not validation_result["is_valid"]:
-                raise ValueError(f"Password validation failed: {validation_result['errors']}")
+                self._raise_validation_error(validation_result["errors"])
             
             # Generate salt
             salt = secrets.token_bytes(32)
@@ -75,14 +77,23 @@ class PasswordHasherService(IPasswordHasher):
             elif self.algorithm == "pbkdf2":
                 hash_value = self._hash_pbkdf2(password, salt)
             else:
-                raise ValueError(f"Unsupported algorithm: {self.algorithm}")
+                self._raise_unsupported_algorithm_error()
             
-            return HashedPassword(
-                algorithm=self.algorithm,
-                hash=hash_value,
+            # Map string algorithm to enum
+            algorithm_mapping = {
+                "argon2": HashAlgorithm.ARGON2ID,
+                "bcrypt": HashAlgorithm.BCRYPT,
+                "pbkdf2": HashAlgorithm.PBKDF2_SHA256
+            }
+            algorithm_enum = algorithm_mapping.get(self.algorithm, HashAlgorithm.ARGON2ID)
+            
+            return PasswordHash(
+                algorithm=algorithm_enum,
                 salt=base64.b64encode(salt).decode('utf-8'),
-                iterations=self._get_iterations(),
-                created_at=datetime.now(UTC)
+                hash_value=hash_value,
+                iterations=self._get_iterations() if algorithm_enum in [HashAlgorithm.PBKDF2_SHA256] else None,
+                memory_cost=self.config.get("argon2_memory_cost", 65536) if algorithm_enum == HashAlgorithm.ARGON2ID else None,
+                parallelism=self.config.get("argon2_parallelism", 1) if algorithm_enum == HashAlgorithm.ARGON2ID else None
             )
             
         except Exception as e:
@@ -92,27 +103,28 @@ class PasswordHasherService(IPasswordHasher):
     async def verify_password(
         self,
         password: str,
-        hashed_password: HashedPassword
+        hashed_password: PasswordHash
     ) -> bool:
         """Verify a password against its hash."""
         try:
-            if hashed_password.algorithm == "argon2":
+            if hashed_password.algorithm == HashAlgorithm.ARGON2ID:
                 try:
-                    self._argon2_hasher.verify(hashed_password.hash, password)
-                    return True
+                    self._argon2_hasher.verify(hashed_password.hash_value, password)
                 except argon2.exceptions.VerifyMismatchError:
                     return False
+                else:
+                    return True
                     
-            elif hashed_password.algorithm == "bcrypt":
+            elif hashed_password.algorithm == HashAlgorithm.BCRYPT:
                 return bcrypt.checkpw(
                     password.encode('utf-8'),
-                    hashed_password.hash.encode('utf-8')
+                    hashed_password.hash_value.encode('utf-8')
                 )
                 
-            elif hashed_password.algorithm == "pbkdf2":
+            elif hashed_password.algorithm == HashAlgorithm.PBKDF2_SHA256:
                 salt = base64.b64decode(hashed_password.salt)
                 test_hash = self._hash_pbkdf2(password, salt)
-                return secrets.compare_digest(test_hash, hashed_password.hash)
+                return secrets.compare_digest(test_hash, hashed_password.hash_value)
                 
             else:
                 logger.warning(f"Unknown algorithm: {hashed_password.algorithm}")
@@ -122,35 +134,33 @@ class PasswordHasherService(IPasswordHasher):
             logger.error(f"Error verifying password: {e!s}")
             return False
     
-    async def needs_rehash(self, hashed_password: HashedPassword) -> bool:
+    async def needs_rehash(self, hashed_password: PasswordHash) -> bool:
         """Check if a password hash needs to be updated."""
+        # Map current algorithm to enum for comparison
+        algorithm_mapping = {
+            "argon2": HashAlgorithm.ARGON2ID,
+            "bcrypt": HashAlgorithm.BCRYPT,
+            "pbkdf2": HashAlgorithm.PBKDF2_SHA256
+        }
+        current_algorithm_enum = algorithm_mapping.get(self.algorithm, HashAlgorithm.ARGON2ID)
+        
         # Check if using outdated algorithm
-        if hashed_password.algorithm != self.algorithm:
+        if hashed_password.algorithm != current_algorithm_enum:
             return True
         
         # Check if parameters have changed for argon2
-        if self.algorithm == "argon2":
+        if self.algorithm == "argon2" and hashed_password.algorithm == HashAlgorithm.ARGON2ID:
             try:
-                # Parse hash parameters
-                params = self._parse_argon2_params(hashed_password.hash)
-                
                 # Check if parameters match current configuration
-                if (params.get("time_cost") != self._argon2_hasher.time_cost or
-                    params.get("memory_cost") != self._argon2_hasher.memory_cost or
-                    params.get("parallelism") != self._argon2_hasher.parallelism):
+                if (hashed_password.memory_cost != self._argon2_hasher.memory_cost or
+                    hashed_password.parallelism != self._argon2_hasher.parallelism):
                     return True
-            except:
-                return True
-        
-        # Check age of hash
-        if hashed_password.created_at:
-            age = datetime.now(UTC) - hashed_password.created_at
-            if age > timedelta(days=365):  # Rehash annually
+            except Exception:
                 return True
         
         return False
     
-    async def validate_password_strength(self, password: str) -> dict[str, Any]:
+    async def validate_password_strength(self, password: str, user_context: dict[str, Any] | None = None) -> dict[str, Any]:
         """Validate password against policy."""
         errors = []
         score = 100
@@ -241,6 +251,14 @@ class PasswordHasherService(IPasswordHasher):
         
         return ''.join(password)
     
+    def _raise_validation_error(self, errors: list[str]) -> None:
+        """Raise validation error with details."""
+        raise ValueError(f"Password validation failed: {errors}")
+    
+    def _raise_unsupported_algorithm_error(self) -> None:
+        """Raise unsupported algorithm error."""
+        raise ValueError(f"Unsupported algorithm: {self.algorithm}")
+    
     def _hash_pbkdf2(self, password: str, salt: bytes) -> str:
         """Hash password using PBKDF2."""
         iterations = self.config.get("pbkdf2_iterations", 100000)
@@ -279,8 +297,8 @@ class PasswordHasherService(IPasswordHasher):
                     elif key == 'p':
                         params['parallelism'] = int(value)
                 return params
-        except:
-            pass
+        except Exception:
+            logger.warning("Failed to parse Argon2 parameters")
         return {}
     
     def _calculate_entropy(self, password: str) -> float:

@@ -58,39 +58,17 @@ class SQLUserPreferenceRepository(SQLRepository[UserPreference, UserPreferenceMo
         
         return model.id
     
-    async def find_by_user(self, user_id: UUID) -> dict[str, Any]:
+    async def find_by_user(self, user_id: UUID) -> UserPreference | None:
         """Find all preferences for user."""
         stmt = select(UserPreferenceModel).where(UserPreferenceModel.user_id == user_id)
         result = await self.session.exec(stmt)
         model = result.first()
         
         if not model:
-            return {}
+            return None
         
-        # Combine all preferences into a single dictionary
-        preferences = {
-            "language": model.language,
-            "timezone": model.timezone,
-            "date_format": model.date_format,
-            "time_format": model.time_format,
-            "theme": model.theme,
-            "email_digest_frequency": model.email_digest_frequency,
-            "show_profile_publicly": model.show_profile_publicly,
-            "allow_messages_from": model.allow_messages_from,
-            **model.custom_preferences
-        }
-        
-        # Add categorized preferences
-        for key, value in model.notification_settings.items():
-            preferences[f"notification.{key}"] = value
-        
-        for key, value in model.privacy_settings.items():
-            preferences[f"privacy.{key}"] = value
-        
-        for key, value in model.accessibility_settings.items():
-            preferences[f"accessibility.{key}"] = value
-        
-        return preferences
+        # Return domain entity
+        return model.to_domain()
     
     async def find_by_key(self, user_id: UUID, key: str) -> Any | None:
         """Find specific preference for user."""

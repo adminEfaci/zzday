@@ -12,10 +12,10 @@ from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING, Any
 from uuid import UUID, uuid4
 
-from app.core.security import verify_password
-
 if TYPE_CHECKING:
     from app.modules.identity.domain.aggregates.user import User
+
+from ...interfaces.security import IPasswordHasher
 
 from ...entities.admin.login_attempt import LoginAttempt
 from ...entities.device.device_registration import DeviceRegistration
@@ -39,7 +39,14 @@ from ...value_objects import IpAddress
 class AuthenticationService:
     """Domain service for authentication operations."""
     
-    @staticmethod
+    def __init__(self, password_hasher: IPasswordHasher):
+        """Initialize authentication service with dependencies.
+        
+        Args:
+            password_hasher: Password hashing interface implementation
+        """
+        self._password_hasher = password_hasher
+    
     def authenticate(
         user: User,
         password: str,
@@ -73,7 +80,7 @@ class AuthenticationService:
         
         try:
             # Verify password
-            if not verify_password(password, user.password_hash):
+            if not self._password_hasher.verify_password(password, user.password_hash):
                 AuthenticationService._handle_failed_login(
                     user, ip_vo, user_agent, LoginFailureReason.INVALID_PASSWORD
                 )

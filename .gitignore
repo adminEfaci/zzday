@@ -69,3 +69,6 @@ frontend/dist/
 *.md
 !README.md
 !docs/**/*.md
+!GIT_STRATEGY.md
+!MERGE_STRATEGY.md
+!AGENT_INSTRUCTIONS.md

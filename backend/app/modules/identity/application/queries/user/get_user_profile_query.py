@@ -13,13 +13,10 @@ from uuid import UUID
 
 from app.core.cqrs import Query, QueryHandler
 from app.core.infrastructure import UnitOfWork
-from app.modules.identity.application.contracts.ports import (
-    IAuditRepository,
-    IDeviceRepository,
-    IPreferencesRepository,
-    ISessionRepository,
-    IUserRepository,
-)
+from app.modules.identity.domain.interfaces.repositories.audit_repository import IAuditRepository
+from app.modules.identity.domain.interfaces.repositories.device_registration_repository import IDeviceRepository
+from app.modules.identity.domain.interfaces.repositories.session_repository import ISessionRepository
+from app.modules.identity.domain.interfaces.repositories.user_repository import IUserRepository
 from app.modules.identity.application.decorators import (
     rate_limit,
     require_permission,
@@ -122,7 +119,7 @@ class GetUserProfileQueryHandler(QueryHandler[GetUserProfileQuery, UserProfileRe
                 await self._validate_profile_access(query)
                 
                 # Get user entity
-                user = await self.user_repository.get_by_id(query.user_id)
+                user = await self.user_repository.find_by_id(query.user_id)
                 if not user:
                     raise UserNotFoundError(f"User {query.user_id} not found")
                 
@@ -393,7 +390,7 @@ class GetUserProfileQueryHandler(QueryHandler[GetUserProfileQuery, UserProfileRe
     async def _get_user_devices(self, user_id: UUID, limit: int) -> list[dict[str, Any]]:
         """Get user devices."""
         
-        devices = await self.device_repository.get_user_devices(user_id, limit=limit)
+        devices = await self.device_repository.find_by_user(user_id, limit=limit)
         
         device_list = []
         for device in devices:
@@ -461,7 +458,7 @@ class GetUserProfileQueryHandler(QueryHandler[GetUserProfileQuery, UserProfileRe
         # Get role-based permissions
         role_permissions = []
         for role in user.roles:
-            role_perms = await self.user_repository.get_role_permissions(role)
+            role_perms = await self.user_repository.find_by_role(role)
             role_permissions.extend(role_perms)
         
         # Get effective permissions (combination of explicit and role-based)

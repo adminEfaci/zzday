@@ -12,14 +12,10 @@ from uuid import UUID
 from app.core.cqrs import Command, CommandHandler
 from app.core.events import EventBus
 from app.core.infrastructure import UnitOfWork
-from app.modules.identity.application.contracts.ports import (
-    IAuditService,
-    IEmailService,
-    INotificationService,
-    IRoleRepository,
-    IUserRepository,
-    IUserRoleRepository,
-)
+from app.modules.identity.domain.interfaces.services.communication.notification_service import IEmailService
+from app.modules.identity.domain.interfaces.services.communication.notification_service import INotificationService
+from app.modules.identity.domain.interfaces.repositories.role_repository import IRoleRepository
+from app.modules.identity.domain.interfaces.repositories.user_repository import IUserRepository
 from app.modules.identity.application.decorators import (
     audit_action,
     rate_limit,
@@ -192,17 +188,17 @@ class AssignRoleCommandHandler(CommandHandler[AssignRoleCommand, RoleAssignmentR
         """
         async with self._unit_of_work:
             # 1. Load assignor (admin user)
-            assignor = await self._user_repository.get_by_id(command.assigned_by)
+            assignor = await self._user_repository.find_by_id(command.assigned_by)
             if not assignor:
                 raise UnauthorizedError("Assignor not found")
             
             # 2. Load target user
-            user = await self._user_repository.get_by_id(command.user_id)
+            user = await self._user_repository.find_by_id(command.user_id)
             if not user:
                 raise UserNotFoundError(f"User {command.user_id} not found")
             
             # 3. Load role
-            role = await self._role_repository.get_by_id(command.role_id)
+            role = await self._role_repository.find_by_id(command.role_id)
             if not role:
                 raise RoleNotFoundError(f"Role {command.role_id} not found")
             
@@ -335,7 +331,7 @@ class AssignRoleCommandHandler(CommandHandler[AssignRoleCommand, RoleAssignmentR
     ) -> None:
         """Validate role assignment follows hierarchy rules."""
         # Get assignor's roles
-        assignor_roles = await self._authorization_service.get_user_roles(assignor.id)
+        assignor_roles = await self._authorization_service.find_by_user(assignor.id)
         
         # Check if assignor can assign this role
         can_assign = False
@@ -361,7 +357,7 @@ class AssignRoleCommandHandler(CommandHandler[AssignRoleCommand, RoleAssignmentR
             )
         
         # Check if target user would exceed assignor's level
-        target_roles = await self._authorization_service.get_user_roles(target_user.id)
+        target_roles = await self._authorization_service.find_by_user(target_user.id)
         max(
             (r.hierarchy_level for r in target_roles),
             default=0
@@ -388,7 +384,7 @@ class AssignRoleCommandHandler(CommandHandler[AssignRoleCommand, RoleAssignmentR
         if not role.prerequisites:
             return
         
-        user_roles = await self._authorization_service.get_user_roles(user.id)
+        user_roles = await self._authorization_service.find_by_user(user.id)
         user_role_ids = {r.id for r in user_roles}
         
         # Check required roles
@@ -401,7 +397,7 @@ class AssignRoleCommandHandler(CommandHandler[AssignRoleCommand, RoleAssignmentR
         if missing_roles:
             role_names = []
             for role_id in missing_roles:
-                prereq_role = await self._role_repository.get_by_id(role_id)
+                prereq_role = await self._role_repository.find_by_id(role_id)
                 if prereq_role:
                     role_names.append(prereq_role.name)
             
@@ -450,7 +446,7 @@ class AssignRoleCommandHandler(CommandHandler[AssignRoleCommand, RoleAssignmentR
     
     async def _get_role_permissions(self, role_id: UUID) -> list[str]:
         """Get permissions granted by role."""
-        permissions = await self._authorization_service.get_role_permissions(role_id)
+        permissions = await self._authorization_service.find_by_role(role_id)
         return [p.name for p in permissions]
     
     async def _send_role_assignment_notification(

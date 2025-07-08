@@ -12,11 +12,7 @@ from uuid import UUID
 
 from app.core.cqrs import Query, QueryHandler
 from app.core.infrastructure import UnitOfWork
-from app.modules.identity.application.contracts.ports import (
-    IAuthorizationRepository,
-    IPolicyRepository,
-    IUserRepository,
-)
+from app.modules.identity.domain.interfaces.repositories.user_repository import IUserRepository
 from app.modules.identity.application.decorators import rate_limit, validate_request
 from app.modules.identity.application.dtos.response import PermissionCheckResponse
 from app.modules.identity.domain.enums import AccessDecision
@@ -65,7 +61,7 @@ class CheckPermissionQueryHandler(QueryHandler[CheckPermissionQuery, PermissionC
         
         async with self.uow:
             # Get user
-            user = await self.user_repository.get_by_id(query.user_id)
+            user = await self.user_repository.find_by_id(query.user_id)
             if not user:
                 return PermissionCheckResponse(
                     user_id=query.user_id,
@@ -112,7 +108,7 @@ class CheckPermissionQueryHandler(QueryHandler[CheckPermissionQuery, PermissionC
         """Check role-based permissions."""
         
         for role in user.roles:
-            role_permissions = await self.user_repository.get_role_permissions(role)
+            role_permissions = await self.user_repository.find_by_role(role)
             if query.permission in role_permissions:
                 return {
                     "granted": True,

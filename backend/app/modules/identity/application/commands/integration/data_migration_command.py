@@ -13,15 +13,9 @@ from uuid import UUID
 from app.core.cqrs import Command, CommandHandler
 from app.core.events import EventBus
 from app.core.infrastructure import UnitOfWork
-from app.modules.identity.application.contracts.ports import (
-    IAuditService,
-    IBackupRepository,
-    IDataSourceRepository,
-    IEmailService,
-    IMigrationRepository,
-    INotificationService,
-    IUserRepository,
-)
+from app.modules.identity.domain.interfaces.services.communication.notification_service import IEmailService
+from app.modules.identity.domain.interfaces.services.communication.notification_service import INotificationService
+from app.modules.identity.domain.interfaces.repositories.user_repository import IUserRepository
 from app.modules.identity.application.decorators import (
     audit_action,
     rate_limit,
@@ -557,7 +551,7 @@ class DataMigrationCommandHandler(CommandHandler[DataMigrationCommand, DataMigra
         errors = []
         
         # Check if user has necessary permissions
-        user = await self._user_repository.get_by_id(command.initiated_by)
+        user = await self._user_repository.find_by_id(command.initiated_by)
         if not user:
             errors.append("Invalid user ID")
             return {"valid": False, "errors": errors}

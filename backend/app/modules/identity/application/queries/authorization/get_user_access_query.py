@@ -8,10 +8,7 @@ from uuid import UUID
 
 from app.core.cqrs import Query, QueryHandler
 from app.core.infrastructure import UnitOfWork
-from app.modules.identity.application.contracts.ports import (
-    IAuthorizationRepository,
-    IUserRepository,
-)
+from app.modules.identity.domain.interfaces.repositories.user_repository import IUserRepository
 from app.modules.identity.application.decorators import (
     rate_limit,
     require_permission,
@@ -51,7 +48,7 @@ class GetUserAccessQueryHandler(QueryHandler[GetUserAccessQuery, UserAccessRespo
         """Handle user access query."""
         
         async with self.uow:
-            user = await self.user_repository.get_by_id(query.user_id)
+            user = await self.user_repository.find_by_id(query.user_id)
             
             # Get direct permissions
             direct_permissions = getattr(user, 'permissions', [])
@@ -59,7 +56,7 @@ class GetUserAccessQueryHandler(QueryHandler[GetUserAccessQuery, UserAccessRespo
             # Get role-based permissions
             role_permissions = []
             for role in user.roles:
-                perms = await self.user_repository.get_role_permissions(role)
+                perms = await self.user_repository.find_by_role(role)
                 role_permissions.extend(perms)
             
             # Get effective permissions

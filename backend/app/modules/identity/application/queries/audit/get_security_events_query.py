@@ -13,12 +13,10 @@ from uuid import UUID
 
 from app.core.cqrs import Query, QueryHandler
 from app.core.infrastructure import UnitOfWork
-from app.modules.identity.application.contracts.ports import (
-    IAuditRepository,
-    ISecurityRepository,
-    ISessionRepository,
-    IUserRepository,
-)
+from app.modules.identity.domain.interfaces.repositories.audit_repository import IAuditRepository
+from app.modules.identity.domain.interfaces.repositories.security_event_repository import ISecurityRepository
+from app.modules.identity.domain.interfaces.repositories.session_repository import ISessionRepository
+from app.modules.identity.domain.interfaces.repositories.user_repository import IUserRepository
 from app.modules.identity.application.decorators import (
     rate_limit,
     require_permission,
@@ -401,7 +399,7 @@ class GetSecurityEventsQueryHandler(QueryHandler[GetSecurityEventsQuery, Securit
             # Add user context
             user_id = event.get("user_id")
             if user_id:
-                user = await self.user_repository.get_by_id(UUID(user_id))
+                user = await self.user_repository.find_by_id(UUID(user_id))
                 if user:
                     enhanced_event["user_context"] = {
                         "username": user.username,
@@ -414,7 +412,7 @@ class GetSecurityEventsQueryHandler(QueryHandler[GetSecurityEventsQuery, Securit
             # Add session context
             session_id = event.get("session_id")
             if session_id:
-                session = await self.session_repository.get_by_id(UUID(session_id))
+                session = await self.session_repository.find_by_id(UUID(session_id))
                 if session:
                     enhanced_event["session_context"] = {
                         "created_at": session.created_at,

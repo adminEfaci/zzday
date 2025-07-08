@@ -10,14 +10,11 @@ from uuid import UUID
 from app.core.cqrs import Command, CommandHandler
 from app.core.events import EventBus
 from app.core.infrastructure import UnitOfWork
-from app.modules.identity.application.contracts.ports import (
-    ICacheService,
-    IEmailService,
-    INotificationService,
-    IPasswordResetTokenRepository,
-    ISessionRepository,
-    IUserRepository,
-)
+from app.modules.identity.domain.interfaces.services.infrastructure.cache_port import ICachePort as ICacheService
+from app.modules.identity.domain.interfaces.services.communication.notification_service import IEmailService
+from app.modules.identity.domain.interfaces.services.communication.notification_service import INotificationService
+from app.modules.identity.domain.interfaces.repositories.session_repository import ISessionRepository
+from app.modules.identity.domain.interfaces.repositories.user_repository import IUserRepository
 from app.modules.identity.application.decorators import (
     audit_action,
     rate_limit,
@@ -227,7 +224,7 @@ class ForcePasswordResetCommandHandler(CommandHandler[ForcePasswordResetCommand,
     ) -> dict:
         """Process password reset for a single user."""
         # 1. Load user
-        user = await self._user_repository.get_by_id(user_id)
+        user = await self._user_repository.find_by_id(user_id)
         
         if not user:
             return {
@@ -299,7 +296,7 @@ class ForcePasswordResetCommandHandler(CommandHandler[ForcePasswordResetCommand,
     
     async def _revoke_user_sessions(self, user_id: UUID) -> int:
         """Revoke all active sessions for user."""
-        sessions = await self._session_repository.get_active_sessions(user_id)
+        sessions = await self._session_repository.find_active_by_user(user_id)
         
         for session in sessions:
             await self._session_service.revoke_session(

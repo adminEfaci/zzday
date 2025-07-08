@@ -11,13 +11,10 @@ from uuid import UUID
 
 from app.core.cqrs import Command, CommandHandler
 from app.core.infrastructure import UnitOfWork
-from app.modules.identity.application.contracts.ports import (
-    IBreachDetectionService,
-    ICacheService,
-    INotificationService,
-    IPasswordHistoryRepository,
-    IUserRepository,
-)
+from app.modules.identity.domain.interfaces.services.infrastructure.cache_port import ICachePort as ICacheService
+from app.modules.identity.domain.interfaces.services.communication.notification_service import INotificationService
+from app.modules.identity.domain.interfaces.repositories.password_history_repository import IPasswordHistoryRepository
+from app.modules.identity.domain.interfaces.repositories.user_repository import IUserRepository
 from app.modules.identity.application.decorators import (
     audit_action,
     rate_limit,
@@ -115,7 +112,7 @@ class CheckPasswordBreachCommandHandler(CommandHandler[CheckPasswordBreachComman
             # 2. Load user if provided
             user = None
             if command.user_id:
-                user = await self._user_repository.get_by_id(command.user_id)
+                user = await self._user_repository.find_by_id(command.user_id)
                 if not user:
                     raise UserNotFoundError(f"User {command.user_id} not found")
             

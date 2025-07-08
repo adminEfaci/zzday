@@ -12,17 +12,11 @@ from uuid import UUID
 from app.core.cqrs import Command, CommandHandler
 from app.core.events import EventBus
 from app.core.infrastructure import UnitOfWork
-from app.modules.identity.application.contracts.ports import (
-    IAuditService,
-    IEmailService,
-    INotificationService,
-    IPermissionRepository,
-    IRoleRepository,
-    ITemplateRepository,
-    IUserPermissionRepository,
-    IUserRepository,
-    IUserRoleRepository,
-)
+from app.modules.identity.domain.interfaces.services.communication.notification_service import IEmailService
+from app.modules.identity.domain.interfaces.services.communication.notification_service import INotificationService
+from app.modules.identity.domain.interfaces.repositories.permission_repository import IPermissionRepository
+from app.modules.identity.domain.interfaces.repositories.role_repository import IRoleRepository
+from app.modules.identity.domain.interfaces.repositories.user_repository import IUserRepository
 from app.modules.identity.application.decorators import (
     audit_action,
     rate_limit,
@@ -232,7 +226,7 @@ class ClonePermissionsCommandHandler(CommandHandler[ClonePermissionsCommand, Per
         """
         async with self._unit_of_work:
             # 1. Load target user
-            target_user = await self._user_repository.get_by_id(command.target_user_id)
+            target_user = await self._user_repository.find_by_id(command.target_user_id)
             if not target_user:
                 raise UserNotFoundError(f"Target user {command.target_user_id} not found")
             
@@ -362,14 +356,14 @@ class ClonePermissionsCommandHandler(CommandHandler[ClonePermissionsCommand, Per
         
         if source_type == "user":
             # Load from user
-            source_user = await self._user_repository.get_by_id(source_id)
+            source_user = await self._user_repository.find_by_id(source_id)
             if not source_user:
                 raise UserNotFoundError(f"Source user {source_id} not found")
             
             # Get user's roles
             user_roles = await self._user_role_repository.find_active_by_user(source_id)
             for user_role in user_roles:
-                role = await self._role_repository.get_by_id(user_role.role_id)
+                role = await self._role_repository.find_by_id(user_role.role_id)
                 if role:
                     source_data["roles"].append({
                         "role": role,
@@ -379,7 +373,7 @@ class ClonePermissionsCommandHandler(CommandHandler[ClonePermissionsCommand, Per
             # Get user's direct permissions
             user_permissions = await self._user_permission_repository.find_active_by_user(source_id)
             for user_perm in user_permissions:
-                permission = await self._permission_repository.get_by_id(user_perm.permission_id)
+                permission = await self._permission_repository.find_by_id(user_perm.permission_id)
                 if permission:
                     source_data["permissions"].append({
                         "permission": permission,
@@ -393,13 +387,13 @@ class ClonePermissionsCommandHandler(CommandHandler[ClonePermissionsCommand, Per
             
         elif source_type == "template":
             # Load from template
-            template = await self._template_repository.get_by_id(source_id)
+            template = await self._template_repository.find_by_id(source_id)
             if not template:
                 raise TemplateNotFoundError(f"Template {source_id} not found")
             
             # Get template roles
             for role_id in template.role_ids:
-                role = await self._role_repository.get_by_id(role_id)
+                role = await self._role_repository.find_by_id(role_id)
                 if role:
                     source_data["roles"].append({
                         "role": role,
@@ -408,7 +402,7 @@ class ClonePermissionsCommandHandler(CommandHandler[ClonePermissionsCommand, Per
             
             # Get template permissions
             for perm_id in template.permission_ids:
-                permission = await self._permission_repository.get_by_id(perm_id)
+                permission = await self._permission_repository.find_by_id(perm_id)
                 if permission:
                     source_data["permissions"].append({
                         "permission": permission,
@@ -496,7 +490,7 @@ class ClonePermissionsCommandHandler(CommandHandler[ClonePermissionsCommand, Per
         ]
         
         # Get effective permissions
-        effective_perms = await self._authorization_service.get_user_permissions(user_id)
+        effective_perms = await self._authorization_service.find_by_user(user_id)
         state["effective_permissions"] = [p.name for p in effective_perms]
         
         return state
@@ -605,7 +599,7 @@ class ClonePermissionsCommandHandler(CommandHandler[ClonePermissionsCommand, Per
                     conflicts["resolved"].append(f"Keeping existing permission '{permission.name}'")
         
         # Check for mutual exclusions
-        effective_perms = await self._authorization_service.get_user_permissions(
+        effective_perms = await self._authorization_service.find_by_user(
             command.target_user_id
         )
         effective_perm_ids = {p.id for p in effective_perms}

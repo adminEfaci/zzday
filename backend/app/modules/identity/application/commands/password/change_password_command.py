@@ -10,14 +10,12 @@ from uuid import UUID
 from app.core.cqrs import Command, CommandHandler
 from app.core.events import EventBus
 from app.core.infrastructure import UnitOfWork
-from app.modules.identity.application.contracts.ports import (
-    ICacheService,
-    IEmailService,
-    INotificationService,
-    IPasswordHistoryRepository,
-    ISessionRepository,
-    IUserRepository,
-)
+from app.modules.identity.domain.interfaces.services.infrastructure.cache_port import ICachePort as ICacheService
+from app.modules.identity.domain.interfaces.services.communication.notification_service import IEmailService
+from app.modules.identity.domain.interfaces.services.communication.notification_service import INotificationService
+from app.modules.identity.domain.interfaces.repositories.password_history_repository import IPasswordHistoryRepository
+from app.modules.identity.domain.interfaces.repositories.session_repository import ISessionRepository
+from app.modules.identity.domain.interfaces.repositories.user_repository import IUserRepository
 from app.modules.identity.application.decorators import (
     audit_action,
     rate_limit,
@@ -133,7 +131,7 @@ class ChangePasswordCommandHandler(CommandHandler[ChangePasswordCommand, BaseRes
         """
         async with self._unit_of_work:
             # 1. Load user
-            user = await self._user_repository.get_by_id(command.user_id)
+            user = await self._user_repository.find_by_id(command.user_id)
             
             if not user:
                 raise UserNotFoundError(f"User {command.user_id} not found")
@@ -281,7 +279,7 @@ class ChangePasswordCommandHandler(CommandHandler[ChangePasswordCommand, BaseRes
         current_session_id: UUID | None
     ) -> int:
         """Revoke all sessions except current."""
-        sessions = await self._session_repository.get_active_sessions(user_id)
+        sessions = await self._session_repository.find_active_by_user(user_id)
         
         revoked_count = 0
         for session in sessions:

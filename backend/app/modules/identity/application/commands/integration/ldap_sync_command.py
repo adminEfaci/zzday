@@ -11,16 +11,10 @@ from uuid import UUID
 from app.core.cqrs import Command, CommandHandler
 from app.core.events import EventBus
 from app.core.infrastructure import UnitOfWork
-from app.modules.identity.application.contracts.ports import (
-    IAuditService,
-    IEmailService,
-    ILdapRepository,
-    ILdapService,
-    INotificationService,
-    IRoleRepository,
-    ISyncHistoryRepository,
-    IUserRepository,
-)
+from app.modules.identity.domain.interfaces.services.communication.notification_service import IEmailService
+from app.modules.identity.domain.interfaces.services.communication.notification_service import INotificationService
+from app.modules.identity.domain.interfaces.repositories.role_repository import IRoleRepository
+from app.modules.identity.domain.interfaces.repositories.user_repository import IUserRepository
 from app.modules.identity.application.decorators import (
     audit_action,
     rate_limit,
@@ -183,7 +177,7 @@ class LdapSyncCommandHandler(CommandHandler[LdapSyncCommand, LdapSyncResponse]):
         """
         async with self._unit_of_work:
             # 1. Load LDAP server configuration
-            ldap_config = await self._ldap_repository.get_by_id(command.ldap_server_id)
+            ldap_config = await self._ldap_repository.find_by_id(command.ldap_server_id)
             if not ldap_config:
                 raise SyncConfigurationError(f"LDAP server {command.ldap_server_id} not found")
             

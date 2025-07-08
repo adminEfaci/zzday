@@ -8,7 +8,7 @@ from uuid import UUID
 
 from app.core.cqrs import Query, QueryHandler
 from app.core.infrastructure import UnitOfWork
-from app.modules.identity.application.contracts.ports import IDeviceRepository
+from app.modules.identity.domain.interfaces.repositories.device_registration_repository import IDeviceRepository
 from app.modules.identity.application.decorators import (
     rate_limit,
     require_permission,
@@ -45,7 +45,7 @@ class GetUserDevicesQueryHandler(
         """Handle user devices query."""
         
         async with self.uow:
-            devices = await self.device_repository.get_user_devices(
+            devices = await self.device_repository.find_by_user(
                 query.user_id,
                 include_inactive=query.include_inactive,
                 device_type=query.device_type,

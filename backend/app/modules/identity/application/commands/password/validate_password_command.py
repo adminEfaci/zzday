@@ -10,13 +10,9 @@ from uuid import UUID
 
 from app.core.cqrs import Command, CommandHandler
 from app.core.infrastructure import UnitOfWork
-from app.modules.identity.application.contracts.ports import (
-    IBreachDetectionService,
-    ICacheService,
-    IPasswordHistoryRepository,
-    IPasswordPolicyRepository,
-    IUserRepository,
-)
+from app.modules.identity.domain.interfaces.services.infrastructure.cache_port import ICachePort as ICacheService
+from app.modules.identity.domain.interfaces.repositories.password_history_repository import IPasswordHistoryRepository
+from app.modules.identity.domain.interfaces.repositories.user_repository import IUserRepository
 from app.modules.identity.application.decorators import rate_limit, validate_request
 from app.modules.identity.application.dtos.request import ValidatePasswordRequest
 from app.modules.identity.application.dtos.response import PasswordValidationResponse
@@ -97,7 +93,7 @@ class ValidatePasswordCommandHandler(CommandHandler[ValidatePasswordCommand, Pas
             # 1. Load user if user_id provided
             user = None
             if command.user_id:
-                user = await self._user_repository.get_by_id(command.user_id)
+                user = await self._user_repository.find_by_id(command.user_id)
                 if not user:
                     raise UserNotFoundError(f"User {command.user_id} not found")
             
@@ -231,7 +227,7 @@ class ValidatePasswordCommandHandler(CommandHandler[ValidatePasswordCommand, Pas
         """Get applicable password policy."""
         # Try specific policy name
         if policy_name:
-            policy = await self._password_policy_repository.get_by_name(policy_name)
+            policy = await self._password_policy_repository.find_by_name(policy_name)
             if policy:
                 return policy
         

@@ -14,15 +14,12 @@ from uuid import UUID
 from app.core.cqrs import Command, CommandHandler
 from app.core.events import EventBus
 from app.core.infrastructure import UnitOfWork
-from app.modules.identity.application.contracts.ports import (
-    IAuditService,
-    IDeviceRepository,
-    IEmailService,
-    INotificationService,
-    ISecurityRepository,
-    ISessionRepository,
-    IUserRepository,
-)
+from app.modules.identity.domain.interfaces.repositories.device_registration_repository import IDeviceRepository
+from app.modules.identity.domain.interfaces.services.communication.notification_service import IEmailService
+from app.modules.identity.domain.interfaces.services.communication.notification_service import INotificationService
+from app.modules.identity.domain.interfaces.repositories.security_event_repository import ISecurityRepository
+from app.modules.identity.domain.interfaces.repositories.session_repository import ISessionRepository
+from app.modules.identity.domain.interfaces.repositories.user_repository import IUserRepository
 from app.modules.identity.application.decorators import (
     audit_action,
     rate_limit,
@@ -266,11 +263,11 @@ class SessionSecurityCommandHandler(CommandHandler[SessionSecurityCommand, Sessi
     async def _handle_session_analysis(self, command: SessionSecurityCommand) -> SessionSecurityResponse:
         """Handle comprehensive session security analysis."""
         # 1. Load session data
-        session = await self._session_repository.get_by_id(command.session_id)
+        session = await self._session_repository.find_by_id(command.session_id)
         if not session:
             raise SessionValidationError(f"Session {command.session_id} not found")
         
-        user = await self._user_repository.get_by_id(session.user_id)
+        user = await self._user_repository.find_by_id(session.user_id)
         if not user:
             raise SessionValidationError(f"User {session.user_id} not found")
         

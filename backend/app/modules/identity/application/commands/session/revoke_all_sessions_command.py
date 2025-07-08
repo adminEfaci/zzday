@@ -9,13 +9,10 @@ from uuid import UUID
 from app.core.cqrs import Command, CommandHandler
 from app.core.events import EventBus
 from app.core.infrastructure import UnitOfWork
-from app.modules.identity.application.contracts.ports import (
-    ICacheService,
-    IEmailService,
-    ISessionRepository,
-    ITokenBlocklistService,
-    IUserRepository,
-)
+from app.modules.identity.domain.interfaces.services.infrastructure.cache_port import ICachePort as ICacheService
+from app.modules.identity.domain.interfaces.services.communication.notification_service import IEmailService
+from app.modules.identity.domain.interfaces.repositories.session_repository import ISessionRepository
+from app.modules.identity.domain.interfaces.repositories.user_repository import IUserRepository
 from app.modules.identity.application.decorators import (
     audit_action,
     rate_limit,
@@ -118,7 +115,7 @@ class RevokeAllSessionsCommandHandler(CommandHandler[RevokeAllSessionsCommand, B
         """
         async with self._unit_of_work:
             # 1. Load user
-            user = await self._user_repository.get_by_id(command.user_id)
+            user = await self._user_repository.find_by_id(command.user_id)
             
             if not user:
                 raise UserNotFoundError(f"User {command.user_id} not found")
@@ -135,7 +132,7 @@ class RevokeAllSessionsCommandHandler(CommandHandler[RevokeAllSessionsCommand, B
                 raise InvalidCredentialsError("Invalid password")
             
             # 3. Get all active sessions
-            active_sessions = await self._session_repository.get_active_sessions(
+            active_sessions = await self._session_repository.find_active_by_user(
                 user.id
             )
             

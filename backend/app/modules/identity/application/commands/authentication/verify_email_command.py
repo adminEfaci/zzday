@@ -10,13 +10,10 @@ from datetime import UTC, datetime
 from app.core.cqrs import Command, CommandHandler
 from app.core.events import EventBus
 from app.core.infrastructure import UnitOfWork
-from app.modules.identity.application.contracts.ports import (
-    ICacheService,
-    IEmailService,
-    IEmailVerificationTokenRepository,
-    INotificationService,
-    IUserRepository,
-)
+from app.modules.identity.domain.interfaces.services.infrastructure.cache_port import ICachePort as ICacheService
+from app.modules.identity.domain.interfaces.services.communication.notification_service import IEmailService
+from app.modules.identity.domain.interfaces.services.communication.notification_service import INotificationService
+from app.modules.identity.domain.interfaces.repositories.user_repository import IUserRepository
 from app.modules.identity.application.decorators import (
     audit_action,
     rate_limit,
@@ -149,7 +146,7 @@ class VerifyEmailCommandHandler(CommandHandler[VerifyEmailCommand, BaseResponse]
                 raise TokenExpiredError("Verification token has expired")
             
             # 3. Load user
-            user = await self._user_repository.get_by_id(token_data.user_id)
+            user = await self._user_repository.find_by_id(token_data.user_id)
             
             if not user:
                 raise UserNotFoundError(f"User {token_data.user_id} not found")

@@ -10,15 +10,11 @@ from uuid import UUID
 from app.core.cqrs import Command, CommandHandler
 from app.core.events import EventBus
 from app.core.infrastructure import UnitOfWork
-from app.modules.identity.application.contracts.ports import (
-    IAuditService,
-    IEmailService,
-    INotificationService,
-    IRoleRepository,
-    ISessionRepository,
-    IUserRepository,
-    IUserRoleRepository,
-)
+from app.modules.identity.domain.interfaces.services.communication.notification_service import IEmailService
+from app.modules.identity.domain.interfaces.services.communication.notification_service import INotificationService
+from app.modules.identity.domain.interfaces.repositories.role_repository import IRoleRepository
+from app.modules.identity.domain.interfaces.repositories.session_repository import ISessionRepository
+from app.modules.identity.domain.interfaces.repositories.user_repository import IUserRepository
 from app.modules.identity.application.decorators import (
     audit_action,
     rate_limit,
@@ -161,17 +157,17 @@ class RevokeRoleCommandHandler(CommandHandler[RevokeRoleCommand, RoleRevocationR
         """
         async with self._unit_of_work:
             # 1. Load revoker (admin user)
-            revoker = await self._user_repository.get_by_id(command.revoked_by)
+            revoker = await self._user_repository.find_by_id(command.revoked_by)
             if not revoker:
                 raise UnauthorizedError("Revoker not found")
             
             # 2. Load target user
-            user = await self._user_repository.get_by_id(command.user_id)
+            user = await self._user_repository.find_by_id(command.user_id)
             if not user:
                 raise UserNotFoundError(f"User {command.user_id} not found")
             
             # 3. Load role
-            role = await self._role_repository.get_by_id(command.role_id)
+            role = await self._role_repository.find_by_id(command.role_id)
             if not role:
                 raise RoleNotFoundError(f"Role {command.role_id} not found")
             
@@ -208,8 +204,8 @@ class RevokeRoleCommandHandler(CommandHandler[RevokeRoleCommand, RoleRevocationR
             
             # 8. Store pre-revocation state
             pre_revocation_state = {
-                "permissions": await self._authorization_service.get_user_permissions(user.id),
-                "roles": await self._authorization_service.get_user_roles(user.id),
+                "permissions": await self._authorization_service.find_by_user(user.id),
+                "roles": await self._authorization_service.find_by_user(user.id),
                 "sessions": await self._session_repository.count_active_by_user(user.id)
             }
             
@@ -241,7 +237,7 @@ class RevokeRoleCommandHandler(CommandHandler[RevokeRoleCommand, RoleRevocationR
             
             # 13. Revoke sessions if requested
             if command.revoke_sessions and role.revoke_sessions_on_removal:
-                sessions = await self._session_repository.get_active_sessions(user.id)
+                sessions = await self._session_repository.find_active_by_user(user.id)
                 for session in sessions:
                     await self._session_service.revoke_session(
                         session.id,
@@ -290,8 +286,8 @@ class RevokeRoleCommandHandler(CommandHandler[RevokeRoleCommand, RoleRevocationR
             
             # 19. Post-revocation analysis
             post_revocation_state = {
-                "permissions": await self._authorization_service.get_user_permissions(user.id),
-                "roles": await self._authorization_service.get_user_roles(user.id),
+                "permissions": await self._authorization_service.find_by_user(user.id),
+                "roles": await self._authorization_service.find_by_user(user.id),
                 "sessions": await self._session_repository.count_active_by_user(user.id)
             }
             
@@ -318,7 +314,7 @@ class RevokeRoleCommandHandler(CommandHandler[RevokeRoleCommand, RoleRevocationR
     ) -> None:
         """Validate role revocation follows hierarchy rules."""
         # Get revoker's roles
-        revoker_roles = await self._authorization_service.get_user_roles(revoker.id)
+        revoker_roles = await self._authorization_service.find_by_user(revoker.id)
         
         # Check if revoker can revoke this role
         can_revoke = False
@@ -344,7 +340,7 @@ class RevokeRoleCommandHandler(CommandHandler[RevokeRoleCommand, RoleRevocationR
             )
         
         # Prevent revoking roles from higher-level users
-        target_roles = await self._authorization_service.get_user_roles(target_user.id)
+        target_roles = await self._authorization_service.find_by_user(target_user.id)
         target_max_level = max(
             (r.hierarchy_level for r in target_roles),
             default=0
@@ -373,17 +369,17 @@ class RevokeRoleCommandHandler(CommandHandler[RevokeRoleCommand, RoleRevocationR
     ) -> list[str]:
         """Check which permissions depend only on this role."""
         # Get all user's roles
-        user_roles = await self._authorization_service.get_user_roles(user_id)
+        user_roles = await self._authorization_service.find_by_user(user_id)
         other_role_ids = [r.id for r in user_roles if r.id != role_id]
         
         # Get permissions from this role
-        role_permissions = await self._authorization_service.get_role_permissions(role_id)
+        role_permissions = await self._authorization_service.find_by_role(role_id)
         role_permission_names = {p.name for p in role_permissions}
         
         # Get permissions from other roles
         other_permissions = set()
         for other_role_id in other_role_ids:
-            perms = await self._authorization_service.get_role_permissions(other_role_id)
+            perms = await self._authorization_service.find_by_role(other_role_id)
             other_permissions.update(p.name for p in perms)
         
         # Find permissions that will be lost
@@ -399,7 +395,7 @@ class RevokeRoleCommandHandler(CommandHandler[RevokeRoleCommand, RoleRevocationR
     ) -> list[str]:
         """Remove permissions that were only granted by this role."""
         # Remove directly granted permissions that match
-        user_permissions = await self._authorization_service.get_direct_permissions(user_id)
+        user_permissions = await self._authorization_service.find_direct_by_user(user_id)
         
         removed_permissions = []
         for permission in user_permissions:
@@ -421,11 +417,11 @@ class RevokeRoleCommandHandler(CommandHandler[RevokeRoleCommand, RoleRevocationR
         parent_role_id: UUID
     ) -> list[dict[str, Any]]:
         """Remove child roles that depend on the parent role."""
-        user_roles = await self._authorization_service.get_user_roles(user_id)
+        user_roles = await self._authorization_service.find_by_user(user_id)
         revoked_child_roles = []
         
         for user_role in user_roles:
-            role = await self._role_repository.get_by_id(user_role.id)
+            role = await self._role_repository.find_by_id(user_role.id)
             if not role:
                 continue
             
@@ -452,10 +448,10 @@ class RevokeRoleCommandHandler(CommandHandler[RevokeRoleCommand, RoleRevocationR
     
     async def _validate_role_requirements(self, user_id: UUID) -> None:
         """Ensure user still meets all role requirements."""
-        user_roles = await self._authorization_service.get_user_roles(user_id)
+        user_roles = await self._authorization_service.find_by_user(user_id)
         
         for user_role in user_roles:
-            role = await self._role_repository.get_by_id(user_role.id)
+            role = await self._role_repository.find_by_id(user_role.id)
             if not role or not role.prerequisites:
                 continue
             

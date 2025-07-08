@@ -13,15 +13,12 @@ from uuid import UUID
 from app.core.cqrs import Command, CommandHandler
 from app.core.events import EventBus
 from app.core.infrastructure import UnitOfWork
-from app.modules.identity.application.contracts.ports import (
-    ICacheService,
-    IDeviceFingerprintService,
-    IGeolocationService,
-    ILoginAttemptRepository,
-    IMFADeviceRepository,
-    ISessionRepository,
-    IUserRepository,
-)
+from app.modules.identity.domain.interfaces.services.infrastructure.cache_port import ICachePort as ICacheService
+from app.modules.identity.domain.interfaces.services.security.geolocation_service import IGeolocationService
+from app.modules.identity.domain.interfaces.repositories.login_attempt_repository import ILoginAttemptRepository
+from app.modules.identity.domain.interfaces.repositories.mfa_device_repository import IMFADeviceRepository
+from app.modules.identity.domain.interfaces.repositories.session_repository import ISessionRepository
+from app.modules.identity.domain.interfaces.repositories.user_repository import IUserRepository
 from app.modules.identity.application.decorators import (
     audit_action,
     rate_limit,
@@ -267,7 +264,7 @@ class AuthenticationCommandHandler:
         Consolidated from LogoutCommandHandler.
         """
         async with self._unit_of_work:
-            session = await self._session_repository.get_by_id(command.params.session_id)
+            session = await self._session_repository.find_by_id(command.params.session_id)
             if not session:
                 raise InvalidTokenError("Invalid session")
             
@@ -307,11 +304,11 @@ class AuthenticationCommandHandler:
                 command.params.refresh_token
             )
             
-            user = await self._user_repository.get_by_id(token_claims.user_id)
+            user = await self._user_repository.find_by_id(token_claims.user_id)
             if not user or not ActiveUserSpecification().is_satisfied_by(user):
                 raise InvalidTokenError("User account is not active")
             
-            session = await self._session_repository.get_by_id(token_claims.session_id)
+            session = await self._session_repository.find_by_id(token_claims.session_id)
             if not session or session.is_terminated:
                 raise InvalidTokenError("Session is no longer valid")
             
@@ -400,7 +397,7 @@ class AuthenticationCommandHandler:
 
     async def _get_and_validate_user(self, email: str) -> User:
         """Get user by email and validate account status."""
-        user = await self._user_repository.get_by_email(email.lower())
+        user = await self._user_repository.find_by_email(email.lower())
         
         if not user:
             await self._log_failed_attempt(email, "", LoginFailureReason.INVALID_CREDENTIALS)

@@ -11,13 +11,10 @@ from uuid import UUID
 from app.core.cqrs import Command, CommandHandler
 from app.core.events import EventBus
 from app.core.infrastructure import UnitOfWork
-from app.modules.identity.application.contracts.ports import (
-    IAuditRepository,
-    ICacheService,
-    IDataOwnershipRepository,
-    IEmailService,
-    IUserRepository,
-)
+from app.modules.identity.domain.interfaces.repositories.audit_repository import IAuditRepository
+from app.modules.identity.domain.interfaces.services.infrastructure.cache_port import ICachePort as ICacheService
+from app.modules.identity.domain.interfaces.services.communication.notification_service import IEmailService
+from app.modules.identity.domain.interfaces.repositories.user_repository import IUserRepository
 from app.modules.identity.application.decorators import (
     audit_action,
     rate_limit,
@@ -142,8 +139,8 @@ class TransferUserDataCommandHandler(CommandHandler[TransferUserDataCommand, Dat
         """
         async with self._unit_of_work:
             # 1. Load both users
-            source_user = await self._user_repository.get_by_id(command.source_user_id)
-            target_user = await self._user_repository.get_by_id(command.target_user_id)
+            source_user = await self._user_repository.find_by_id(command.source_user_id)
+            target_user = await self._user_repository.find_by_id(command.target_user_id)
             
             if not source_user:
                 raise UserNotFoundError(f"Source user {command.source_user_id} not found")

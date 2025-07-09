@@ -1492,6 +1492,281 @@ class RepositoryFactory:
 
 
 # =====================================================================================
+# SQL-SPECIFIC REPOSITORY IMPLEMENTATION
+# =====================================================================================
+
+
+class SQLRepository(BaseRepository[TEntity, TId]):
+    """
+    SQL-specific repository implementation using SQLModel/SQLAlchemy.
+    
+    Provides SQL-specific functionality on top of BaseRepository including:
+    - SQLModel/SQLAlchemy session management
+    - Domain entity to SQL model conversion
+    - SQL query optimization
+    - Connection pooling support
+    """
+    
+    def __init__(
+        self,
+        session: Any,
+        model_type: type[TModel],
+        entity_type: type[TEntity] | None = None,
+        cache: Any | None = None,
+    ):
+        """
+        Initialize SQL repository.
+        
+        Args:
+            session: SQLModel/SQLAlchemy session
+            model_type: SQL model type
+            entity_type: Domain entity type (inferred from type if not provided)
+            cache: Optional cache implementation
+        """
+        # Create session factory from session
+        def session_factory():
+            return session
+        
+        # Infer entity type from generic type if not provided
+        if entity_type is None:
+            # Try to infer from class generic parameters
+            import inspect
+            orig_bases = getattr(self.__class__, '__orig_bases__', ())
+            if orig_bases:
+                for base in orig_bases:
+                    if hasattr(base, '__args__'):
+                        entity_type = base.__args__[0]
+                        break
+            
+            if entity_type is None:
+                raise InfrastructureError("Entity type must be provided or inferrable from generics")
+        
+        super().__init__(entity_type, session_factory, cache)
+        self.session = session
+        self.model_type = model_type
+    
+    def _entity_to_model(self, entity: TEntity) -> TModel:
+        """
+        Convert domain entity to SQL model.
+        
+        Args:
+            entity: Domain entity
+            
+        Returns:
+            TModel: SQL model instance
+        """
+        if hasattr(self.model_type, 'from_domain'):
+            return self.model_type.from_domain(entity)
+        else:
+            # Generic conversion - assumes model constructor accepts entity attributes
+            try:
+                entity_dict = entity.__dict__ if hasattr(entity, '__dict__') else {}
+                return self.model_type(**entity_dict)
+            except Exception as e:
+                raise InfrastructureError(f"Failed to convert entity to model: {e}")
+    
+    def _model_to_entity(self, model: TModel) -> TEntity:
+        """
+        Convert SQL model to domain entity.
+        
+        Args:
+            model: SQL model instance
+            
+        Returns:
+            TEntity: Domain entity
+        """
+        if hasattr(model, 'to_domain'):
+            return model.to_domain()
+        else:
+            # Generic conversion - assumes entity constructor accepts model attributes
+            try:
+                model_dict = model.__dict__ if hasattr(model, '__dict__') else {}
+                return self.entity_type(**model_dict)
+            except Exception as e:
+                raise InfrastructureError(f"Failed to convert model to entity: {e}")
+    
+    async def find_by_id(self, entity_id: TId) -> TEntity | None:
+        """Find entity by ID using SQL query."""
+        async with self.operation_context("find_by_id"):
+            try:
+                model = await self.session.get(self.model_type, entity_id)
+                return self._model_to_entity(model) if model else None
+            except Exception as e:
+                logger.exception(
+                    "Failed to find entity by ID",
+                    repository=self.__class__.__name__,
+                    entity_id=str(entity_id),
+                    error=str(e),
+                )
+                raise InfrastructureError(f"Failed to find entity by ID: {e}")
+    
+    async def find_all(
+        self, limit: int | None = None, offset: int = 0
+    ) -> list[TEntity]:
+        """Find all entities with pagination."""
+        async with self.operation_context("find_all"):
+            try:
+                # Import here to avoid circular imports
+                from sqlmodel import select
+                
+                stmt = select(self.model_type)
+                if offset > 0:
+                    stmt = stmt.offset(offset)
+                if limit is not None:
+                    stmt = stmt.limit(limit)
+                
+                result = await self.session.exec(stmt)
+                models = result.all()
+                
+                return [self._model_to_entity(model) for model in models]
+            except Exception as e:
+                logger.exception(
+                    "Failed to find all entities",
+                    repository=self.__class__.__name__,
+                    limit=limit,
+                    offset=offset,
+                    error=str(e),
+                )
+                raise InfrastructureError(f"Failed to find all entities: {e}")
+    
+    async def save(self, entity: TEntity) -> TEntity:
+        """Save entity to database."""
+        async with self.operation_context("save"):
+            try:
+                model = self._entity_to_model(entity)
+                
+                # Check if entity exists
+                entity_id = getattr(entity, 'id', None)
+                if entity_id:
+                    existing = await self.session.get(self.model_type, entity_id)
+                    if existing:
+                        # Update existing
+                        for key, value in model.__dict__.items():
+                            if not key.startswith('_'):
+                                setattr(existing, key, value)
+                        self.session.add(existing)
+                        await self.session.commit()
+                        return self._model_to_entity(existing)
+                
+                # Create new
+                self.session.add(model)
+                await self.session.commit()
+                return self._model_to_entity(model)
+                
+            except Exception as e:
+                await self.session.rollback()
+                logger.exception(
+                    "Failed to save entity",
+                    repository=self.__class__.__name__,
+                    entity_type=self.entity_type.__name__,
+                    error=str(e),
+                )
+                raise InfrastructureError(f"Failed to save entity: {e}")
+    
+    async def delete(self, entity_id: TId) -> bool:
+        """Delete entity by ID."""
+        async with self.operation_context("delete"):
+            try:
+                model = await self.session.get(self.model_type, entity_id)
+                if not model:
+                    return False
+                
+                await self.session.delete(model)
+                await self.session.commit()
+                return True
+                
+            except Exception as e:
+                await self.session.rollback()
+                logger.exception(
+                    "Failed to delete entity",
+                    repository=self.__class__.__name__,
+                    entity_id=str(entity_id),
+                    error=str(e),
+                )
+                raise InfrastructureError(f"Failed to delete entity: {e}")
+    
+    async def exists(self, entity_id: TId) -> bool:
+        """Check if entity exists."""
+        async with self.operation_context("exists"):
+            try:
+                model = await self.session.get(self.model_type, entity_id)
+                return model is not None
+            except Exception as e:
+                logger.exception(
+                    "Failed to check entity existence",
+                    repository=self.__class__.__name__,
+                    entity_id=str(entity_id),
+                    error=str(e),
+                )
+                raise InfrastructureError(f"Failed to check entity existence: {e}")
+    
+    async def count(self) -> int:
+        """Count total entities."""
+        async with self.operation_context("count"):
+            try:
+                # Import here to avoid circular imports
+                from sqlmodel import select, func
+                
+                stmt = select(func.count(self.model_type.id))
+                result = await self.session.exec(stmt)
+                return result.first() or 0
+            except Exception as e:
+                logger.exception(
+                    "Failed to count entities",
+                    repository=self.__class__.__name__,
+                    error=str(e),
+                )
+                raise InfrastructureError(f"Failed to count entities: {e}")
+    
+    async def find_by_specification(
+        self, specification: Specification[TEntity]
+    ) -> list[TEntity]:
+        """Find entities by specification."""
+        async with self.operation_context("find_by_specification"):
+            try:
+                # This is a simplified implementation
+                # In a real implementation, you'd convert specification to SQL
+                all_entities = await self.find_all()
+                return [entity for entity in all_entities if specification.is_satisfied_by(entity)]
+            except Exception as e:
+                logger.exception(
+                    "Failed to find entities by specification",
+                    repository=self.__class__.__name__,
+                    specification=type(specification).__name__,
+                    error=str(e),
+                )
+                raise InfrastructureError(f"Failed to find entities by specification: {e}")
+    
+    async def find_one_by_specification(
+        self, specification: Specification[TEntity]
+    ) -> TEntity | None:
+        """Find first entity by specification."""
+        entities = await self.find_by_specification(specification)
+        return entities[0] if entities else None
+    
+    async def count_by_specification(
+        self, specification: Specification[TEntity]
+    ) -> int:
+        """Count entities by specification."""
+        entities = await self.find_by_specification(specification)
+        return len(entities)
+    
+    async def delete_by_specification(
+        self, specification: Specification[TEntity]
+    ) -> int:
+        """Delete entities by specification."""
+        entities = await self.find_by_specification(specification)
+        deleted_count = 0
+        
+        for entity in entities:
+            entity_id = getattr(entity, 'id', None)
+            if entity_id and await self.delete(entity_id):
+                deleted_count += 1
+        
+        return deleted_count
+
+
+# =====================================================================================
 # EXPORTS
 # =====================================================================================
 
@@ -1501,6 +1776,7 @@ __all__ = [
     "CacheableRepository",
     "EventSourcedRepository",
     "ReadOnlyRepository",
+    "SQLRepository",
     # Interfaces
     "Repository",
     # Factory

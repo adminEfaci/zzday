@@ -58,7 +58,7 @@ class SQLRoleRepository(SQLRepository[Role, RoleModel], IRoleRepository):
         await self.session.commit()
         return role.id
     
-    async def find_by_id(self, role_id: UUID) -> dict | None:
+    async def find_by_id(self, role_id: UUID) -> Role | None:
         """Find role by ID."""
         stmt = select(RoleModel).where(RoleModel.id == role_id)
         result = await self.session.exec(stmt)
@@ -67,19 +67,9 @@ class SQLRoleRepository(SQLRepository[Role, RoleModel], IRoleRepository):
         if not model:
             return None
         
-        # Get associated permissions
-        perm_stmt = select(RolePermissionAssociation).where(
-            RolePermissionAssociation.role_id == role_id
-        )
-        perm_result = await self.session.exec(perm_stmt)
-        permissions = [str(assoc.permission_id) for assoc in perm_result.all()]
-        
-        role_dict = model.to_dict()
-        role_dict["permission_ids"] = permissions
-        
-        return role_dict
+        return model.to_domain()
     
-    async def find_by_name(self, name: str) -> dict | None:
+    async def find_by_name(self, name: str) -> Role | None:
         """Find role by name."""
         stmt = select(RoleModel).where(RoleModel.name == name)
         result = await self.session.exec(stmt)
@@ -88,40 +78,17 @@ class SQLRoleRepository(SQLRepository[Role, RoleModel], IRoleRepository):
         if not model:
             return None
         
-        # Get associated permissions
-        perm_stmt = select(RolePermissionAssociation).where(
-            RolePermissionAssociation.role_id == model.id
-        )
-        perm_result = await self.session.exec(perm_stmt)
-        permissions = [str(assoc.permission_id) for assoc in perm_result.all()]
-        
-        role_dict = model.to_dict()
-        role_dict["permission_ids"] = permissions
-        
-        return role_dict
+        return model.to_domain()
     
-    async def find_all(self) -> list[dict]:
+    async def find_all(self) -> list[Role]:
         """Find all roles."""
         stmt = select(RoleModel).order_by(RoleModel.level.desc(), RoleModel.name)
         result = await self.session.exec(stmt)
         models = result.all()
         
-        roles = []
-        for model in models:
-            # Get associated permissions for each role
-            perm_stmt = select(RolePermissionAssociation).where(
-                RolePermissionAssociation.role_id == model.id
-            )
-            perm_result = await self.session.exec(perm_stmt)
-            permissions = [str(assoc.permission_id) for assoc in perm_result.all()]
-            
-            role_dict = model.to_dict()
-            role_dict["permission_ids"] = permissions
-            roles.append(role_dict)
-        
-        return roles
+        return [model.to_domain() for model in models]
     
-    async def find_by_user(self, user_id: UUID) -> list[dict]:
+    async def find_by_user(self, user_id: UUID) -> list[Role]:
         """Find roles assigned to user."""
         # Get role associations for user
         assoc_stmt = select(RoleUserAssociation).where(
@@ -141,27 +108,7 @@ class SQLRoleRepository(SQLRepository[Role, RoleModel], IRoleRepository):
         role_result = await self.session.exec(role_stmt)
         models = role_result.all()
         
-        roles = []
-        for model in models:
-            # Get associated permissions for each role
-            perm_stmt = select(RolePermissionAssociation).where(
-                RolePermissionAssociation.role_id == model.id
-            )
-            perm_result = await self.session.exec(perm_stmt)
-            permissions = [str(assoc.permission_id) for assoc in perm_result.all()]
-            
-            role_dict = model.to_dict()
-            role_dict["permission_ids"] = permissions
-            
-            # Add association metadata
-            user_assoc = next(a for a in associations if a.role_id == model.id)
-            role_dict["assigned_at"] = user_assoc.assigned_at.isoformat()
-            role_dict["assigned_by"] = str(user_assoc.assigned_by) if user_assoc.assigned_by else None
-            role_dict["expires_at"] = user_assoc.expires_at.isoformat() if user_assoc.expires_at else None
-            
-            roles.append(role_dict)
-        
-        return roles
+        return [model.to_domain() for model in models]
     
     async def assign_to_user(self, role_id: UUID, user_id: UUID) -> bool:
         """Assign role to user."""
@@ -257,7 +204,7 @@ class SQLRoleRepository(SQLRepository[Role, RoleModel], IRoleRepository):
         
         return True
     
-    async def get_role_permissions(self, role_id: UUID) -> list[dict]:
+    async def get_role_permissions(self, role_id: UUID) -> list[UUID]:
         """Get all permissions for role."""
         stmt = select(RolePermissionAssociation).where(
             RolePermissionAssociation.role_id == role_id
@@ -265,17 +212,7 @@ class SQLRoleRepository(SQLRepository[Role, RoleModel], IRoleRepository):
         result = await self.session.exec(stmt)
         associations = result.all()
         
-        permissions = []
-        for assoc in associations:
-            perm_dict = {
-                "permission_id": str(assoc.permission_id),
-                "granted_at": assoc.granted_at.isoformat(),
-                "granted_by": str(assoc.granted_by) if assoc.granted_by else None,
-                "conditions": assoc.conditions
-            }
-            permissions.append(perm_dict)
-        
-        return permissions
+        return [assoc.permission_id for assoc in associations]
     
     async def update(
         self, 

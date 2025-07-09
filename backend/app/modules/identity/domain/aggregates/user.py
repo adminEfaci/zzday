@@ -228,11 +228,7 @@ class User(AggregateRoot):
         ))
 
     def record_login_attempt(self, success: bool, login_context: dict | None = None) -> None:
-        """Record login attempt and update tracking - delegates complex logic to service."""
-        from .services.user_authentication_service import UserAuthenticationService
-        
-        auth_service = UserAuthenticationService()
-        
+        """Record login attempt and update tracking."""
         if success:
             self.failed_login_count = 0
             self.last_failed_login = None
@@ -295,18 +291,13 @@ class User(AggregateRoot):
         self._touch()
 
     def assign_role(self, role_id: UUID, assigned_by: UUID) -> None:
-        """Assign role to user - validates using permission service."""
-        from .services.user_permission_service import UserPermissionService
-        
+        """Assign role to user. Validation should be done at application layer."""
         if role_id in self._role_ids:
-            return
+            return  # Already assigned
 
-        # Delegate validation to service
-        permission_service = UserPermissionService()
-        is_valid, error_message = permission_service.validate_role_assignment(self, role_id)
-        
-        if not is_valid:
-            raise ValueError(error_message)
+        # Simple aggregate business rule: user must be active to receive new roles
+        if not self.is_active:
+            raise ValueError("Cannot assign role to inactive user")
 
         self._role_ids.add(role_id)
         self._touch()
@@ -476,26 +467,21 @@ class User(AggregateRoot):
     # SERVICE INTEGRATION METHODS
     # =============================================================================
 
-    def assess_login_risk(self, login_context: dict) -> RiskLevel:
-        """Assess login risk using authentication service."""
-        from .services.user_authentication_service import UserAuthenticationService
-        
-        auth_service = UserAuthenticationService()
-        return auth_service.assess_login_risk(self, login_context)
+    def get_failed_login_count(self) -> int:
+        """Get count of recent failed login attempts."""
+        return self.failed_login_count
+    
+    def is_account_locked(self) -> bool:
+        """Check if account is locked due to too many failed attempts."""
+        return self.is_locked
 
-    def get_effective_permissions(self) -> set[str]:
-        """Get effective permissions using permission service."""
-        from .services.user_permission_service import UserPermissionService
-        
-        permission_service = UserPermissionService()
-        return permission_service.calculate_effective_permissions(self)
+    def get_role_ids(self) -> set[UUID]:
+        """Get user's assigned role IDs. Permission calculation should be done at application layer."""
+        return self._role_ids.copy()
 
-    def can_assign_role_to(self, target_user: 'User', role_id: UUID) -> bool:
-        """Check if this user can assign role to another user."""
-        from .services.user_permission_service import UserPermissionService
-        
-        permission_service = UserPermissionService()
-        return permission_service.can_assign_role(self, target_user, role_id)
+    def has_role(self, role_id: UUID) -> bool:
+        """Check if user has specific role."""
+        return role_id in self._role_ids
 
     # =============================================================================
     # HELPER METHODS

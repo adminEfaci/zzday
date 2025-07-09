@@ -5,6 +5,7 @@ Domain services for complex permission operations that span multiple aggregates
 or require external dependencies.
 """
 
+import asyncio
 import re
 from abc import ABC, abstractmethod
 from typing import Any, List, Set
@@ -44,6 +45,9 @@ class PermissionHierarchyService:
     
     def __init__(self, permission_repo: IPermissionRepository):
         self._permission_repo = permission_repo
+        self._lock = asyncio.Lock()
+        self._hierarchy_cache: dict[UUID, Set[UUID]] = {}
+        self._cache_lock = asyncio.Lock()
     
     async def validate_hierarchy_move(
         self, 
@@ -67,9 +71,18 @@ class PermissionHierarchyService:
             raise ValueError("Permission hierarchy too deep (max 10 levels)")
     
     async def get_all_descendants(self, permission_id: UUID) -> Set[UUID]:
-        """Get all descendant permission IDs."""
+        """Get all descendant permission IDs with caching."""
+        async with self._cache_lock:
+            if permission_id in self._hierarchy_cache:
+                return self._hierarchy_cache[permission_id].copy()
+        
         descendants = await self._permission_repo.get_descendants(permission_id)
-        return {p.id for p in descendants}
+        descendant_ids = {p.id for p in descendants}
+        
+        async with self._cache_lock:
+            self._hierarchy_cache[permission_id] = descendant_ids
+        
+        return descendant_ids
     
     async def get_effective_permissions(
         self, 
@@ -92,12 +105,17 @@ class PermissionHierarchyService:
         return effective
     
     async def rebuild_materialized_paths(self, root_permission_id: UUID) -> None:
-        """Rebuild materialized paths for permission subtree."""
-        root = await self._permission_repo.get_by_id(root_permission_id)
-        if not root:
-            return
-        
-        await self._rebuild_paths_recursive(root, root.path.rsplit('/', 1)[0] if '/' in root.path else "")
+        """Rebuild materialized paths for permission subtree with concurrency control."""
+        async with self._lock:
+            root = await self._permission_repo.get_by_id(root_permission_id)
+            if not root:
+                return
+            
+            # Clear cache for this hierarchy
+            async with self._cache_lock:
+                self._hierarchy_cache.clear()
+            
+            await self._rebuild_paths_recursive(root, root.path.rsplit('/', 1)[0] if '/' in root.path else "")
     
     async def _is_descendant(self, potential_descendant_id: UUID, ancestor_id: UUID) -> bool:
         """Check if potential_descendant is a descendant of ancestor."""
@@ -119,6 +137,9 @@ class PermissionEvaluationService:
     
     def __init__(self, permission_repo: IPermissionRepository):
         self._permission_repo = permission_repo
+        self._evaluation_cache: dict[str, bool] = {}
+        self._cache_lock = asyncio.Lock()
+        self._max_cache_size = 10000
     
     async def evaluate_permission_request(
         self, 
@@ -126,9 +147,38 @@ class PermissionEvaluationService:
         requested_permission_code: str,
         context: dict[str, Any] | None = None
     ) -> bool:
-        """Evaluate if user has permission for requested action."""
+        """Evaluate if user has permission for requested action with caching."""
         context = context or {}
         
+        # Create cache key
+        cache_key = self._create_cache_key(user_permissions, requested_permission_code, context)
+        
+        # Check cache first
+        async with self._cache_lock:
+            if cache_key in self._evaluation_cache:
+                return self._evaluation_cache[cache_key]
+        
+        # Evaluate permissions
+        result = await self._evaluate_permissions_uncached(user_permissions, requested_permission_code, context)
+        
+        # Cache result
+        async with self._cache_lock:
+            if len(self._evaluation_cache) >= self._max_cache_size:
+                # Simple LRU eviction - remove first item
+                first_key = next(iter(self._evaluation_cache))
+                del self._evaluation_cache[first_key]
+            
+            self._evaluation_cache[cache_key] = result
+        
+        return result
+    
+    async def _evaluate_permissions_uncached(
+        self, 
+        user_permissions: Set[Permission],
+        requested_permission_code: str,
+        context: dict[str, Any]
+    ) -> bool:
+        """Evaluate permissions without caching."""
         for permission in user_permissions:
             if not permission.is_active:
                 continue
@@ -143,20 +193,48 @@ class PermissionEvaluationService:
         
         return False
     
+    def _create_cache_key(
+        self, 
+        user_permissions: Set[Permission],
+        requested_permission_code: str,
+        context: dict[str, Any]
+    ) -> str:
+        """Create cache key for permission evaluation."""
+        permission_ids = sorted([str(p.id) for p in user_permissions])
+        context_str = str(sorted(context.items())) if context else ""
+        return f"{':'.join(permission_ids)}:{requested_permission_code}:{context_str}"
+    
     async def find_conflicting_permissions(
         self, 
         permissions: Set[Permission]
     ) -> List[tuple[Permission, Permission]]:
-        """Find permissions that conflict with each other."""
+        """Find permissions that conflict with each other using concurrent checks."""
         conflicts = []
         permission_list = list(permissions)
         
+        # Create tasks for conflict checking
+        tasks = []
         for i, perm1 in enumerate(permission_list):
             for perm2 in permission_list[i+1:]:
-                if await self._are_conflicting(perm1, perm2):
-                    conflicts.append((perm1, perm2))
+                tasks.append(self._check_conflict_pair(perm1, perm2))
+        
+        # Execute conflict checks concurrently
+        if tasks:
+            results = await asyncio.gather(*tasks)
+            
+            # Collect conflicts
+            task_index = 0
+            for i, perm1 in enumerate(permission_list):
+                for perm2 in permission_list[i+1:]:
+                    if results[task_index]:
+                        conflicts.append((perm1, perm2))
+                    task_index += 1
         
         return conflicts
+    
+    async def _check_conflict_pair(self, perm1: Permission, perm2: Permission) -> bool:
+        """Check if two permissions conflict."""
+        return await self._are_conflicting(perm1, perm2)
     
     async def resolve_permission_implications(
         self, 
@@ -224,6 +302,9 @@ class PermissionValidationService:
     
     def __init__(self, permission_repo: IPermissionRepository):
         self._permission_repo = permission_repo
+        self._validation_cache: dict[str, bool] = {}
+        self._cache_lock = asyncio.Lock()
+        self._max_cache_size = 5000
     
     async def validate_permission_creation(
         self,
@@ -233,15 +314,31 @@ class PermissionValidationService:
         resource_type: ResourceType,
         parent: Permission | None = None
     ) -> None:
-        """Validate permission creation request."""
+        """Validate permission creation request with caching."""
+        # Check cache for code validation
+        cache_key = f"code_valid:{code}"
+        async with self._cache_lock:
+            code_valid = self._validation_cache.get(cache_key)
+        
+        if code_valid is None:
+            # Validate code format
+            code_valid = self._is_valid_permission_code(code)
+            
+            async with self._cache_lock:
+                if len(self._validation_cache) >= self._max_cache_size:
+                    # Simple LRU eviction
+                    first_key = next(iter(self._validation_cache))
+                    del self._validation_cache[first_key]
+                
+                self._validation_cache[cache_key] = code_valid
+        
+        if not code_valid:
+            raise ValueError(f"Invalid permission code format: {code}")
+        
         # Check for duplicate code
         existing = await self._permission_repo.get_by_code(code)
         if existing:
             raise ValueError(f"Permission with code '{code}' already exists")
-        
-        # Validate code format
-        if not self._is_valid_permission_code(code):
-            raise ValueError(f"Invalid permission code format: {code}")
         
         # Validate parent relationship
         if parent:
@@ -283,6 +380,9 @@ class PermissionPolicyService:
     
     def __init__(self, permission_repo: IPermissionRepository):
         self._permission_repo = permission_repo
+        self._policy_cache: dict[str, dict[str, Any]] = {}
+        self._cache_lock = asyncio.Lock()
+        self._max_cache_size = 1000
     
     async def generate_policy_document(
         self, 
@@ -307,23 +407,44 @@ class PermissionPolicyService:
         self, 
         permissions: Set[Permission]
     ) -> Set[Permission]:
-        """Optimize permission set by removing redundant permissions."""
+        """Optimize permission set by removing redundant permissions using concurrent checks."""
         optimized = set()
+        permission_list = list(permissions)
         
-        for permission in permissions:
-            # Check if this permission is already implied by others
+        # Create implication matrix concurrently
+        tasks = []
+        for i, perm1 in enumerate(permission_list):
+            for j, perm2 in enumerate(permission_list):
+                if i != j:
+                    tasks.append(self._check_implication(perm1, perm2, i, j))
+        
+        # Execute implication checks concurrently
+        if tasks:
+            results = await asyncio.gather(*tasks)
+            
+            # Build implication matrix
+            implications = {}
+            for result in results:
+                if result[2]:  # if implies
+                    implications.setdefault(result[0], set()).add(result[1])
+        
+        # Find non-redundant permissions
+        for i, permission in enumerate(permission_list):
             is_redundant = False
-            for other in optimized:
-                if other.implies(permission):
+            for j, other in enumerate(permission_list):
+                if i != j and j in implications.get(i, set()):
                     is_redundant = True
                     break
             
             if not is_redundant:
-                # Remove any permissions that this one implies
-                optimized = {p for p in optimized if not permission.implies(p)}
                 optimized.add(permission)
         
         return optimized
+    
+    async def _check_implication(self, perm1: Permission, perm2: Permission, i: int, j: int) -> tuple[int, int, bool]:
+        """Check if perm1 implies perm2 and return indices."""
+        implies = perm1.implies(perm2)
+        return (i, j, implies)
     
     async def calculate_permission_risk_score(
         self, 
@@ -360,6 +481,18 @@ class PermissionServiceFactory:
     
     def __init__(self, permission_repo: IPermissionRepository):
         self._permission_repo = permission_repo
+        self._service_cache: dict[str, Any] = {}
+        self._cache_lock = asyncio.Lock()
+    
+    async def get_cached_service(self, service_type: str) -> Any:
+        """Get cached service instance."""
+        async with self._cache_lock:
+            return self._service_cache.get(service_type)
+    
+    async def cache_service(self, service_type: str, service: Any) -> None:
+        """Cache service instance."""
+        async with self._cache_lock:
+            self._service_cache[service_type] = service
     
     def create_hierarchy_service(self) -> PermissionHierarchyService:
         return PermissionHierarchyService(self._permission_repo)

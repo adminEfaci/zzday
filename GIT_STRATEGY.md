@@ -29,6 +29,7 @@ This document defines the Git branching strategy for the iterative codebase anal
   - CQRS implementation
   - Command and query segregation
   - Service dependencies
+  - Events Handlers 
 
 ### 4. **Infrastructure Agent** (Branch: `analysis/infrastructure`)
 - **Responsibility**: Review infrastructure implementations, repositories, and external integrations

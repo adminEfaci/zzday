@@ -48,7 +48,7 @@ class SQLAccessTokenRepository(SQLRepository[AccessToken, AccessTokenModel], IAc
         
         return token.id
     
-    async def find_by_hash(self, token_hash: str) -> dict | None:
+    async def find_by_hash(self, token_hash: str) -> AccessToken | None:
         """Find token by hash."""
         stmt = select(AccessTokenModel).where(
             and_(
@@ -62,18 +62,8 @@ class SQLAccessTokenRepository(SQLRepository[AccessToken, AccessTokenModel], IAc
         if not model:
             return None
         
-        # Return as dictionary for compatibility
-        return {
-            "id": model.id,
-            "user_id": model.user_id,
-            "session_id": model.session_id,
-            "scopes": model.scopes,
-            "expires_at": model.expires_at,
-            "status": model.status,
-            "created_at": model.created_at,
-            "client_id": model.client_id,
-            "metadata": model.metadata
-        }
+        # Return domain entity
+        return model.to_domain()
     
     async def invalidate(self, token_id: UUID) -> bool:
         """Invalidate access token."""

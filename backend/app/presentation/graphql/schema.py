@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 # Identity Module
 try:
-    from app.modules.identity.presentation.graphql.schema import (
+    from app.modules.identity.presentation.graphql.identity_schema import (
         IdentityMutations,
         IdentityQueries,
     )

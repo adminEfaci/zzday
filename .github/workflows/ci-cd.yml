@@ -1,0 +1,717 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, master, develop ]
+  pull_request:
+    branches: [ main, master, develop ]
+  workflow_dispatch:
+  schedule:
+    - cron: '0 2 * * *'  # Run at 2 AM daily for health monitoring
+    - cron: '0 3 * * 0'  # Run at 3 AM on Sundays for dependency updates
+
+env:
+  PYTHON_VERSION: '3.11'
+  NODE_VERSION: '18'
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  # Code Quality & Security Checks
+  code-quality:
+    name: Code Quality & Security
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: Install UV package manager
+      run: |
+        curl -LsSf https://astral.sh/uv/install.sh | sh
+        echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+
+    - name: Install dependencies
+      run: |
+        cd backend
+        uv pip install --system -r app/config/requirements/dev.txt
+
+    - name: Run Black (Code Formatting)
+      run: |
+        cd backend
+        black --check app/
+
+    - name: Run isort (Import Sorting)
+      run: |
+        cd backend
+        isort --check-only app/
+
+    - name: Run Ruff (Linting)
+      run: |
+        cd backend
+        ruff check app/
+
+    - name: Run MyPy (Type Checking)
+      run: |
+        cd backend
+        mypy app/
+
+    - name: Run Bandit (Security Scanning)
+      run: |
+        cd backend
+        bandit -r app/ -x app/tests/ -f json -o bandit-report.json
+        bandit -r app/ -x app/tests/
+
+    - name: Run Safety (Dependency Vulnerability Check)
+      run: |
+        cd backend
+        safety check
+
+    - name: Upload Security Report
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: security-report
+        path: backend/bandit-report.json
+
+  # Unit Testing
+  unit-tests:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    needs: code-quality
+    
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: test_password
+          POSTGRES_USER: test_user
+          POSTGRES_DB: test_db
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: Install UV package manager
+      run: |
+        curl -LsSf https://astral.sh/uv/install.sh | sh
+        echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+
+    - name: Install dependencies
+      run: |
+        cd backend
+        uv pip install --system -r app/config/requirements/dev.txt
+
+    - name: Run Unit Tests
+      env:
+        DATABASE_URL: postgresql://test_user:test_password@localhost:5432/test_db
+        REDIS_URL: redis://localhost:6379/0
+        TESTING: true
+      run: |
+        cd backend
+        pytest app/tests/unit/ -v --cov=app --cov-report=xml --cov-report=term-missing --cov-fail-under=95
+
+    - name: Upload Coverage Reports
+      uses: codecov/codecov-action@v3
+      with:
+        file: backend/coverage.xml
+        flags: unittests
+        name: unit-tests
+        fail_ci_if_error: true
+
+  # Integration Testing
+  integration-tests:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    needs: unit-tests
+    
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: test_password
+          POSTGRES_USER: test_user
+          POSTGRES_DB: test_db
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+      rabbitmq:
+        image: rabbitmq:3-management-alpine
+        env:
+          RABBITMQ_DEFAULT_USER: test_user
+          RABBITMQ_DEFAULT_PASS: test_password
+        options: >-
+          --health-cmd "rabbitmq-diagnostics -q ping"
+          --health-interval 30s
+          --health-timeout 30s
+          --health-retries 3
+        ports:
+          - 5672:5672
+          - 15672:15672
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: Install UV package manager
+      run: |
+        curl -LsSf https://astral.sh/uv/install.sh | sh
+        echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+
+    - name: Install dependencies
+      run: |
+        cd backend
+        uv pip install --system -r app/config/requirements/dev.txt
+
+    - name: Run Database Migrations
+      env:
+        DATABASE_URL: postgresql://test_user:test_password@localhost:5432/test_db
+        TESTING: true
+      run: |
+        cd backend
+        alembic upgrade head
+        
+    - name: Run Database Optimization Analysis
+      env:
+        DATABASE_URL: postgresql://test_user:test_password@localhost:5432/test_db
+        TESTING: true
+      run: |
+        cd backend
+        echo "Running database optimization analysis..."
+        python -c "
+        import asyncio
+        import sys
+        sys.path.insert(0, '.')
+        from app.core.infrastructure.database_optimizer import DatabaseOptimizer
+        from app.core.database import get_async_session
+        
+        async def run_optimization():
+            async with get_async_session() as session:
+                optimizer = DatabaseOptimizer(session)
+                missing_indexes = await optimizer.find_missing_indexes()
+                slow_queries = await optimizer.find_slow_queries()
+                
+                print(f'Database Optimization Results:')
+                print(f'Missing Indexes: {len(missing_indexes)}')
+                print(f'Slow Queries: {len(slow_queries)}')
+                
+                if len(missing_indexes) > 5:
+                    print('WARNING: Many missing indexes detected')
+                    exit(1)
+                if len(slow_queries) > 10:
+                    print('WARNING: Many slow queries detected')
+                    exit(1)
+        
+        asyncio.run(run_optimization())
+        "
+
+    - name: Run Integration Tests
+      env:
+        DATABASE_URL: postgresql://test_user:test_password@localhost:5432/test_db
+        REDIS_URL: redis://localhost:6379/0
+        RABBITMQ_URL: amqp://test_user:test_password@localhost:5672/
+        TESTING: true
+      run: |
+        cd backend
+        pytest app/tests/integration/ -v --cov=app --cov-report=xml --cov-report=term-missing
+
+    - name: Upload Integration Coverage
+      uses: codecov/codecov-action@v3
+      with:
+        file: backend/coverage.xml
+        flags: integration
+        name: integration-tests
+
+  # E2E Testing
+  e2e-tests:
+    name: E2E Tests
+    runs-on: ubuntu-latest
+    needs: integration-tests
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Run E2E Tests with Docker Compose
+      run: |
+        cd backend
+        docker-compose -f docker-compose.test.yml up --build --abort-on-container-exit
+        docker-compose -f docker-compose.test.yml down
+
+    - name: Upload E2E Test Results
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: e2e-test-results
+        path: backend/test-results/
+
+  # Build Application
+  build:
+    name: Build Application
+    runs-on: ubuntu-latest
+    needs: [code-quality, unit-tests, integration-tests]
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Log in to Container Registry
+      if: github.event_name != 'pull_request'
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Extract metadata
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+        tags: |
+          type=ref,event=branch
+          type=ref,event=pr
+          type=sha,prefix={{branch}}-
+          type=raw,value=latest,enable={{is_default_branch}}
+
+    - name: Build and push Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: backend
+        file: backend/app/config/docker/Dockerfile
+        push: ${{ github.event_name != 'pull_request' }}
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+    - name: Run Container Security Scan
+      if: github.event_name != 'pull_request'
+      uses: aquasecurity/trivy-action@master
+      with:
+        image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+        format: 'sarif'
+        output: 'trivy-results.sarif'
+
+    - name: Upload Container Security Results
+      if: github.event_name != 'pull_request'
+      uses: github/codeql-action/upload-sarif@v2
+      with:
+        sarif_file: 'trivy-results.sarif'
+
+  # Deploy to Staging
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: [build, e2e-tests]
+    if: github.ref == 'refs/heads/develop' && github.event_name == 'push'
+    environment: staging
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Deploy to Staging
+      run: |
+        echo "Deploying to staging environment..."
+        # Add your staging deployment commands here
+        # Examples:
+        # kubectl apply -f k8s/staging/
+        # helm upgrade --install ezzday-staging ./helm/ezzday --namespace staging
+        # or deploy to cloud provider
+
+    - name: Run Staging Health Check
+      run: |
+        echo "Running staging health checks..."
+        # Add health check commands
+        # curl -f $STAGING_URL/health
+        # kubectl get pods -n staging
+
+    - name: Run Staging Smoke Tests
+      run: |
+        echo "Running staging smoke tests..."
+        # Add smoke test commands
+        # pytest tests/smoke/ --url=$STAGING_URL
+
+  # Deploy to Production
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: [build, e2e-tests]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    environment: production
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Deploy to Production
+      run: |
+        echo "Deploying to production environment..."
+        # Add your production deployment commands here
+        # kubectl apply -f k8s/production/
+        # helm upgrade --install ezzday-prod ./helm/ezzday --namespace production
+
+    - name: Run Production Health Check
+      run: |
+        echo "Running production health checks..."
+        # Add health check commands
+        # curl -f $PRODUCTION_URL/health
+        # kubectl get pods -n production
+
+    - name: Run Production Smoke Tests
+      run: |
+        echo "Running production smoke tests..."
+        # Add smoke test commands
+        # pytest tests/smoke/ --url=$PRODUCTION_URL
+
+    - name: Notify Deployment Success
+      if: success()
+      run: |
+        echo "Production deployment successful!"
+        # Add notification commands (Slack, email, etc.)
+
+  # Performance Testing
+  performance-tests:
+    name: Performance Tests
+    runs-on: ubuntu-latest
+    needs: deploy-staging
+    if: github.ref == 'refs/heads/develop' && github.event_name == 'push'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: Install UV package manager
+      run: |
+        curl -LsSf https://astral.sh/uv/install.sh | sh
+        echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+
+    - name: Install dependencies
+      run: |
+        cd backend
+        uv pip install --system -r app/config/requirements/dev.txt
+
+    - name: Run Performance Tests with Locust
+      env:
+        DATABASE_URL: postgresql://test_user:test_password@localhost:5432/test_db
+        REDIS_URL: redis://localhost:6379/0
+      run: |
+        cd backend
+        echo "Running performance tests with Locust..."
+        python -m app.core.infrastructure.performance_tests --host $STAGING_URL --users 10 --spawn-rate 2 --run-time 60s --output-format json > performance-results/locust-results.json
+        
+    - name: Run Database Optimization Analysis
+      env:
+        DATABASE_URL: postgresql://test_user:test_password@localhost:5432/test_db
+      run: |
+        cd backend
+        echo "Running database optimization analysis..."
+        python scripts/run_database_optimization.py --output-dir performance-results/
+        
+    - name: Generate Performance Report
+      run: |
+        cd backend
+        echo "Generating performance analysis report..."
+        python -c "
+        import json
+        import os
+        if os.path.exists('performance-results/locust-results.json'):
+            with open('performance-results/locust-results.json', 'r') as f:
+                data = json.load(f)
+                print(f'Performance Test Results:')
+                print(f'Total Requests: {data.get(\"total_requests\", 0)}')
+                print(f'Failures: {data.get(\"failures\", 0)}')
+                print(f'Average Response Time: {data.get(\"avg_response_time\", 0)}ms')
+                print(f'95th Percentile: {data.get(\"p95_response_time\", 0)}ms')
+                if data.get('failures', 0) > data.get('total_requests', 1) * 0.05:
+                    print('ERROR: Failure rate exceeds 5%')
+                    exit(1)
+        "
+
+    - name: Run Traditional Performance Tests
+      run: |
+        echo "Running traditional performance tests..."
+        # Add performance testing commands
+        # docker run --rm -i grafana/k6:latest run - <tests/performance/load-test.js
+        # artillery run tests/performance/load-test.yml
+
+    - name: Upload Performance Results
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: performance-results
+        path: performance-results/
+
+  # Security Testing
+  security-tests:
+    name: Security Tests
+    runs-on: ubuntu-latest
+    needs: deploy-staging
+    if: github.ref == 'refs/heads/develop' && github.event_name == 'push'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Run OWASP ZAP Security Tests
+      run: |
+        echo "Running OWASP ZAP security tests..."
+        # docker run -v $(pwd):/zap/wrk/:rw -t owasp/zap2docker-stable zap-baseline.py -t $STAGING_URL
+    
+    - name: Run Agent 3 Security Test Suite
+      env:
+        DATABASE_URL: postgresql://test_user:test_password@localhost:5432/test_db
+        REDIS_URL: redis://localhost:6379/0
+      run: |
+        cd backend
+        echo "Running comprehensive security test suite..."
+        python scripts/run_security_tests.py --base-url $STAGING_URL --format json,html --output-dir security-test-results/
+        
+    - name: Generate Security Report
+      run: |
+        cd backend
+        echo "Generating security analysis report..."
+        python -c "
+        import json
+        import os
+        if os.path.exists('security-test-results/'):
+            files = [f for f in os.listdir('security-test-results/') if f.endswith('.json')]
+            if files:
+                with open(f'security-test-results/{files[0]}', 'r') as f:
+                    data = json.load(f)
+                    print(f'Security Test Results:')
+                    print(f'Total Tests: {data.get(\"summary\", {}).get(\"total_tests\", 0)}')
+                    print(f'Critical Failures: {data.get(\"summary\", {}).get(\"critical_failures\", 0)}')
+                    print(f'High Failures: {data.get(\"summary\", {}).get(\"high_failures\", 0)}')
+                    if data.get('summary', {}).get('critical_failures', 0) > 0:
+                        exit(1)
+        "
+
+    - name: Upload Security Test Results
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: security-test-results
+        path: security-test-results/
+
+  # Dependency Updates
+  dependency-updates:
+    name: Dependency Updates
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: Install UV package manager
+      run: |
+        curl -LsSf https://astral.sh/uv/install.sh | sh
+        echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+
+    - name: Update Dependencies
+      run: |
+        cd backend
+        uv pip install --system -r app/config/requirements/dev.txt
+        # Add dependency update commands
+        # pip-audit --upgrade
+        # safety check --upgrade
+
+    - name: Run Tests After Updates
+      run: |
+        cd backend
+        pytest app/tests/unit/ -v --cov=app --cov-report=term-missing
+
+    - name: Create Pull Request
+      if: success()
+      uses: peter-evans/create-pull-request@v5
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        commit-message: "chore: update dependencies"
+        title: "Automated Dependency Updates"
+        body: "This PR updates project dependencies to their latest versions."
+        branch: automated-dependency-updates
+        base: develop
+
+  # Daily Health Monitoring
+  health-monitoring:
+    name: Daily Health Monitoring
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: monitor_password
+          POSTGRES_USER: monitor_user
+          POSTGRES_DB: monitor_db
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: Install UV package manager
+      run: |
+        curl -LsSf https://astral.sh/uv/install.sh | sh
+        echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+
+    - name: Install dependencies
+      run: |
+        cd backend
+        uv pip install --system -r app/config/requirements/dev.txt
+
+    - name: Run Database Migrations
+      env:
+        DATABASE_URL: postgresql://monitor_user:monitor_password@localhost:5432/monitor_db
+      run: |
+        cd backend
+        alembic upgrade head
+
+    - name: Generate Daily Health Report
+      env:
+        DATABASE_URL: postgresql://monitor_user:monitor_password@localhost:5432/monitor_db
+        REDIS_URL: redis://localhost:6379/0
+      run: |
+        cd backend
+        echo "Generating daily health report..."
+        python scripts/daily_health_report.py --output-dir health-reports/ --format both
+
+    - name: Run Security Health Check
+      env:
+        DATABASE_URL: postgresql://monitor_user:monitor_password@localhost:5432/monitor_db
+        REDIS_URL: redis://localhost:6379/0
+      run: |
+        cd backend
+        echo "Running security health check..."
+        python scripts/run_security_tests.py --base-url http://localhost:8000 --format json --output-dir health-reports/ --severity critical,high
+
+    - name: Run Database Optimization Check
+      env:
+        DATABASE_URL: postgresql://monitor_user:monitor_password@localhost:5432/monitor_db
+      run: |
+        cd backend
+        echo "Running database optimization check..."
+        python scripts/run_database_optimization.py --output-dir health-reports/ --fail-on-critical
+
+    - name: Upload Health Reports
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: daily-health-reports
+        path: backend/health-reports/
+
+    - name: Create Health Report Issue
+      if: failure()
+      uses: actions/github-script@v6
+      with:
+        script: |
+          github.rest.issues.create({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            title: `Daily Health Report - Issues Detected (${new Date().toISOString().split('T')[0]})`,
+            body: `
+            ## Daily Health Report Alert
+            
+            The daily health monitoring has detected issues that require attention.
+            
+            **Date:** ${new Date().toISOString().split('T')[0]}
+            **Workflow:** ${context.workflow}
+            **Run ID:** ${context.runId}
+            
+            Please check the workflow artifacts for detailed reports:
+            - Security test results
+            - Database optimization analysis  
+            - System health metrics
+            
+            **Action Required:** Review and address the identified issues.
+            `,
+            labels: ['health-monitoring', 'infrastructure', 'urgent']
+          })

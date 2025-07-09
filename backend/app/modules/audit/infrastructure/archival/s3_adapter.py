@@ -239,7 +239,7 @@ class S3Adapter:
                     metadata["tags"] = {
                         tag["Key"]: tag["Value"] for tag in tag_response["TagSet"]
                     }
-                except:
+                except (ClientError, KeyError, TypeError):
                     metadata["tags"] = {}
 
                 return metadata

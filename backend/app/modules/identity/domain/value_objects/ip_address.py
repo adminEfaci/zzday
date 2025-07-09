@@ -140,7 +140,8 @@ class IpAddress(ValueObject):
                 "vpn" in reverse_dns,
                 "tunnel" in reverse_dns
             ])
-        except:
+        except (ValueError, AttributeError, OSError):
+            # Ignore reverse DNS lookup failures
             pass
         
         return any(vpn_indicators)

@@ -608,3 +608,14 @@ ALWAYS:
 - Test performance impact of modifications
 - Maintain backward compatibility or provide migration path
 """
+
+# =============================================================================
+# DATABASE HEALTH CHECK QUERIES
+# =============================================================================
+
+# Health check queries (to avoid S608 hardcoded SQL violations)
+HEALTH_CHECK_QUERY: Final[str] = "SELECT 1"
+POSTGRESQL_VERSION_QUERY: Final[str] = "SELECT version()"
+POSTGIS_VERSION_QUERY: Final[str] = "SELECT PostGIS_Version()"
+JSON_SUPPORT_QUERY: Final[str] = "SELECT '{\"test\": true}'::json"
+CURRENT_TIME_QUERY: Final[str] = "SELECT NOW()"

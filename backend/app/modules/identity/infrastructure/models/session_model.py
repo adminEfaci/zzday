@@ -105,7 +105,7 @@ class SessionModel(SQLModel, table=True):
         if self.geolocation:
             try:
                 geolocation = Geolocation(**self.geolocation)
-            except:
+            except (ValueError, TypeError, AttributeError):
                 geolocation = self.geolocation
         
         # Handle enums

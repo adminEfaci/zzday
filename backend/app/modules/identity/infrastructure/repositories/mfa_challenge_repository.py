@@ -233,7 +233,7 @@ class CacheMFAChallengeRepository(IMFAChallengeRepository):
             for pattern in patterns:
                 try:
                     await self._cache_service.clear_pattern(pattern)
-                except:
+                except (AttributeError, NotImplementedError, ValueError) as e:
                     # Pattern clearing might not be supported by all cache implementations
                     pass
             

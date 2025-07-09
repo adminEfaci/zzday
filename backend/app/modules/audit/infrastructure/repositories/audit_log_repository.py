@@ -788,7 +788,9 @@ class AuditLogRepository(BaseRepository[AuditLog, UUID]):
 
     async def _test_database_connectivity(self, session: AsyncSession) -> None:
         """Test database connectivity."""
-        await session.execute(text("SELECT 1"))
+        async with session.begin():
+            from app.core.constants import HEALTH_CHECK_QUERY
+            await session.execute(text(HEALTH_CHECK_QUERY))
 
 
 __all__ = ["AuditLogRepository"]

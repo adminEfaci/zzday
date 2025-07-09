@@ -796,7 +796,7 @@ class GoogleMapsAdapter(BaseMappingAdapter):
             data = response.json()
             status = data.get("status", "UNKNOWN_ERROR")
             error_message = data.get("error_message", f"Google Maps error: {status}")
-        except:
+        except (ValueError, TypeError, KeyError) as e:
             error_message = f"Google Maps error: HTTP {response.status_code}"
             status = str(response.status_code)
 

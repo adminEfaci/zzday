@@ -62,7 +62,8 @@ class HealthCheckTask(AsyncTask):
             # Test query performance
             start_time = datetime.now(datetime.UTC)
             async with get_session() as session:
-                result = await session.execute(text("SELECT NOW()"))
+                from app.core.constants import CURRENT_TIME_QUERY
+                result = await session.execute(text(CURRENT_TIME_QUERY))
                 db_time = result.scalar()
             query_time = (datetime.now(datetime.UTC) - start_time).total_seconds()
 

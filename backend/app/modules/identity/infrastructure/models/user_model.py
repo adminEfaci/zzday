@@ -163,7 +163,7 @@ class UserModel(SQLModel, table=True):
                     full_name = PersonName(first_name=parts[0], last_name=parts[1])
                 else:
                     full_name = PersonName(first_name=self.full_name, last_name="")
-            except:
+            except (ValueError, TypeError, AttributeError):
                 # Fallback to string
                 full_name = self.full_name
         
@@ -172,7 +172,7 @@ class UserModel(SQLModel, table=True):
         if self.date_of_birth:
             try:
                 date_of_birth = DateOfBirth.from_iso_format(self.date_of_birth)
-            except:
+            except (ValueError, TypeError, AttributeError):
                 date_of_birth = self.date_of_birth
         
         # Handle Address
@@ -180,7 +180,7 @@ class UserModel(SQLModel, table=True):
         if self.address:
             try:
                 address = Address(**self.address)
-            except:
+            except (ValueError, TypeError, AttributeError):
                 address = self.address
         
         # Handle enums

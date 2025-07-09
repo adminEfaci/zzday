@@ -326,7 +326,7 @@ class ScheduledReportInput:
             import pytz
 
             pytz.timezone(self.timezone)
-        except:
+        except (pytz.UnknownTimeZoneError, AttributeError, ImportError):
             errors.append(f"Invalid timezone: {self.timezone}")
 
         # Validate report template

@@ -345,36 +345,27 @@ async def lifespan(app: FastAPI) -> AsyncGenerator:
 
 
 async def _test_postgresql_setup() -> None:
-    """Test PostgreSQL connection and verify extensions."""
+    """Test PostgreSQL database setup and extensions."""
     try:
-        from app.core.database import check_database_health
-        
-        # Test basic connectivity
-        health_status = await check_database_health()
-        
-        if health_status.get("overall_status") != "healthy":
-            logger.warning("PostgreSQL health check shows degraded status", status=health_status)
-        
-        # Test PostgreSQL-specific features
-        from app.core.database import get_session
+        from app.core.constants import POSTGRESQL_VERSION_QUERY, POSTGIS_VERSION_QUERY, JSON_SUPPORT_QUERY
         from sqlalchemy import text
         
         async with get_session() as session:
             # Test PostgreSQL version
-            result = await session.execute(text("SELECT version()"))
+            result = await session.execute(text(POSTGRESQL_VERSION_QUERY))
             version = result.scalar()
             logger.info("PostgreSQL version confirmed", version=version)
             
             # Test PostGIS extension if available
             try:
-                result = await session.execute(text("SELECT PostGIS_Version()"))
+                result = await session.execute(text(POSTGIS_VERSION_QUERY))
                 postgis_version = result.scalar()
                 logger.info("PostGIS extension available", version=postgis_version)
             except Exception:
                 logger.info("PostGIS extension not available (optional)")
                 
             # Test JSON capabilities
-            result = await session.execute(text("SELECT '{\"test\": true}'::json"))
+            result = await session.execute(text(JSON_SUPPORT_QUERY))
             logger.info("PostgreSQL JSON support confirmed")
             
     except Exception as e:

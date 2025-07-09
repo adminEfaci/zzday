@@ -696,7 +696,7 @@ class SamsaraAdapter(BaseFleetAdapter):
             error_data = response.json()
             error_message = error_data.get("message", "Unknown error")
             error_code = error_data.get("code", str(response.status_code))
-        except:
+        except (ValueError, AttributeError, TypeError):
             error_message = response.text or f"HTTP {response.status_code} error"
             error_code = str(response.status_code)
 

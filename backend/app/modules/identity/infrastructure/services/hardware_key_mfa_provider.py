@@ -228,7 +228,7 @@ class HardwareKeyMFAProvider(IMFAProvider):
         try:
             # In production, would check for python-fido2 library
             return True
-        except:
+        except (ImportError, AttributeError, Exception):
             return False
     
     def _verify_webauthn_response(

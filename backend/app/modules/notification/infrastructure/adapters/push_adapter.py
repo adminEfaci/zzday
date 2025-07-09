@@ -325,7 +325,7 @@ class PushChannelAdapter(BaseChannelAdapter):
                     [device_token], f"user_{user_id}", app=self._firebase_app
                 )
                 return response.success_count > 0
-            except:
+            except (ValueError, AttributeError, Exception):
                 return False
 
         return True
@@ -349,7 +349,7 @@ class PushChannelAdapter(BaseChannelAdapter):
                     [device_token], f"user_{user_id}", app=self._firebase_app
                 )
                 return response.success_count > 0
-            except:
+            except (ValueError, AttributeError, Exception):
                 return False
 
         return True

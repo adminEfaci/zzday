@@ -10,6 +10,7 @@ from uuid import UUID
 
 from sqlalchemy import and_, delete, func, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import text
 
 from app.core.infrastructure.repository import BaseRepository
 from app.core.logging import get_logger

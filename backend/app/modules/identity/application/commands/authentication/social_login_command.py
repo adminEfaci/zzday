@@ -10,6 +10,7 @@ from typing import Any
 from uuid import UUID
 
 from app.core.cqrs import Command, CommandHandler
+from app.core.constants.auth import AUTH_CONSTANTS
 from app.modules.identity.application.decorators import (
     audit_action,
     rate_limit,
@@ -240,8 +241,8 @@ class SocialLoginCommandHandler(CommandHandler[SocialLoginCommand, Authenticatio
             return AuthenticationResponse(
                 access_token=access_token,
                 refresh_token=refresh_token,
-                token_type="Bearer",
-                expires_in=3600,
+                token_type=AUTH_CONSTANTS.TOKEN_TYPE_BEARER,
+                expires_in=AUTH_CONSTANTS.DEFAULT_ACCESS_TOKEN_EXPIRY,
                 user_id=user.id,
                 username=user.username,
                 email=user.email,

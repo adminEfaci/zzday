@@ -172,7 +172,7 @@ class VariableResolver:
             try:
                 # Parse ISO format
                 date_obj = datetime.fromisoformat(value.replace("Z", "+00:00")).date()
-            except:
+            except (ValueError, TypeError) as e:
                 return str(value)
         else:
             return str(value)
@@ -192,7 +192,7 @@ class VariableResolver:
             try:
                 # Parse ISO format
                 dt_obj = datetime.fromisoformat(value.replace("Z", "+00:00"))
-            except:
+            except (ValueError, TypeError) as e:
                 return str(value)
         else:
             return str(value)
@@ -412,7 +412,7 @@ class JinjaTemplateEngine:
         if isinstance(value, str):
             try:
                 value = datetime.fromisoformat(value.replace("Z", "+00:00"))
-            except:
+            except (ValueError, TypeError):
                 return str(value)
 
         if isinstance(value, date | datetime):
@@ -425,7 +425,7 @@ class JinjaTemplateEngine:
         if isinstance(value, str):
             try:
                 value = datetime.fromisoformat(value.replace("Z", "+00:00"))
-            except:
+            except (ValueError, TypeError):
                 return str(value)
 
         if isinstance(value, datetime):
@@ -548,7 +548,7 @@ class JinjaTemplateEngine:
         try:
             ast = self.env.parse(template_string)
             return ast.find_all(jinja2.nodes.Name)
-        except:
+        except (jinja2.TemplateSyntaxError, jinja2.TemplateError):
             # Fallback to regex if parsing fails
             pattern = r"\{\{\s*(\w+)(?:\.\w+)*\s*(?:\|[^}]+)?\}\}"
             matches = re.findall(pattern, template_string)

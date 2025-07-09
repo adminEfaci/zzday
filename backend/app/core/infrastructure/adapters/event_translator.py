@@ -6,13 +6,11 @@ proper module boundaries.
 """
 
 from abc import ABC, abstractmethod
-from typing import Dict, Optional, Type, TypeVar, Union
-import logging
+from typing import TypeVar, Any
 
 from app.core.contracts import ContractEvent
 from app.core.events.types import DomainEvent
 from app.core.logging import get_logger
-
 
 T = TypeVar("T", bound=ContractEvent)
 D = TypeVar("D", bound=DomainEvent)
@@ -37,8 +35,8 @@ class EventTranslator(ABC):
             source_module: The name of the module owning this translator
         """
         self._source_module = source_module
-        self._domain_to_contract_map: Dict[Type[DomainEvent], Type[ContractEvent]] = {}
-        self._contract_to_domain_map: Dict[Type[ContractEvent], Type[DomainEvent]] = {}
+        self._domain_to_contract_map: dict[type[DomainEvent], type[ContractEvent]] = {}
+        self._contract_to_domain_map: dict[type[ContractEvent], type[DomainEvent]] = {}
         self._initialize_mappings()
     
     @abstractmethod
@@ -48,12 +46,11 @@ class EventTranslator(ABC):
         
         Subclasses should override this to register their mappings.
         """
-        pass
     
     def register_mapping(
         self,
-        domain_event_type: Type[DomainEvent],
-        contract_event_type: Type[ContractEvent]
+        domain_event_type: type[DomainEvent],
+        contract_event_type: type[ContractEvent]
     ) -> None:
         """
         Register a mapping between domain and contract events.
@@ -68,7 +65,7 @@ class EventTranslator(ABC):
     def translate_to_contract(
         self,
         domain_event: DomainEvent
-    ) -> Optional[ContractEvent]:
+    ) -> ContractEvent | None:
         """
         Translate a domain event to a contract event.
         
@@ -95,11 +92,14 @@ class EventTranslator(ABC):
             contract_event = contract_type(**event_data)
             
             # Set metadata
-            contract_event = contract_event.with_metadata(
+            contract_event_with_meta = contract_event.with_metadata(
                 source_module=self._source_module,
                 correlation_id=getattr(domain_event.metadata, "correlation_id", None),
                 causation_id=str(domain_event.metadata.event_id),
             )
+            
+            # Cast back to ContractEvent type
+            contract_event = contract_event_with_meta  # type: ignore
             
             return contract_event
             
@@ -113,7 +113,7 @@ class EventTranslator(ABC):
     def translate_to_domain(
         self,
         contract_event: ContractEvent
-    ) -> Optional[DomainEvent]:
+    ) -> DomainEvent | None:
         """
         Translate a contract event to a domain event.
         
@@ -156,8 +156,8 @@ class EventTranslator(ABC):
     def _extract_contract_data(
         self,
         domain_event: DomainEvent,
-        contract_type: Type[ContractEvent]
-    ) -> Dict[str, any]:
+        contract_type: type[ContractEvent]
+    ) -> dict[str, Any]:
         """
         Extract data from domain event for contract event creation.
         
@@ -168,14 +168,13 @@ class EventTranslator(ABC):
         Returns:
             Dictionary of data for contract event constructor
         """
-        pass
     
     @abstractmethod
     def _extract_domain_data(
         self,
         contract_event: ContractEvent,
-        domain_type: Type[DomainEvent]
-    ) -> Dict[str, any]:
+        domain_type: type[DomainEvent]
+    ) -> dict[str, Any]:
         """
         Extract data from contract event for domain event creation.
         
@@ -186,7 +185,6 @@ class EventTranslator(ABC):
         Returns:
             Dictionary of data for domain event constructor
         """
-        pass
     
     def can_translate_to_contract(self, domain_event: DomainEvent) -> bool:
         """Check if a domain event can be translated to a contract event."""
@@ -198,14 +196,14 @@ class EventTranslator(ABC):
     
     def get_contract_type(
         self,
-        domain_event_type: Type[DomainEvent]
-    ) -> Optional[Type[ContractEvent]]:
+        domain_event_type: type[DomainEvent]
+    ) -> type[ContractEvent] | None:
         """Get the contract event type for a domain event type."""
         return self._domain_to_contract_map.get(domain_event_type)
     
     def get_domain_type(
         self,
-        contract_event_type: Type[ContractEvent]
-    ) -> Optional[Type[DomainEvent]]:
+        contract_event_type: type[ContractEvent]
+    ) -> type[DomainEvent] | None:
         """Get the domain event type for a contract event type."""
         return self._contract_to_domain_map.get(contract_event_type)

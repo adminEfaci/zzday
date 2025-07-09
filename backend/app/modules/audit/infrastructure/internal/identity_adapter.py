@@ -5,30 +5,29 @@ This adapter handles all communication with the Identity module
 through its contract, replacing direct domain imports.
 """
 
-from typing import Optional
 from uuid import UUID
+from typing import Any
 
+from app.core.contracts import ContractCommand, ContractQuery
+from app.core.events import IEventBus
 from app.core.infrastructure.adapters import InternalModuleAdapter
-from app.core.events import EventBus
 from app.core.logging import get_logger
 from app.modules.identity.application.contracts.identity_contract import (
-    UserLoggedInEvent,
+    GetUserByIdQuery,
     LoginFailedEvent,
-    UserLockedOutEvent,
-    UserRegisteredEvent,
-    UserActivatedEvent,
-    UserDeactivatedEvent,
-    UserDeletedEvent,
-    PasswordChangedEvent,
-    MFAEnabledEvent,
     MFADisabledEvent,
+    MFAEnabledEvent,
+    PasswordChangedEvent,
     RoleAssignedEvent,
     RoleRevokedEvent,
     SecurityAlertEvent,
-    GetUserByIdQuery,
+    UserActivatedEvent,
+    UserDeactivatedEvent,
+    UserDeletedEvent,
+    UserLockedOutEvent,
+    UserLoggedInEvent,
+    UserRegisteredEvent,
 )
-from app.core.contracts import ContractCommand, ContractQuery
-
 
 logger = get_logger(__name__)
 
@@ -41,7 +40,7 @@ class IdentityAdapter(InternalModuleAdapter):
     to query Identity data, all through the contract interface.
     """
     
-    def __init__(self, event_bus: EventBus):
+    def __init__(self, event_bus: IEventBus):
         """
         Initialize the Identity adapter.
         
@@ -56,7 +55,7 @@ class IdentityAdapter(InternalModuleAdapter):
         self._audit_service = None  # Will be injected
         self._register_event_handlers()
     
-    def set_audit_service(self, audit_service) -> None:
+    def set_audit_service(self, audit_service: Any) -> None:
         """
         Set the audit service for handling events.
         
@@ -311,7 +310,7 @@ class IdentityAdapter(InternalModuleAdapter):
             correlation_id=event.metadata.correlation_id,
         )
     
-    async def get_user_info(self, user_id: UUID) -> Optional[dict]:
+    async def get_user_info(self, user_id: UUID) -> dict | None:
         """
         Get basic user information from Identity module.
         
@@ -330,7 +329,7 @@ class IdentityAdapter(InternalModuleAdapter):
             logger.error(f"Failed to get user info for {user_id}: {e}")
             return None
     
-    async def _send_command_internal(self, command: ContractCommand) -> any:
+    async def _send_command_internal(self, command: ContractCommand) -> Any:
         """
         Send command to Identity module.
         
@@ -339,7 +338,7 @@ class IdentityAdapter(InternalModuleAdapter):
         """
         raise NotImplementedError("Audit module does not send commands to Identity")
     
-    async def _send_query_internal(self, query: ContractQuery) -> any:
+    async def _send_query_internal(self, query: ContractQuery) -> Any:
         """
         Send query to Identity module.
         

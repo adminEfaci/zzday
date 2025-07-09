@@ -6,14 +6,14 @@ enabling proper boundaries and communication between modules without
 direct dependencies.
 """
 
-from .base import ModuleContract, ContractEvent, ContractCommand, ContractQuery
+from .base import ContractCommand, ContractEvent, ContractQuery, ModuleContract
 from .registry import ContractRegistry, get_contract_registry
 
 __all__ = [
-    "ModuleContract",
-    "ContractEvent", 
     "ContractCommand",
+    "ContractEvent",
     "ContractQuery",
     "ContractRegistry",
+    "ModuleContract",
     "get_contract_registry",
 ]

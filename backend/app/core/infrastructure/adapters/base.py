@@ -6,21 +6,19 @@ through contracts without direct dependencies.
 """
 
 from abc import ABC, abstractmethod
-from typing import Any, Callable, Dict, Optional, Type, TypeVar
-import asyncio
-import logging
+from collections.abc import Callable
+from typing import Any, TypeVar
 
 from app.core.contracts import (
-    ModuleContract,
-    ContractEvent,
     ContractCommand,
+    ContractEvent,
     ContractQuery,
     ContractRegistry,
+    ModuleContract,
     get_contract_registry,
 )
-from app.core.events import EventBus
+from app.core.events import IEventBus
 from app.core.logging import get_logger
-
 
 T = TypeVar("T")
 logger = get_logger(__name__)
@@ -37,10 +35,10 @@ class InternalModuleAdapter(ABC):
     
     def __init__(
         self,
-        event_bus: EventBus,
+        event_bus: IEventBus,
         source_module: str,
         target_module: str,
-        contract_registry: Optional[ContractRegistry] = None
+        contract_registry: ContractRegistry | None = None
     ):
         """
         Initialize the adapter.
@@ -55,8 +53,8 @@ class InternalModuleAdapter(ABC):
         self._source_module = source_module
         self._target_module = target_module
         self._contract_registry = contract_registry or get_contract_registry()
-        self._target_contract: Optional[ModuleContract] = None
-        self._event_handlers: Dict[Type[ContractEvent], Callable] = {}
+        self._target_contract: ModuleContract | None = None
+        self._event_handlers: dict[type[ContractEvent], Callable] = {}
         self._initialized = False
         
     async def initialize(self) -> None:
@@ -101,7 +99,7 @@ class InternalModuleAdapter(ABC):
     
     def register_event_handler(
         self,
-        event_type: Type[ContractEvent],
+        event_type: type[ContractEvent],
         handler: Callable[[ContractEvent], Any]
     ) -> None:
         """
@@ -141,10 +139,13 @@ class InternalModuleAdapter(ABC):
             )
         
         # Set metadata
-        command = command.with_metadata(
+        command_with_meta = command.with_metadata(
             source_module=self._source_module,
             target_module=self._target_module
         )
+        
+        # Cast back to ContractCommand type
+        command = command_with_meta  # type: ignore
         
         # Send via command bus or direct call
         # This is where you'd integrate with your command handling infrastructure
@@ -173,10 +174,13 @@ class InternalModuleAdapter(ABC):
             )
         
         # Set metadata
-        query = query.with_metadata(
+        query_with_meta = query.with_metadata(
             source_module=self._source_module,
             target_module=self._target_module
         )
+        
+        # Cast back to ContractQuery type
+        query = query_with_meta  # type: ignore
         
         # Send via query bus or direct call
         return await self._send_query_internal(query)
@@ -189,7 +193,6 @@ class InternalModuleAdapter(ABC):
         Subclasses should implement this to integrate with their
         command handling infrastructure.
         """
-        pass
     
     @abstractmethod
     async def _send_query_internal(self, query: ContractQuery) -> Any:
@@ -199,9 +202,8 @@ class InternalModuleAdapter(ABC):
         Subclasses should implement this to integrate with their
         query handling infrastructure.
         """
-        pass
     
-    def get_target_contract(self) -> Optional[ModuleContract]:
+    def get_target_contract(self) -> ModuleContract | None:
         """Get the target module's contract."""
         return self._target_contract
     

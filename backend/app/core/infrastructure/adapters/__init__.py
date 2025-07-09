@@ -8,6 +8,6 @@ from .base import InternalModuleAdapter
 from .event_translator import EventTranslator
 
 __all__ = [
-    "InternalModuleAdapter",
     "EventTranslator",
+    "InternalModuleAdapter",
 ]

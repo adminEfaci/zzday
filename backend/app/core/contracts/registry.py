@@ -5,11 +5,11 @@ Manages registration and lookup of module contracts,
 ensuring proper module boundaries and versioning.
 """
 
-from typing import Dict, Optional, Type
 import threading
 
 from app.core.errors import ValidationError
-from .base import ModuleContract, ContractEvent, ContractCommand, ContractQuery
+
+from .base import ContractCommand, ContractEvent, ContractQuery, ModuleContract
 
 
 class ContractRegistry:
@@ -20,8 +20,8 @@ class ContractRegistry:
     contracts without direct dependencies.
     """
     
-    def __init__(self):
-        self._contracts: Dict[str, ModuleContract] = {}
+    def __init__(self) -> None:
+        self._contracts: dict[str, ModuleContract] = {}
         self._lock = threading.RLock()
     
     def register_contract(self, contract: ModuleContract) -> None:
@@ -53,7 +53,7 @@ class ContractRegistry:
             
             self._contracts[module_name] = contract
     
-    def get_contract(self, module_name: str) -> Optional[ModuleContract]:
+    def get_contract(self, module_name: str) -> ModuleContract | None:
         """
         Get a module contract by name.
         
@@ -66,12 +66,12 @@ class ContractRegistry:
         with self._lock:
             return self._contracts.get(module_name)
     
-    def get_all_contracts(self) -> Dict[str, ModuleContract]:
+    def get_all_contracts(self) -> dict[str, ModuleContract]:
         """Get all registered contracts."""
         with self._lock:
             return self._contracts.copy()
     
-    def find_event_contract(self, event_type: Type[ContractEvent]) -> Optional[ModuleContract]:
+    def find_event_contract(self, event_type: type[ContractEvent]) -> ModuleContract | None:
         """
         Find which contract an event belongs to.
         
@@ -87,7 +87,7 @@ class ContractRegistry:
                     return contract
         return None
     
-    def find_command_contract(self, command_type: Type[ContractCommand]) -> Optional[ModuleContract]:
+    def find_command_contract(self, command_type: type[ContractCommand]) -> ModuleContract | None:
         """
         Find which contract a command belongs to.
         
@@ -103,7 +103,7 @@ class ContractRegistry:
                     return contract
         return None
     
-    def find_query_contract(self, query_type: Type[ContractQuery]) -> Optional[ModuleContract]:
+    def find_query_contract(self, query_type: type[ContractQuery]) -> ModuleContract | None:
         """
         Find which contract a query belongs to.
         

@@ -7,16 +7,14 @@ events, commands, and queries that other modules can use.
 
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Dict, List, Optional, Type
 from uuid import UUID
 
 from app.core.contracts import (
-    ModuleContract,
-    ContractEvent,
     ContractCommand,
+    ContractEvent,
     ContractQuery,
+    ModuleContract,
 )
-
 
 # ===== EVENTS =====
 # Events that the Identity module publishes
@@ -82,7 +80,7 @@ class UserDeactivatedEvent(ContractEvent):
     user_id: UUID
     reason: str
     deactivated_at: datetime
-    deactivated_by: Optional[UUID] = None
+    deactivated_by: UUID | None = None
 
 
 @dataclass(frozen=True)
@@ -160,10 +158,10 @@ class SessionExpiredEvent(ContractEvent):
 @dataclass(frozen=True)
 class SecurityAlertEvent(ContractEvent):
     """A security alert has been triggered."""
-    user_id: Optional[UUID]
+    user_id: UUID | None
     alert_type: str  # "suspicious_login", "password_breach", "unusual_activity"
     severity: str  # "low", "medium", "high", "critical"
-    details: Dict[str, str]
+    details: dict[str, str]
     triggered_at: datetime
 
 
@@ -176,9 +174,9 @@ class RegisterUserCommand(ContractCommand):
     email: str
     username: str
     password: str
-    first_name: Optional[str] = None
-    last_name: Optional[str] = None
-    phone_number: Optional[str] = None
+    first_name: str | None = None
+    last_name: str | None = None
+    phone_number: str | None = None
 
 
 @dataclass
@@ -188,7 +186,7 @@ class AuthenticateUserCommand(ContractCommand):
     password: str
     ip_address: str
     user_agent: str
-    device_fingerprint: Optional[str] = None
+    device_fingerprint: str | None = None
 
 
 @dataclass
@@ -219,7 +217,7 @@ class EnableMFACommand(ContractCommand):
     """Command to enable MFA for a user."""
     user_id: UUID
     mfa_method: str
-    setup_data: Dict[str, str]  # Method-specific setup data
+    setup_data: dict[str, str]  # Method-specific setup data
 
 
 @dataclass
@@ -252,7 +250,7 @@ class RevokeRoleCommand(ContractCommand):
 class ActivateUserCommand(ContractCommand):
     """Command to activate a user account."""
     user_id: UUID
-    activation_token: Optional[str] = None
+    activation_token: str | None = None
 
 
 @dataclass
@@ -301,7 +299,7 @@ class GetUserRolesQuery(ContractQuery):
 class GetUserPermissionsQuery(ContractQuery):
     """Query to get effective permissions for a user."""
     user_id: UUID
-    resource_type: Optional[str] = None
+    resource_type: str | None = None
 
 
 @dataclass
@@ -309,15 +307,15 @@ class CheckPermissionQuery(ContractQuery):
     """Query to check if a user has a specific permission."""
     user_id: UUID
     permission: str
-    resource_id: Optional[UUID] = None
-    context: Optional[Dict[str, str]] = None
+    resource_id: UUID | None = None
+    context: dict[str, str] | None = None
 
 
 @dataclass
 class SearchUsersQuery(ContractQuery):
     """Query to search for users."""
-    search_term: Optional[str] = None
-    filters: Optional[Dict[str, str]] = None
+    search_term: str | None = None
+    filters: dict[str, str] | None = None
     page: int = 1
     page_size: int = 20
     sort_by: str = "created_at"
@@ -328,9 +326,9 @@ class SearchUsersQuery(ContractQuery):
 class GetSecurityEventsQuery(ContractQuery):
     """Query to get security events for a user."""
     user_id: UUID
-    event_types: Optional[List[str]] = None
-    start_date: Optional[datetime] = None
-    end_date: Optional[datetime] = None
+    event_types: list[str] | None = None
+    start_date: datetime | None = None
+    end_date: datetime | None = None
     limit: int = 50
 
 
@@ -352,7 +350,7 @@ class IdentityModuleContract(ModuleContract):
     def version(self) -> str:
         return "1.0.0"
     
-    def get_events(self) -> Dict[str, Type[ContractEvent]]:
+    def get_events(self) -> dict[str, type[ContractEvent]]:
         """Get all events exposed by the Identity module."""
         return {
             "UserRegistered": UserRegisteredEvent,
@@ -373,7 +371,7 @@ class IdentityModuleContract(ModuleContract):
             "SecurityAlert": SecurityAlertEvent,
         }
     
-    def get_commands(self) -> Dict[str, Type[ContractCommand]]:
+    def get_commands(self) -> dict[str, type[ContractCommand]]:
         """Get all commands accepted by the Identity module."""
         return {
             "RegisterUser": RegisterUserCommand,
@@ -389,7 +387,7 @@ class IdentityModuleContract(ModuleContract):
             "DeactivateUser": DeactivateUserCommand,
         }
     
-    def get_queries(self) -> Dict[str, Type[ContractQuery]]:
+    def get_queries(self) -> dict[str, type[ContractQuery]]:
         """Get all queries supported by the Identity module."""
         return {
             "GetUserById": GetUserByIdQuery,

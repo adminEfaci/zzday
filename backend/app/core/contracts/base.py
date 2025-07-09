@@ -7,12 +7,9 @@ module boundaries and prevent direct cross-module dependencies.
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from datetime import datetime
-from typing import Any, Dict, Optional, Type, TypeVar
+from datetime import datetime, timezone
+from typing import Any, TypeVar
 from uuid import UUID, uuid4
-
-from app.core.domain.base import ValueObject
-
 
 T = TypeVar("T")
 
@@ -22,14 +19,14 @@ class ContractMetadata:
     """Metadata for contract messages."""
     
     contract_id: UUID = field(default_factory=uuid4)
-    timestamp: datetime = field(default_factory=lambda: datetime.now(datetime.UTC))
+    timestamp: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     source_module: str = ""
-    target_module: Optional[str] = None
-    correlation_id: Optional[str] = None
-    causation_id: Optional[str] = None
+    target_module: str | None = None
+    correlation_id: str | None = None
+    causation_id: str | None = None
     version: str = "1.0"
     
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert metadata to dictionary."""
         return {
             "contract_id": str(self.contract_id),
@@ -45,21 +42,19 @@ class ContractMetadata:
 class ContractMessage(ABC):
     """Base class for all contract messages."""
     
-    def __init__(self, metadata: Optional[ContractMetadata] = None):
+    def __init__(self, metadata: ContractMetadata | None = None):
         self.metadata = metadata or ContractMetadata()
     
     @abstractmethod
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert message to dictionary."""
-        pass
     
     @classmethod
     @abstractmethod
-    def from_dict(cls: Type[T], data: Dict[str, Any]) -> T:
+    def from_dict(cls: type[T], data: dict[str, Any]) -> T:
         """Create message from dictionary."""
-        pass
     
-    def with_metadata(self, **kwargs) -> "ContractMessage":
+    def with_metadata(self, **kwargs: Any) -> "ContractMessage":
         """Create a copy with updated metadata."""
         current_meta = self.metadata.to_dict()
         current_meta.update(kwargs)
@@ -89,14 +84,14 @@ class ContractEvent(ContractMessage):
     They are immutable and should be named in past tense.
     """
     
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert event to dictionary."""
         return {
             "metadata": self.metadata.to_dict(),
             "data": self._get_data_dict(),
         }
     
-    def _get_data_dict(self) -> Dict[str, Any]:
+    def _get_data_dict(self) -> dict[str, Any]:
         """Get event data as dictionary."""
         # Default implementation for dataclasses
         from dataclasses import asdict
@@ -105,7 +100,7 @@ class ContractEvent(ContractMessage):
         return data
     
     @classmethod
-    def from_dict(cls: Type[T], data: Dict[str, Any]) -> T:
+    def from_dict(cls: type[T], data: dict[str, Any]) -> T:
         """Create event from dictionary."""
         metadata_data = data.pop("metadata", {})
         
@@ -137,14 +132,14 @@ class ContractCommand(ContractMessage):
     They are requests that can be accepted or rejected.
     """
     
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert command to dictionary."""
         return {
             "metadata": self.metadata.to_dict(),
             "data": self._get_data_dict(),
         }
     
-    def _get_data_dict(self) -> Dict[str, Any]:
+    def _get_data_dict(self) -> dict[str, Any]:
         """Get command data as dictionary."""
         from dataclasses import asdict
         data = asdict(self)
@@ -152,7 +147,7 @@ class ContractCommand(ContractMessage):
         return data
     
     @classmethod
-    def from_dict(cls: Type[T], data: Dict[str, Any]) -> T:
+    def from_dict(cls: type[T], data: dict[str, Any]) -> T:
         """Create command from dictionary."""
         metadata_data = data.pop("metadata", {})
         
@@ -184,14 +179,14 @@ class ContractQuery(ContractMessage):
     They should not change state.
     """
     
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert query to dictionary."""
         return {
             "metadata": self.metadata.to_dict(),
             "data": self._get_data_dict(),
         }
     
-    def _get_data_dict(self) -> Dict[str, Any]:
+    def _get_data_dict(self) -> dict[str, Any]:
         """Get query data as dictionary."""
         from dataclasses import asdict
         data = asdict(self)
@@ -199,7 +194,7 @@ class ContractQuery(ContractMessage):
         return data
     
     @classmethod
-    def from_dict(cls: Type[T], data: Dict[str, Any]) -> T:
+    def from_dict(cls: type[T], data: dict[str, Any]) -> T:
         """Create query from dictionary."""
         metadata_data = data.pop("metadata", {})
         
@@ -234,28 +229,23 @@ class ModuleContract(ABC):
     @abstractmethod
     def module_name(self) -> str:
         """Get the module name."""
-        pass
     
     @property
     @abstractmethod
     def version(self) -> str:
         """Get the contract version."""
-        pass
     
     @abstractmethod
-    def get_events(self) -> Dict[str, Type[ContractEvent]]:
+    def get_events(self) -> dict[str, type[ContractEvent]]:
         """Get all events exposed by this module."""
-        pass
     
     @abstractmethod
-    def get_commands(self) -> Dict[str, Type[ContractCommand]]:
+    def get_commands(self) -> dict[str, type[ContractCommand]]:
         """Get all commands accepted by this module."""
-        pass
     
     @abstractmethod
-    def get_queries(self) -> Dict[str, Type[ContractQuery]]:
+    def get_queries(self) -> dict[str, type[ContractQuery]]:
         """Get all queries supported by this module."""
-        pass
     
     def validate_event(self, event: ContractEvent) -> bool:
         """Validate that an event belongs to this contract."""

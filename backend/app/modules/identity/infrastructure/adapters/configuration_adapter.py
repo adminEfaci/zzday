@@ -25,7 +25,18 @@ class ConfigurationAdapter(IConfigurationPort):
         vault_client=None,
         environment_prefix="EZZDAY_",
     ):
+<<<<<<< HEAD
         """Initialize configuration adapter."""
+=======
+        """Initialize configuration adapter.
+
+        Args:
+            config_file_path: Path to configuration file
+            feature_flags_service: Feature flags service (LaunchDarkly, etc.)
+            vault_client: HashiCorp Vault client for secrets
+            environment_prefix: Prefix for environment variables
+        """
+>>>>>>> analysis/coordination
         self._config_file = config_file_path
         self._feature_flags = feature_flags_service
         self._vault = vault_client
@@ -36,9 +47,17 @@ class ConfigurationAdapter(IConfigurationPort):
     async def get_password_policy(self) -> dict[str, Any]:
         """Get password policy configuration."""
         try:
+<<<<<<< HEAD
             if "password_policy" in self._config_cache:
                 return self._config_cache["password_policy"]
 
+=======
+            # Try to get from cache first
+            if "password_policy" in self._config_cache:
+                return self._config_cache["password_policy"]
+
+            # Get from various sources
+>>>>>>> analysis/coordination
             policy = await self._get_config_value("password_policy", {
                 "min_length": 8,
                 "max_length": 128,
@@ -65,11 +84,19 @@ class ConfigurationAdapter(IConfigurationPort):
                 "reset_token_expiry_minutes": 30,
             })
 
+<<<<<<< HEAD
+=======
+            # Cache the result
+>>>>>>> analysis/coordination
             self._config_cache["password_policy"] = policy
             return policy
 
         except Exception as e:
             logger.error(f"Error getting password policy: {e}")
+<<<<<<< HEAD
+=======
+            # Return safe defaults
+>>>>>>> analysis/coordination
             return {
                 "min_length": 8,
                 "max_length": 128,
@@ -86,9 +113,17 @@ class ConfigurationAdapter(IConfigurationPort):
     async def get_session_config(self) -> dict[str, Any]:
         """Get session configuration."""
         try:
+<<<<<<< HEAD
             if "session_config" in self._config_cache:
                 return self._config_cache["session_config"]
 
+=======
+            # Try to get from cache first
+            if "session_config" in self._config_cache:
+                return self._config_cache["session_config"]
+
+            # Get from various sources
+>>>>>>> analysis/coordination
             config = await self._get_config_value("session_config", {
                 "access_token_expiry_minutes": 15,
                 "refresh_token_expiry_days": 30,
@@ -110,11 +145,19 @@ class ConfigurationAdapter(IConfigurationPort):
                 "anomaly_detection_enabled": True,
             })
 
+<<<<<<< HEAD
+=======
+            # Cache the result
+>>>>>>> analysis/coordination
             self._config_cache["session_config"] = config
             return config
 
         except Exception as e:
             logger.error(f"Error getting session config: {e}")
+<<<<<<< HEAD
+=======
+            # Return safe defaults
+>>>>>>> analysis/coordination
             return {
                 "access_token_expiry_minutes": 15,
                 "refresh_token_expiry_days": 30,
@@ -128,9 +171,17 @@ class ConfigurationAdapter(IConfigurationPort):
     async def get_mfa_config(self) -> dict[str, Any]:
         """Get MFA configuration."""
         try:
+<<<<<<< HEAD
             if "mfa_config" in self._config_cache:
                 return self._config_cache["mfa_config"]
 
+=======
+            # Try to get from cache first
+            if "mfa_config" in self._config_cache:
+                return self._config_cache["mfa_config"]
+
+            # Get from various sources
+>>>>>>> analysis/coordination
             config = await self._get_config_value("mfa_config", {
                 "enabled": True,
                 "required_for_new_users": False,
@@ -161,11 +212,19 @@ class ConfigurationAdapter(IConfigurationPort):
                 "step_up_auth_enabled": True,
             })
 
+<<<<<<< HEAD
+=======
+            # Cache the result
+>>>>>>> analysis/coordination
             self._config_cache["mfa_config"] = config
             return config
 
         except Exception as e:
             logger.error(f"Error getting MFA config: {e}")
+<<<<<<< HEAD
+=======
+            # Return safe defaults
+>>>>>>> analysis/coordination
             return {
                 "enabled": True,
                 "required_for_admin_users": True,
@@ -182,10 +241,18 @@ class ConfigurationAdapter(IConfigurationPort):
     async def get_rate_limit_config(self, endpoint: str) -> dict[str, Any]:
         """Get rate limit configuration for endpoint."""
         try:
+<<<<<<< HEAD
+=======
+            # Try to get from cache first
+>>>>>>> analysis/coordination
             cache_key = f"rate_limit_{endpoint}"
             if cache_key in self._config_cache:
                 return self._config_cache[cache_key]
 
+<<<<<<< HEAD
+=======
+            # Get rate limit configurations
+>>>>>>> analysis/coordination
             rate_limits = await self._get_config_value("rate_limits", {
                 "login": {
                     "requests_per_minute": 10,
@@ -225,12 +292,23 @@ class ConfigurationAdapter(IConfigurationPort):
                 },
             })
 
+<<<<<<< HEAD
             config = rate_limits.get(endpoint, rate_limits["default"])
+=======
+            # Get config for specific endpoint or default
+            config = rate_limits.get(endpoint, rate_limits["default"])
+
+            # Cache the result
+>>>>>>> analysis/coordination
             self._config_cache[cache_key] = config
             return config
 
         except Exception as e:
             logger.error(f"Error getting rate limit config for {endpoint}: {e}")
+<<<<<<< HEAD
+=======
+            # Return safe defaults
+>>>>>>> analysis/coordination
             return {
                 "requests_per_minute": 60,
                 "requests_per_hour": 1000,
@@ -243,10 +321,18 @@ class ConfigurationAdapter(IConfigurationPort):
     ) -> bool:
         """Check if feature is enabled."""
         try:
+<<<<<<< HEAD
+=======
+            # Try to get from cache first
+>>>>>>> analysis/coordination
             cache_key = f"feature_{feature}_{user_id}" if user_id else f"feature_{feature}"
             if cache_key in self._feature_cache:
                 return self._feature_cache[cache_key]
 
+<<<<<<< HEAD
+=======
+            # Check feature flags service first
+>>>>>>> analysis/coordination
             if self._feature_flags and user_id:
                 result = await self._feature_flags.is_enabled(feature, str(user_id))
                 self._feature_cache[cache_key] = result
@@ -256,6 +342,10 @@ class ConfigurationAdapter(IConfigurationPort):
                 self._feature_cache[cache_key] = result
                 return result
 
+<<<<<<< HEAD
+=======
+            # Fall back to configuration
+>>>>>>> analysis/coordination
             feature_flags = await self._get_config_value("feature_flags", {
                 "user_registration": True,
                 "email_verification": True,
@@ -295,14 +385,26 @@ class ConfigurationAdapter(IConfigurationPort):
 
         except Exception as e:
             logger.error(f"Error checking feature {feature}: {e}")
+<<<<<<< HEAD
+=======
+            # Return safe default
+>>>>>>> analysis/coordination
             return False
 
     async def get_compliance_settings(self) -> dict[str, Any]:
         """Get compliance settings."""
         try:
+<<<<<<< HEAD
             if "compliance_settings" in self._config_cache:
                 return self._config_cache["compliance_settings"]
 
+=======
+            # Try to get from cache first
+            if "compliance_settings" in self._config_cache:
+                return self._config_cache["compliance_settings"]
+
+            # Get from various sources
+>>>>>>> analysis/coordination
             settings = await self._get_config_value("compliance_settings", {
                 "gdpr_enabled": True,
                 "ccpa_enabled": True,
@@ -310,7 +412,11 @@ class ConfigurationAdapter(IConfigurationPort):
                 "pci_dss_enabled": False,
                 "sox_enabled": False,
                 "data_retention_days": 365,
+<<<<<<< HEAD
                 "audit_log_retention_days": 2555,
+=======
+                "audit_log_retention_days": 2555,  # 7 years
+>>>>>>> analysis/coordination
                 "consent_management_enabled": True,
                 "right_to_be_forgotten_enabled": True,
                 "data_portability_enabled": True,
@@ -341,11 +447,19 @@ class ConfigurationAdapter(IConfigurationPort):
                 "regulatory_change_monitoring": True,
             })
 
+<<<<<<< HEAD
+=======
+            # Cache the result
+>>>>>>> analysis/coordination
             self._config_cache["compliance_settings"] = settings
             return settings
 
         except Exception as e:
             logger.error(f"Error getting compliance settings: {e}")
+<<<<<<< HEAD
+=======
+            # Return safe defaults
+>>>>>>> analysis/coordination
             return {
                 "gdpr_enabled": True,
                 "ccpa_enabled": True,
@@ -363,14 +477,26 @@ class ConfigurationAdapter(IConfigurationPort):
     async def _get_config_value(self, key: str, default: Any = None) -> Any:
         """Get configuration value from various sources."""
         try:
+<<<<<<< HEAD
             env_key = f"{self._env_prefix}{key.upper()}"
             env_value = os.getenv(env_key)
             if env_value:
+=======
+            # 1. Try environment variable first
+            env_key = f"{self._env_prefix}{key.upper()}"
+            env_value = os.getenv(env_key)
+            if env_value:
+                # Try to parse as JSON
+>>>>>>> analysis/coordination
                 try:
                     return json.loads(env_value)
                 except json.JSONDecodeError:
                     return env_value
 
+<<<<<<< HEAD
+=======
+            # 2. Try Vault if available
+>>>>>>> analysis/coordination
             if self._vault:
                 try:
                     vault_value = await self._vault.read(f"secret/ezzday/{key}")
@@ -379,6 +505,10 @@ class ConfigurationAdapter(IConfigurationPort):
                 except Exception as e:
                     logger.debug(f"Vault read failed for {key}: {e}")
 
+<<<<<<< HEAD
+=======
+            # 3. Try configuration file
+>>>>>>> analysis/coordination
             if os.path.exists(self._config_file):
                 try:
                     with open(self._config_file) as f:
@@ -388,8 +518,111 @@ class ConfigurationAdapter(IConfigurationPort):
                 except Exception as e:
                     logger.debug(f"Config file read failed for {key}: {e}")
 
+<<<<<<< HEAD
+=======
+            # 4. Return default
+>>>>>>> analysis/coordination
             return default
 
         except Exception as e:
             logger.error(f"Error getting config value {key}: {e}")
+<<<<<<< HEAD
             return default
+=======
+            return default
+
+    async def set_config_value(self, key: str, value: Any) -> bool:
+        """Set configuration value (extension method)."""
+        try:
+            # Update cache
+            self._config_cache[key] = value
+
+            # Try to persist to Vault
+            if self._vault:
+                try:
+                    await self._vault.write(f"secret/ezzday/{key}", {"data": value})
+                    logger.info(f"Config value {key} saved to Vault")
+                    return True
+                except Exception as e:
+                    logger.error(f"Failed to save config {key} to Vault: {e}")
+
+            # Fall back to config file
+            if os.path.exists(self._config_file):
+                try:
+                    with open(self._config_file) as f:
+                        config_data = json.load(f)
+                    
+                    config_data[key] = value
+                    
+                    with open(self._config_file, 'w') as f:
+                        json.dump(config_data, f, indent=2)
+                    
+                    logger.info(f"Config value {key} saved to file")
+                    return True
+                except Exception as e:
+                    logger.error(f"Failed to save config {key} to file: {e}")
+
+            return False
+
+        except Exception as e:
+            logger.error(f"Error setting config value {key}: {e}")
+            return False
+
+    async def reload_config(self) -> None:
+        """Reload configuration from sources."""
+        try:
+            # Clear caches
+            self._config_cache.clear()
+            self._feature_cache.clear()
+
+            logger.info("Configuration reloaded")
+
+        except Exception as e:
+            logger.error(f"Error reloading configuration: {e}")
+
+    async def get_all_feature_flags(self) -> dict[str, bool]:
+        """Get all feature flags."""
+        try:
+            if self._feature_flags:
+                return await self._feature_flags.get_all_flags()
+            
+            # Fall back to configuration
+            feature_flags = await self._get_config_value("feature_flags", {})
+            return feature_flags
+
+        except Exception as e:
+            logger.error(f"Error getting all feature flags: {e}")
+            return {}
+
+    async def get_environment_info(self) -> dict[str, Any]:
+        """Get environment information."""
+        try:
+            return {
+                "environment": os.getenv("ENVIRONMENT", "development"),
+                "version": os.getenv("APP_VERSION", "unknown"),
+                "deployment_id": os.getenv("DEPLOYMENT_ID", "unknown"),
+                "region": os.getenv("AWS_REGION", "unknown"),
+                "hostname": os.getenv("HOSTNAME", "unknown"),
+                "config_source": self._get_config_source(),
+                "feature_flags_provider": self._get_feature_flags_provider(),
+                "vault_enabled": self._vault is not None,
+            }
+
+        except Exception as e:
+            logger.error(f"Error getting environment info: {e}")
+            return {"error": str(e)}
+
+    def _get_config_source(self) -> str:
+        """Get the primary configuration source."""
+        if self._vault:
+            return "vault"
+        if os.path.exists(self._config_file):
+            return "file"
+        return "environment"
+
+    def _get_feature_flags_provider(self) -> str:
+        """Get the feature flags provider."""
+        if self._feature_flags:
+            return "external_service"
+        return "configuration"
+>>>>>>> analysis/coordination

@@ -12,8 +12,9 @@ from uuid import UUID
 import redis.asyncio as redis
 from redis.exceptions import RedisError
 
-from app.modules.identity.domain.interfaces.services.infrastructure.cache_port import ICachePort
-
+from app.modules.identity.domain.interfaces.services.infrastructure.cache_port import (
+    ICachePort,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -71,9 +72,8 @@ class RedisCacheAdapter(ICachePort):
             if result:
                 logger.debug(f"Session cached: {session_id} (TTL: {ttl}s)")
                 return True
-            else:
-                logger.warning(f"Failed to cache session: {session_id}")
-                return False
+            logger.warning(f"Failed to cache session: {session_id}")
+            return False
                 
         except (RedisError, json.JSONEncodeError, TypeError) as e:
             logger.error(f"Error storing session {session_id} in cache: {e}")
@@ -88,9 +88,8 @@ class RedisCacheAdapter(ICachePort):
             if result > 0:
                 logger.debug(f"Session deleted from cache: {session_id}")
                 return True
-            else:
-                logger.debug(f"Session not found in cache: {session_id}")
-                return False
+            logger.debug(f"Session not found in cache: {session_id}")
+            return False
                 
         except RedisError as e:
             logger.error(f"Error deleting session {session_id} from cache: {e}")
@@ -135,9 +134,8 @@ class RedisCacheAdapter(ICachePort):
             if result:
                 logger.debug(f"User cache set: {user_id}:{key} (TTL: {ttl_seconds}s)")
                 return True
-            else:
-                logger.warning(f"Failed to set user cache: {user_id}:{key}")
-                return False
+            logger.warning(f"Failed to set user cache: {user_id}:{key}")
+            return False
                 
         except (RedisError, json.JSONEncodeError, TypeError) as e:
             logger.error(f"Error setting user cache {user_id}:{key}: {e}")
@@ -202,9 +200,8 @@ class RedisCacheAdapter(ICachePort):
                 deleted_count = await self._redis.delete(*keys_to_delete)
                 logger.warning(f"Cleared {deleted_count} cache entries")
                 return True
-            else:
-                logger.info("No cache entries to clear")
-                return True
+            logger.info("No cache entries to clear")
+            return True
                 
         except RedisError as e:
             logger.error(f"Error clearing cache: {e}")

@@ -7,16 +7,16 @@ Time-based One-Time Password Multi-Factor Authentication provider.
 import base64
 import io
 import logging
-from datetime import datetime, UTC
+from datetime import UTC, datetime
 from typing import Any
-from urllib.parse import quote
 
 import pyotp
 import qrcode
-from qrcode.image.pure import PymagingImage
 
 from app.modules.identity.domain.entities.admin.mfa_device import MFADevice, MFAMethod
-from app.modules.identity.infrastructure.services.mfa_provider_factory import IMFAProvider
+from app.modules.identity.infrastructure.services.mfa_provider_factory import (
+    IMFAProvider,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -121,8 +121,7 @@ class TOTPMFAProvider(IMFAProvider):
                     'method': 'totp',
                     'device_id': str(device.id)
                 }
-            else:
-                return False, {'error': 'Invalid code'}
+            return False, {'error': 'Invalid code'}
                 
         except Exception as e:
             logger.error(f"TOTP verification error: {e}")

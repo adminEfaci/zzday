@@ -6,7 +6,7 @@ proper module boundaries.
 """
 
 from abc import ABC, abstractmethod
-from typing import TypeVar, Any
+from typing import Any, TypeVar
 
 from app.core.contracts import ContractEvent
 from app.core.events.types import DomainEvent

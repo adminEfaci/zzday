@@ -7,7 +7,6 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 from typing import Any
-from uuid import UUID, uuid4
 
 from ...entities.role.permission import Permission
 from ...entities.role.role import Role

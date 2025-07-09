@@ -5,17 +5,16 @@ Tests the foundation of the contract system including
 ContractEvent, ContractCommand, ContractQuery, and ModuleContract.
 """
 
-import pytest
 from dataclasses import dataclass
 from datetime import datetime
 from uuid import UUID, uuid4
-from typing import Any
+
+import pytest
 
 from app.core.contracts.base import (
-    ContractEvent,
     ContractCommand,
+    ContractEvent,
     ContractQuery,
-    ContractMessage,
     MessageMetadata,
     ModuleContract,
 )
@@ -279,7 +278,7 @@ class TestContractQuery:
         assert query_with_meta.user_id == query.user_id
 
 
-class TestModuleContract:
+class TestModuleContractImplementation:
     """Test ModuleContract functionality."""
     
     def test_contract_properties(self):

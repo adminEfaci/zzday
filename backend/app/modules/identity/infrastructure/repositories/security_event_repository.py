@@ -4,19 +4,21 @@ Security Event Repository Implementation
 Concrete implementation of the security event repository interface.
 """
 
-from datetime import datetime, UTC
+from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID, uuid4
 
-from sqlalchemy import and_, desc, func, select, or_
+from sqlalchemy import and_, desc, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.infrastructure.repository import BaseRepository
 from app.modules.identity.domain.entities.session.security_event import SecurityEvent
-from app.modules.identity.domain.enums import SecurityEventType, RiskLevel
+from app.modules.identity.domain.enums import RiskLevel, SecurityEventType
 from app.modules.identity.domain.enums_security import SecurityEventStatus
-from app.modules.identity.domain.interfaces.repositories.security_event_repository import ISecurityEventRepository
-from app.modules.identity.domain.value_objects import IpAddress, Geolocation
+from app.modules.identity.domain.interfaces.repositories.security_event_repository import (
+    ISecurityEventRepository,
+)
+from app.modules.identity.domain.value_objects import Geolocation, IpAddress
 from app.modules.identity.infrastructure.models.audit_model import SecurityEventModel
 
 

@@ -5,9 +5,8 @@ Implements systematic failure injection to test system resilience.
 """
 
 import asyncio
-from contextlib import asynccontextmanager
-from typing import Dict, List, Optional
 from unittest.mock import patch
+
 import pytest
 
 
@@ -50,8 +49,7 @@ class ChaosMonkey:
             await asyncio.sleep(ms / 1000.0)  # Convert ms to seconds
             if 'post' in str(args[0]):
                 return await original_post(*args, **kwargs)
-            else:
-                return await original_get(*args, **kwargs)
+            return await original_get(*args, **kwargs)
                 
         # This is a simplified example - real implementation would patch HTTP client
         self.active_failures.append(('network_latency', None))
@@ -120,7 +118,7 @@ class ChaosMonkey:
                     pass  # Ignore cleanup errors
         self.active_failures.clear()
         
-    def get_active_failures(self) -> List[str]:
+    def get_active_failures(self) -> list[str]:
         """Get list of currently active failures."""
         return [failure_type for failure_type, _ in self.active_failures]
 

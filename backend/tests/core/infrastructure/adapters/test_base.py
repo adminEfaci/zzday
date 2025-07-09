@@ -4,19 +4,19 @@ Tests for Internal Module Adapter Base Class
 Tests the base adapter functionality for cross-module communication.
 """
 
-import pytest
 import asyncio
 from dataclasses import dataclass
-from uuid import uuid4
 from typing import Any
-from unittest.mock import Mock, AsyncMock, patch
+from unittest.mock import Mock
+
+import pytest
 
 from app.core.contracts import (
-    ContractEvent,
     ContractCommand,
+    ContractEvent,
     ContractQuery,
-    ModuleContract,
     ContractRegistry,
+    ModuleContract,
 )
 from app.core.events import EventBus
 from app.core.infrastructure.adapters import InternalModuleAdapter

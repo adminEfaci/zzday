@@ -7,7 +7,7 @@ module boundaries and prevent direct cross-module dependencies.
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any, TypeVar
 from uuid import UUID, uuid4
 
@@ -19,7 +19,7 @@ class ContractMetadata:
     """Metadata for contract messages."""
     
     contract_id: UUID = field(default_factory=uuid4)
-    timestamp: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    timestamp: datetime = field(default_factory=lambda: datetime.now(UTC))
     source_module: str = ""
     target_module: str | None = None
     correlation_id: str | None = None

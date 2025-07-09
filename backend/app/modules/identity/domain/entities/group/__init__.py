@@ -11,12 +11,6 @@ from .group import (
     GroupMembershipRequest,
 )
 
-# Entities
-from .group_member import GroupMember
-
-# Domain Services
-from .group_permission_service import GroupPermissionService
-
 # Constants
 from .group_constants import (
     GroupActivityTypes,
@@ -98,6 +92,12 @@ from .group_events import (
     SubgroupAdded,
     SubgroupRemoved,
 )
+
+# Entities
+from .group_member import GroupMember
+
+# Domain Services
+from .group_permission_service import GroupPermissionService
 
 __all__ = [
     # === AGGREGATES ===

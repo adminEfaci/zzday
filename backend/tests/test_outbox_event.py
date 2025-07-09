@@ -2,9 +2,10 @@
 Tests for OutboxEvent domain entity.
 """
 
-import pytest
-from datetime import datetime, UTC
+from datetime import UTC, datetime
 from uuid import uuid4
+
+import pytest
 
 from app.models.outbox_event import OutboxEvent
 
@@ -244,5 +245,5 @@ class TestOutboxEvent:
             event_data={}
         )
         
-        with pytest.raises(Exception):  # Should raise validation error
+        with pytest.raises(AttributeError, match="can't set attribute"):  # Should raise validation error
             event.retry_count = 5

@@ -7,13 +7,15 @@ from typing import Any
 
 from app.core.cqrs import Query, QueryHandler
 from app.core.infrastructure import UnitOfWork
-from app.modules.identity.domain.interfaces.repositories.user_repository import IUserRepository
 from app.modules.identity.application.decorators import (
     rate_limit,
     require_permission,
     validate_request,
 )
 from app.modules.identity.application.dtos.response import LicenseStatusResponse
+from app.modules.identity.domain.interfaces.repositories.user_repository import (
+    IUserRepository,
+)
 
 
 class LicenseType(Enum):

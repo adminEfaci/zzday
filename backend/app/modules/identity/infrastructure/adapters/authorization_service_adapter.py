@@ -256,7 +256,7 @@ class AuthorizationServiceAdapter(IAuthorizationService):
                 "action": action,
                 "resource": resource,
                 "allowed": False,
-                "reason": f"Validation error: {str(e)}",
+                "reason": f"Validation error: {e!s}",
                 "validated_at": datetime.now(UTC).isoformat(),
             }
 
@@ -325,7 +325,7 @@ class AuthorizationServiceAdapter(IAuthorizationService):
 
         except Exception as e:
             logger.error(f"Error checking SoD for user {user_id}: {e}")
-            return False, f"SoD check error: {str(e)}"
+            return False, f"SoD check error: {e!s}"
 
     def invalidate_permission_cache(self, user_id: UUID) -> None:
         """Invalidate permission cache for user."""

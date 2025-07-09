@@ -4,16 +4,16 @@ OutboxRepository SQLAlchemy Adapter
 SQLAlchemy implementation of the OutboxRepository interface.
 """
 
-from datetime import datetime, UTC, timedelta
-from typing import List
+from datetime import UTC, datetime, timedelta
 from uuid import UUID
 
-from sqlmodel import Session, select, delete, and_
+from sqlmodel import Session, and_, delete, select
+
 from app.core.errors import InfrastructureError
 from app.core.logging import get_logger
-from app.repositories.outbox_repository import OutboxRepository
-from app.models.outbox_event import OutboxEvent
 from app.infrastructure.database.models.outbox_event_model import OutboxEventModel
+from app.models.outbox_event import OutboxEvent
+from app.repositories.outbox_repository import OutboxRepository
 
 logger = get_logger(__name__)
 
@@ -37,7 +37,7 @@ class OutboxRepositoryAdapter(OutboxRepository):
     
     async def store_events(
         self, 
-        events: List[OutboxEvent], 
+        events: list[OutboxEvent], 
         aggregate_id: UUID
     ) -> None:
         """
@@ -95,7 +95,7 @@ class OutboxRepositoryAdapter(OutboxRepository):
     async def get_unprocessed_events(
         self, 
         limit: int = 100
-    ) -> List[OutboxEvent]:
+    ) -> list[OutboxEvent]:
         """
         Get unprocessed events for background processor.
         
@@ -260,7 +260,7 @@ class OutboxRepositoryAdapter(OutboxRepository):
     async def get_failed_events(
         self, 
         limit: int = 100
-    ) -> List[OutboxEvent]:
+    ) -> list[OutboxEvent]:
         """
         Get events that have exhausted retries.
         
@@ -376,7 +376,7 @@ class OutboxRepositoryAdapter(OutboxRepository):
         self, 
         aggregate_id: UUID,
         limit: int = 100
-    ) -> List[OutboxEvent]:
+    ) -> list[OutboxEvent]:
         """
         Get events for a specific aggregate.
         

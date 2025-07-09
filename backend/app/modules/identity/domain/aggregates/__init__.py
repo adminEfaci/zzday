@@ -9,7 +9,7 @@ and coordinating with other aggregates through domain events.
 # Aggregate Roots
 from .group import (
     Group,
-    GroupInvitation, 
+    GroupInvitation,
     GroupMembershipRequest,
 )
 from .user import User

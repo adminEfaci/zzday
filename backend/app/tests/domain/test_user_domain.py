@@ -5,20 +5,19 @@ Pure domain tests for User entity isolated from infrastructure.
 Tests business rules and domain logic without external dependencies.
 """
 
-import pytest
-from datetime import datetime, timezone, timedelta
+from datetime import UTC, datetime, timedelta
 from uuid import uuid4
 
+import pytest
+
 from app.modules.identity.domain.entities.user import User
-from app.modules.identity.domain.value_objects.email import Email
-from app.modules.identity.domain.value_objects.password_hash import PasswordHash
-from app.modules.identity.domain.value_objects.security_stamp import SecurityStamp
 from app.modules.identity.domain.exceptions import (
     InvalidEmailError,
     InvalidPasswordError,
-    UserInactiveError,
-    UserUnverifiedError,
 )
+from app.modules.identity.domain.value_objects.email import Email
+from app.modules.identity.domain.value_objects.password_hash import PasswordHash
+from app.modules.identity.domain.value_objects.security_stamp import SecurityStamp
 
 
 @pytest.mark.unit
@@ -39,8 +38,8 @@ class TestUserDomainCreation:
             security_stamp=security_stamp,
             is_active=True,
             is_verified=True,
-            created_at=datetime.now(timezone.utc),
-            updated_at=datetime.now(timezone.utc)
+            created_at=datetime.now(UTC),
+            updated_at=datetime.now(UTC)
         )
         
         assert user.id == user_id
@@ -62,8 +61,8 @@ class TestUserDomainCreation:
             security_stamp=SecurityStamp.generate_initial(),
             is_active=True,
             is_verified=False,
-            created_at=datetime.now(timezone.utc),
-            updated_at=datetime.now(timezone.utc)
+            created_at=datetime.now(UTC),
+            updated_at=datetime.now(UTC)
         )
         
         assert user.email.value == "test@example.com"
@@ -101,8 +100,8 @@ class TestUserDomainBusinessRules:
             security_stamp=SecurityStamp.generate_initial(),
             is_active=True,
             is_verified=True,
-            created_at=datetime.now(timezone.utc),
-            updated_at=datetime.now(timezone.utc)
+            created_at=datetime.now(UTC),
+            updated_at=datetime.now(UTC)
         )
         
         # User should be able to authenticate
@@ -117,8 +116,8 @@ class TestUserDomainBusinessRules:
             security_stamp=SecurityStamp.generate_initial(),
             is_active=False,
             is_verified=True,
-            created_at=datetime.now(timezone.utc),
-            updated_at=datetime.now(timezone.utc)
+            created_at=datetime.now(UTC),
+            updated_at=datetime.now(UTC)
         )
         
         assert user.can_authenticate() is False
@@ -132,8 +131,8 @@ class TestUserDomainBusinessRules:
             security_stamp=SecurityStamp.generate_initial(),
             is_active=True,
             is_verified=False,
-            created_at=datetime.now(timezone.utc),
-            updated_at=datetime.now(timezone.utc)
+            created_at=datetime.now(UTC),
+            updated_at=datetime.now(UTC)
         )
         
         assert user.can_authenticate() is False
@@ -147,9 +146,9 @@ class TestUserDomainBusinessRules:
             security_stamp=SecurityStamp.generate_initial(),
             is_active=True,
             is_verified=True,
-            locked_until=datetime.now(timezone.utc) + timedelta(hours=1),
-            created_at=datetime.now(timezone.utc),
-            updated_at=datetime.now(timezone.utc)
+            locked_until=datetime.now(UTC) + timedelta(hours=1),
+            created_at=datetime.now(UTC),
+            updated_at=datetime.now(UTC)
         )
         
         assert user.can_authenticate() is False
@@ -163,9 +162,9 @@ class TestUserDomainBusinessRules:
             security_stamp=SecurityStamp.generate_initial(),
             is_active=True,
             is_verified=True,
-            locked_until=datetime.now(timezone.utc) - timedelta(hours=1),
-            created_at=datetime.now(timezone.utc),
-            updated_at=datetime.now(timezone.utc)
+            locked_until=datetime.now(UTC) - timedelta(hours=1),
+            created_at=datetime.now(UTC),
+            updated_at=datetime.now(UTC)
         )
         
         assert user.can_authenticate() is True
@@ -184,8 +183,8 @@ class TestUserDomainOperations:
             security_stamp=SecurityStamp.generate_initial(),
             is_active=True,
             is_verified=False,
-            created_at=datetime.now(timezone.utc),
-            updated_at=datetime.now(timezone.utc)
+            created_at=datetime.now(UTC),
+            updated_at=datetime.now(UTC)
         )
         
         assert user.is_verified is False
@@ -204,8 +203,8 @@ class TestUserDomainOperations:
             security_stamp=SecurityStamp.generate_initial(),
             is_active=False,
             is_verified=True,
-            created_at=datetime.now(timezone.utc),
-            updated_at=datetime.now(timezone.utc)
+            created_at=datetime.now(UTC),
+            updated_at=datetime.now(UTC)
         )
         
         assert user.is_active is False
@@ -223,8 +222,8 @@ class TestUserDomainOperations:
             security_stamp=SecurityStamp.generate_initial(),
             is_active=True,
             is_verified=True,
-            created_at=datetime.now(timezone.utc),
-            updated_at=datetime.now(timezone.utc)
+            created_at=datetime.now(UTC),
+            updated_at=datetime.now(UTC)
         )
         
         assert user.is_active is True
@@ -242,8 +241,8 @@ class TestUserDomainOperations:
             security_stamp=SecurityStamp.generate_initial(),
             is_active=True,
             is_verified=True,
-            created_at=datetime.now(timezone.utc),
-            updated_at=datetime.now(timezone.utc)
+            created_at=datetime.now(UTC),
+            updated_at=datetime.now(UTC)
         )
         
         old_password_hash = user.password_hash
@@ -265,8 +264,8 @@ class TestUserDomainOperations:
             security_stamp=SecurityStamp.generate_initial(),
             is_active=True,
             is_verified=True,
-            created_at=datetime.now(timezone.utc),
-            updated_at=datetime.now(timezone.utc)
+            created_at=datetime.now(UTC),
+            updated_at=datetime.now(UTC)
         )
         
         user.update_profile(
@@ -292,8 +291,8 @@ class TestUserDomainOperations:
             security_stamp=SecurityStamp.generate_initial(),
             is_active=True,
             is_verified=True,
-            created_at=datetime.now(timezone.utc),
-            updated_at=datetime.now(timezone.utc)
+            created_at=datetime.now(UTC),
+            updated_at=datetime.now(UTC)
         )
         
         assert user.failed_login_attempts == 0
@@ -313,8 +312,8 @@ class TestUserDomainOperations:
             security_stamp=SecurityStamp.generate_initial(),
             is_active=True,
             is_verified=True,
-            created_at=datetime.now(timezone.utc),
-            updated_at=datetime.now(timezone.utc)
+            created_at=datetime.now(UTC),
+            updated_at=datetime.now(UTC)
         )
         
         assert user.failed_login_attempts == 0
@@ -334,8 +333,8 @@ class TestUserDomainOperations:
             security_stamp=SecurityStamp.generate_initial(),
             is_active=True,
             is_verified=True,
-            created_at=datetime.now(timezone.utc),
-            updated_at=datetime.now(timezone.utc)
+            created_at=datetime.now(UTC),
+            updated_at=datetime.now(UTC)
         )
         
         # Record max failed attempts
@@ -344,7 +343,7 @@ class TestUserDomainOperations:
         
         assert user.failed_login_attempts == 5
         assert user.locked_until is not None
-        assert user.locked_until > datetime.now(timezone.utc)
+        assert user.locked_until > datetime.now(UTC)
     
     def test_unlock_user(self):
         """Test unlocking user."""
@@ -355,10 +354,10 @@ class TestUserDomainOperations:
             security_stamp=SecurityStamp.generate_initial(),
             is_active=True,
             is_verified=True,
-            locked_until=datetime.now(timezone.utc) + timedelta(hours=1),
+            locked_until=datetime.now(UTC) + timedelta(hours=1),
             failed_login_attempts=5,
-            created_at=datetime.now(timezone.utc),
-            updated_at=datetime.now(timezone.utc)
+            created_at=datetime.now(UTC),
+            updated_at=datetime.now(UTC)
         )
         
         assert user.locked_until is not None
@@ -384,8 +383,8 @@ class TestUserDomainValidation:
                 security_stamp=SecurityStamp.generate_initial(),
                 is_active=True,
                 is_verified=True,
-                created_at=datetime.now(timezone.utc),
-                updated_at=datetime.now(timezone.utc)
+                created_at=datetime.now(UTC),
+                updated_at=datetime.now(UTC)
             )
     
     def test_user_cannot_have_weak_password(self):
@@ -398,8 +397,8 @@ class TestUserDomainValidation:
                 security_stamp=SecurityStamp.generate_initial(),
                 is_active=True,
                 is_verified=True,
-                created_at=datetime.now(timezone.utc),
-                updated_at=datetime.now(timezone.utc)
+                created_at=datetime.now(UTC),
+                updated_at=datetime.now(UTC)
             )
     
     def test_user_requires_security_stamp(self):
@@ -412,8 +411,8 @@ class TestUserDomainValidation:
                 security_stamp=None,
                 is_active=True,
                 is_verified=True,
-                created_at=datetime.now(timezone.utc),
-                updated_at=datetime.now(timezone.utc)
+                created_at=datetime.now(UTC),
+                updated_at=datetime.now(UTC)
             )
     
     def test_user_requires_valid_timestamps(self):
@@ -427,7 +426,7 @@ class TestUserDomainValidation:
                 is_active=True,
                 is_verified=True,
                 created_at=None,
-                updated_at=datetime.now(timezone.utc)
+                updated_at=datetime.now(UTC)
             )
 
 
@@ -446,8 +445,8 @@ class TestUserDomainEquality:
             security_stamp=SecurityStamp.generate_initial(),
             is_active=True,
             is_verified=True,
-            created_at=datetime.now(timezone.utc),
-            updated_at=datetime.now(timezone.utc)
+            created_at=datetime.now(UTC),
+            updated_at=datetime.now(UTC)
         )
         
         user2 = User(
@@ -457,8 +456,8 @@ class TestUserDomainEquality:
             security_stamp=SecurityStamp.generate_initial(),
             is_active=False,
             is_verified=False,
-            created_at=datetime.now(timezone.utc),
-            updated_at=datetime.now(timezone.utc)
+            created_at=datetime.now(UTC),
+            updated_at=datetime.now(UTC)
         )
         
         assert user1 == user2
@@ -473,8 +472,8 @@ class TestUserDomainEquality:
             security_stamp=SecurityStamp.generate_initial(),
             is_active=True,
             is_verified=True,
-            created_at=datetime.now(timezone.utc),
-            updated_at=datetime.now(timezone.utc)
+            created_at=datetime.now(UTC),
+            updated_at=datetime.now(UTC)
         )
         
         user2 = User(
@@ -484,8 +483,8 @@ class TestUserDomainEquality:
             security_stamp=SecurityStamp.generate_initial(),
             is_active=True,
             is_verified=True,
-            created_at=datetime.now(timezone.utc),
-            updated_at=datetime.now(timezone.utc)
+            created_at=datetime.now(UTC),
+            updated_at=datetime.now(UTC)
         )
         
         assert user1 != user2
@@ -500,8 +499,8 @@ class TestUserDomainEquality:
             security_stamp=SecurityStamp.generate_initial(),
             is_active=True,
             is_verified=True,
-            created_at=datetime.now(timezone.utc),
-            updated_at=datetime.now(timezone.utc)
+            created_at=datetime.now(UTC),
+            updated_at=datetime.now(UTC)
         )
         
         user_str = str(user)

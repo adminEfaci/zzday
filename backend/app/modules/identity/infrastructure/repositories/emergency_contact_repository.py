@@ -4,19 +4,24 @@ Emergency Contact Repository Implementation
 SQLModel-based implementation of the emergency contact repository interface.
 """
 
-from datetime import datetime, UTC
-from typing import Any
+from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
-from sqlmodel import Session, select, and_, or_, col, func
+from sqlmodel import Session, and_, func, select
+
 from app.core.infrastructure.repository import SQLRepository
-from app.modules.identity.domain.entities.admin.emergency_contact import EmergencyContact
+from app.modules.identity.domain.entities.admin.emergency_contact import (
+    EmergencyContact,
+)
 from app.modules.identity.domain.enums import ContactRelationship
-from app.modules.identity.domain.interfaces.repositories.emergency_contact_repository import IEmergencyContactRepository
-from app.modules.identity.infrastructure.models.emergency_contact_model import EmergencyContactModel
+from app.modules.identity.domain.interfaces.repositories.emergency_contact_repository import (
+    IEmergencyContactRepository,
+)
+from app.modules.identity.infrastructure.models.emergency_contact_model import (
+    EmergencyContactModel,
+)
 from app.shared.value_objects.email import EmailAddress
 from app.shared.value_objects.phone import PhoneNumber
-from app.shared.value_objects.address import Address
 
 
 class SQLEmergencyContactRepository(SQLRepository[EmergencyContact, EmergencyContactModel], IEmergencyContactRepository):

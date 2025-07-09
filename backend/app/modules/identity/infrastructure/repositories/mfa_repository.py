@@ -4,19 +4,24 @@ MFA Repository Implementation
 SQLModel-based implementation of the MFA repository interface.
 """
 
-from datetime import datetime, UTC, timedelta
-from typing import Any
-from uuid import UUID
 import hashlib
+from datetime import UTC, datetime, timedelta
+from uuid import UUID
 
-from sqlmodel import Session, select, and_, or_, col, func
-from app.modules.identity.domain.entities.admin.mfa_device import MFADevice, BackupCode
-from app.modules.identity.domain.enums import MFAMethod as MfaMethod
-from app.modules.identity.domain.interfaces.repositories.mfa_repository import IMFARepository
-from app.modules.identity.infrastructure.models.mfa_model import MFADeviceModel, BackupCodeModel, RecoveryCodeModel
+from sqlmodel import Session, and_, func, select
+
 from app.core.errors import InfrastructureError
 from app.core.logging import get_logger
-
+from app.modules.identity.domain.entities.admin.mfa_device import BackupCode, MFADevice
+from app.modules.identity.domain.enums import MFAMethod as MfaMethod
+from app.modules.identity.domain.interfaces.repositories.mfa_repository import (
+    IMFARepository,
+)
+from app.modules.identity.infrastructure.models.mfa_model import (
+    BackupCodeModel,
+    MFADeviceModel,
+    RecoveryCodeModel,
+)
 
 logger = get_logger(__name__)
 
@@ -111,7 +116,7 @@ class SQLMFARepository(IMFARepository):
                 user_id=str(user_id),
                 error=str(e)
             )
-            raise InfrastructureError(f"Failed to create MFA device: {str(e)}")
+            raise InfrastructureError(f"Failed to create MFA device: {e!s}")
     
     async def find_by_id(self, device_id: UUID) -> dict | None:
         """Find MFA device by ID.
@@ -151,7 +156,7 @@ class SQLMFARepository(IMFARepository):
                 device_id=str(device_id),
                 error=str(e)
             )
-            raise InfrastructureError(f"Failed to find MFA device: {str(e)}")
+            raise InfrastructureError(f"Failed to find MFA device: {e!s}")
     
     async def find_by_user(self, user_id: UUID) -> list[dict]:
         """Find all MFA devices for user.
@@ -201,7 +206,7 @@ class SQLMFARepository(IMFARepository):
                 user_id=str(user_id),
                 error=str(e)
             )
-            raise InfrastructureError(f"Failed to find user MFA devices: {str(e)}")
+            raise InfrastructureError(f"Failed to find user MFA devices: {e!s}")
     
     async def find_verified_by_user(self, user_id: UUID) -> list[dict]:
         """Find verified MFA devices for user.
@@ -235,7 +240,7 @@ class SQLMFARepository(IMFARepository):
                 user_id=str(user_id),
                 error=str(e)
             )
-            raise InfrastructureError(f"Failed to find verified devices: {str(e)}")
+            raise InfrastructureError(f"Failed to find verified devices: {e!s}")
     
     async def verify_device(self, device_id: UUID) -> bool:
         """Mark MFA device as verified.
@@ -272,7 +277,7 @@ class SQLMFARepository(IMFARepository):
                 device_id=str(device_id),
                 error=str(e)
             )
-            raise InfrastructureError(f"Failed to verify device: {str(e)}")
+            raise InfrastructureError(f"Failed to verify device: {e!s}")
     
     async def disable_device(self, device_id: UUID) -> bool:
         """Disable MFA device.
@@ -310,7 +315,7 @@ class SQLMFARepository(IMFARepository):
                 device_id=str(device_id),
                 error=str(e)
             )
-            raise InfrastructureError(f"Failed to disable device: {str(e)}")
+            raise InfrastructureError(f"Failed to disable device: {e!s}")
     
     async def update_last_used(self, device_id: UUID) -> bool:
         """Update device last used timestamp.
@@ -346,7 +351,7 @@ class SQLMFARepository(IMFARepository):
                 device_id=str(device_id),
                 error=str(e)
             )
-            raise InfrastructureError(f"Failed to update device: {str(e)}")
+            raise InfrastructureError(f"Failed to update device: {e!s}")
     
     async def get_backup_codes(self, device_id: UUID) -> list[str]:
         """Get backup codes for device.
@@ -379,7 +384,7 @@ class SQLMFARepository(IMFARepository):
                 device_id=str(device_id),
                 error=str(e)
             )
-            raise InfrastructureError(f"Failed to get backup codes: {str(e)}")
+            raise InfrastructureError(f"Failed to get backup codes: {e!s}")
     
     async def use_backup_code(self, device_id: UUID, code: str) -> bool:
         """Mark backup code as used.
@@ -441,7 +446,7 @@ class SQLMFARepository(IMFARepository):
                 device_id=str(device_id),
                 error=str(e)
             )
-            raise InfrastructureError(f"Failed to use backup code: {str(e)}")
+            raise InfrastructureError(f"Failed to use backup code: {e!s}")
     
     # Additional methods not in interface but useful for the implementation
     
@@ -497,7 +502,7 @@ class SQLMFARepository(IMFARepository):
                 device_id=str(device_id),
                 error=str(e)
             )
-            raise InfrastructureError(f"Failed to set primary device: {str(e)}")
+            raise InfrastructureError(f"Failed to set primary device: {e!s}")
     
     async def increment_failed_attempts(self, device_id: UUID) -> int:
         """Increment failed verification attempts for a device.
@@ -532,7 +537,7 @@ class SQLMFARepository(IMFARepository):
                 device_id=str(device_id),
                 error=str(e)
             )
-            raise InfrastructureError(f"Failed to update failed attempts: {str(e)}")
+            raise InfrastructureError(f"Failed to update failed attempts: {e!s}")
     
     async def generate_recovery_codes(self, user_id: UUID, count: int = 8) -> list[str]:
         """Generate recovery codes for a user.
@@ -594,7 +599,7 @@ class SQLMFARepository(IMFARepository):
                 user_id=str(user_id),
                 error=str(e)
             )
-            raise InfrastructureError(f"Failed to generate recovery codes: {str(e)}")
+            raise InfrastructureError(f"Failed to generate recovery codes: {e!s}")
     
     async def use_recovery_code(self, user_id: UUID, code: str) -> bool:
         """Use a recovery code.
@@ -647,7 +652,7 @@ class SQLMFARepository(IMFARepository):
                 user_id=str(user_id),
                 error=str(e)
             )
-            raise InfrastructureError(f"Failed to use recovery code: {str(e)}")
+            raise InfrastructureError(f"Failed to use recovery code: {e!s}")
     
     async def count_devices_by_method(self, user_id: UUID, method: MfaMethod) -> int:
         """Count MFA devices by method for a user.
@@ -678,4 +683,4 @@ class SQLMFARepository(IMFARepository):
                 method=method.value,
                 error=str(e)
             )
-            raise InfrastructureError(f"Failed to count devices: {str(e)}")
+            raise InfrastructureError(f"Failed to count devices: {e!s}")

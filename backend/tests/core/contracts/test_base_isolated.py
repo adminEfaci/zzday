@@ -5,24 +5,23 @@ These tests run the contract base classes without
 requiring the full application configuration.
 """
 
-import pytest
-import sys
 import os
+import sys
 from dataclasses import dataclass
-from datetime import datetime, timezone
-from uuid import UUID, uuid4
+from datetime import UTC, datetime
 from typing import Any
+from uuid import UUID, uuid4
+
+import pytest
 
 # Add the app directory to the path so we can import modules directly
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', '..', 'app'))
 
 # Define minimal contract base classes for testing
 from abc import ABC, abstractmethod
-from dataclasses import dataclass, field
-from datetime import datetime, timezone
-from typing import Any, TypeVar
-from uuid import UUID, uuid4
 from copy import deepcopy
+from dataclasses import field
+from typing import TypeVar
 
 T = TypeVar("T")
 
@@ -32,7 +31,7 @@ class MessageMetadata:
     """Metadata for contract messages."""
     
     message_id: UUID = field(default_factory=uuid4)
-    timestamp: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    timestamp: datetime = field(default_factory=lambda: datetime.now(UTC))
     correlation_id: str | None = None
     causation_id: str | None = None
     source_module: str | None = None
@@ -285,7 +284,7 @@ class TestContractEvent:
     def test_create_event(self):
         """Test creating a contract event."""
         user_id = uuid4()
-        timestamp = datetime.now(timezone.utc)
+        timestamp = datetime.now(UTC)
         
         event = TestEvent(
             user_id=user_id,
@@ -305,7 +304,7 @@ class TestContractEvent:
         event = TestEvent(
             user_id=uuid4(),
             action="test",
-            timestamp=datetime.now(timezone.utc),
+            timestamp=datetime.now(UTC),
         )
         
         event_with_meta = event.with_metadata(
@@ -321,7 +320,7 @@ class TestContractEvent:
     def test_event_to_dict(self):
         """Test converting event to dictionary."""
         user_id = uuid4()
-        timestamp = datetime.now(timezone.utc)
+        timestamp = datetime.now(UTC)
         
         event = TestEvent(
             user_id=user_id,
@@ -338,7 +337,7 @@ class TestContractEvent:
         assert data["data"]["timestamp"] == timestamp.isoformat()
 
 
-class TestModuleContract:
+class TestModuleContractImplementation:
     """Test ModuleContract functionality."""
     
     def test_contract_properties(self):
@@ -356,7 +355,7 @@ class TestModuleContract:
         event = TestEvent(
             user_id=uuid4(),
             action="test",
-            timestamp=datetime.now(timezone.utc),
+            timestamp=datetime.now(UTC),
         )
         assert contract.validate_event(event) is True
         

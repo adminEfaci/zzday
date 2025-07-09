@@ -14,8 +14,14 @@ from app.core.domain.base import AggregateRoot
 from ..role_enums import RoleStatus, RoleType
 from ..value_objects import RoleName
 from .role_events import (
-    RoleCreated, RoleUpdated, RoleDeleted, RoleActivated, RoleDeactivated,
-    RolePermissionGranted, RolePermissionRevoked, RoleHierarchyChanged
+    RoleActivated,
+    RoleCreated,
+    RoleDeactivated,
+    RoleDeleted,
+    RoleHierarchyChanged,
+    RolePermissionGranted,
+    RolePermissionRevoked,
+    RoleUpdated,
 )
 
 

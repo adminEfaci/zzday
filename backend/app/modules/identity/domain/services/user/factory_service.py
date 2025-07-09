@@ -8,10 +8,10 @@ from __future__ import annotations
 import secrets
 from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING, Any
-from uuid import UUID, uuid4
+from uuid import uuid4
 
 if TYPE_CHECKING:
-    from app.modules.identity.domain.entities.role.role import Role
+    pass
 
 from app.core.security import hash_password
 

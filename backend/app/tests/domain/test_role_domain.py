@@ -5,16 +5,15 @@ Pure domain tests for Role entity isolated from infrastructure.
 Tests business rules and domain logic without external dependencies.
 """
 
-import pytest
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from uuid import uuid4
 
-from app.modules.identity.domain.entities.role.role import Role
+import pytest
+
 from app.modules.identity.domain.entities.role.permission import Permission
+from app.modules.identity.domain.entities.role.role import Role
 from app.modules.identity.domain.exceptions import (
     RoleInvalidError,
-    PermissionDeniedError,
-    RoleHierarchyError,
 )
 
 
@@ -38,8 +37,8 @@ class TestRoleDomainCreation:
             permissions=permissions,
             is_system=False,
             is_active=True,
-            created_at=datetime.now(timezone.utc),
-            updated_at=datetime.now(timezone.utc)
+            created_at=datetime.now(UTC),
+            updated_at=datetime.now(UTC)
         )
         
         assert role.id == role_id
@@ -60,8 +59,8 @@ class TestRoleDomainCreation:
             permissions=[],
             is_system=False,
             is_active=True,
-            created_at=datetime.now(timezone.utc),
-            updated_at=datetime.now(timezone.utc)
+            created_at=datetime.now(UTC),
+            updated_at=datetime.now(UTC)
         )
         
         assert role.name == "user"
@@ -81,8 +80,8 @@ class TestRoleDomainCreation:
             permissions=[],
             is_system=True,
             is_active=True,
-            created_at=datetime.now(timezone.utc),
-            updated_at=datetime.now(timezone.utc)
+            created_at=datetime.now(UTC),
+            updated_at=datetime.now(UTC)
         )
         
         assert role.name == "system"
@@ -104,8 +103,8 @@ class TestRoleDomainBusinessRules:
             permissions=[],
             is_system=False,
             is_active=True,
-            created_at=datetime.now(timezone.utc),
-            updated_at=datetime.now(timezone.utc)
+            created_at=datetime.now(UTC),
+            updated_at=datetime.now(UTC)
         )
         
         user_role = Role(
@@ -116,8 +115,8 @@ class TestRoleDomainBusinessRules:
             permissions=[],
             is_system=False,
             is_active=True,
-            created_at=datetime.now(timezone.utc),
-            updated_at=datetime.now(timezone.utc)
+            created_at=datetime.now(UTC),
+            updated_at=datetime.now(UTC)
         )
         
         assert admin_role.is_higher_than(user_role)
@@ -139,8 +138,8 @@ class TestRoleDomainBusinessRules:
             permissions=permissions,
             is_system=False,
             is_active=True,
-            created_at=datetime.now(timezone.utc),
-            updated_at=datetime.now(timezone.utc)
+            created_at=datetime.now(UTC),
+            updated_at=datetime.now(UTC)
         )
         
         assert role.has_permission("user:read")
@@ -157,8 +156,8 @@ class TestRoleDomainBusinessRules:
             permissions=[],
             is_system=False,
             is_active=True,
-            created_at=datetime.now(timezone.utc),
-            updated_at=datetime.now(timezone.utc)
+            created_at=datetime.now(UTC),
+            updated_at=datetime.now(UTC)
         )
         
         assert role.can_be_used()
@@ -173,8 +172,8 @@ class TestRoleDomainBusinessRules:
             permissions=[],
             is_system=False,
             is_active=False,
-            created_at=datetime.now(timezone.utc),
-            updated_at=datetime.now(timezone.utc)
+            created_at=datetime.now(UTC),
+            updated_at=datetime.now(UTC)
         )
         
         assert not role.can_be_used()
@@ -189,8 +188,8 @@ class TestRoleDomainBusinessRules:
             permissions=[],
             is_system=True,
             is_active=True,
-            created_at=datetime.now(timezone.utc),
-            updated_at=datetime.now(timezone.utc)
+            created_at=datetime.now(UTC),
+            updated_at=datetime.now(UTC)
         )
         
         assert not role.can_be_deleted()
@@ -205,8 +204,8 @@ class TestRoleDomainBusinessRules:
             permissions=[],
             is_system=False,
             is_active=True,
-            created_at=datetime.now(timezone.utc),
-            updated_at=datetime.now(timezone.utc)
+            created_at=datetime.now(UTC),
+            updated_at=datetime.now(UTC)
         )
         
         assert role.can_be_deleted()
@@ -226,8 +225,8 @@ class TestRoleDomainOperations:
             permissions=[],
             is_system=False,
             is_active=True,
-            created_at=datetime.now(timezone.utc),
-            updated_at=datetime.now(timezone.utc)
+            created_at=datetime.now(UTC),
+            updated_at=datetime.now(UTC)
         )
         
         permission = Permission(name="user:read", description="Read user data")
@@ -252,8 +251,8 @@ class TestRoleDomainOperations:
             permissions=[permission],
             is_system=False,
             is_active=True,
-            created_at=datetime.now(timezone.utc),
-            updated_at=datetime.now(timezone.utc)
+            created_at=datetime.now(UTC),
+            updated_at=datetime.now(UTC)
         )
         
         assert len(role.permissions) == 1
@@ -274,8 +273,8 @@ class TestRoleDomainOperations:
             permissions=[],
             is_system=False,
             is_active=True,
-            created_at=datetime.now(timezone.utc),
-            updated_at=datetime.now(timezone.utc)
+            created_at=datetime.now(UTC),
+            updated_at=datetime.now(UTC)
         )
         
         old_updated_at = role.updated_at
@@ -299,8 +298,8 @@ class TestRoleDomainOperations:
             permissions=[],
             is_system=False,
             is_active=False,
-            created_at=datetime.now(timezone.utc),
-            updated_at=datetime.now(timezone.utc)
+            created_at=datetime.now(UTC),
+            updated_at=datetime.now(UTC)
         )
         
         assert role.is_active is False
@@ -319,8 +318,8 @@ class TestRoleDomainOperations:
             permissions=[],
             is_system=False,
             is_active=True,
-            created_at=datetime.now(timezone.utc),
-            updated_at=datetime.now(timezone.utc)
+            created_at=datetime.now(UTC),
+            updated_at=datetime.now(UTC)
         )
         
         assert role.is_active is True
@@ -339,8 +338,8 @@ class TestRoleDomainOperations:
             permissions=[],
             is_system=True,
             is_active=True,
-            created_at=datetime.now(timezone.utc),
-            updated_at=datetime.now(timezone.utc)
+            created_at=datetime.now(UTC),
+            updated_at=datetime.now(UTC)
         )
         
         with pytest.raises(RoleInvalidError):
@@ -362,8 +361,8 @@ class TestRoleDomainOperations:
             permissions=permissions,
             is_system=False,
             is_active=True,
-            created_at=datetime.now(timezone.utc),
-            updated_at=datetime.now(timezone.utc)
+            created_at=datetime.now(UTC),
+            updated_at=datetime.now(UTC)
         )
         
         permission_names = role.get_permission_names()
@@ -389,8 +388,8 @@ class TestRoleDomainValidation:
                 permissions=[],
                 is_system=False,
                 is_active=True,
-                created_at=datetime.now(timezone.utc),
-                updated_at=datetime.now(timezone.utc)
+                created_at=datetime.now(UTC),
+                updated_at=datetime.now(UTC)
             )
     
     def test_role_name_cannot_be_none(self):
@@ -404,8 +403,8 @@ class TestRoleDomainValidation:
                 permissions=[],
                 is_system=False,
                 is_active=True,
-                created_at=datetime.now(timezone.utc),
-                updated_at=datetime.now(timezone.utc)
+                created_at=datetime.now(UTC),
+                updated_at=datetime.now(UTC)
             )
     
     def test_role_level_must_be_positive(self):
@@ -419,8 +418,8 @@ class TestRoleDomainValidation:
                 permissions=[],
                 is_system=False,
                 is_active=True,
-                created_at=datetime.now(timezone.utc),
-                updated_at=datetime.now(timezone.utc)
+                created_at=datetime.now(UTC),
+                updated_at=datetime.now(UTC)
             )
     
     def test_role_level_cannot_be_zero(self):
@@ -434,8 +433,8 @@ class TestRoleDomainValidation:
                 permissions=[],
                 is_system=False,
                 is_active=True,
-                created_at=datetime.now(timezone.utc),
-                updated_at=datetime.now(timezone.utc)
+                created_at=datetime.now(UTC),
+                updated_at=datetime.now(UTC)
             )
     
     def test_role_permissions_must_be_list(self):
@@ -449,8 +448,8 @@ class TestRoleDomainValidation:
                 permissions=None,
                 is_system=False,
                 is_active=True,
-                created_at=datetime.now(timezone.utc),
-                updated_at=datetime.now(timezone.utc)
+                created_at=datetime.now(UTC),
+                updated_at=datetime.now(UTC)
             )
     
     def test_role_requires_valid_timestamps(self):
@@ -465,7 +464,7 @@ class TestRoleDomainValidation:
                 is_system=False,
                 is_active=True,
                 created_at=None,
-                updated_at=datetime.now(timezone.utc)
+                updated_at=datetime.now(UTC)
             )
 
 
@@ -485,8 +484,8 @@ class TestRoleDomainEquality:
             permissions=[],
             is_system=False,
             is_active=True,
-            created_at=datetime.now(timezone.utc),
-            updated_at=datetime.now(timezone.utc)
+            created_at=datetime.now(UTC),
+            updated_at=datetime.now(UTC)
         )
         
         role2 = Role(
@@ -497,8 +496,8 @@ class TestRoleDomainEquality:
             permissions=[],
             is_system=True,
             is_active=False,
-            created_at=datetime.now(timezone.utc),
-            updated_at=datetime.now(timezone.utc)
+            created_at=datetime.now(UTC),
+            updated_at=datetime.now(UTC)
         )
         
         assert role1 == role2
@@ -514,8 +513,8 @@ class TestRoleDomainEquality:
             permissions=[],
             is_system=False,
             is_active=True,
-            created_at=datetime.now(timezone.utc),
-            updated_at=datetime.now(timezone.utc)
+            created_at=datetime.now(UTC),
+            updated_at=datetime.now(UTC)
         )
         
         role2 = Role(
@@ -526,8 +525,8 @@ class TestRoleDomainEquality:
             permissions=[],
             is_system=False,
             is_active=True,
-            created_at=datetime.now(timezone.utc),
-            updated_at=datetime.now(timezone.utc)
+            created_at=datetime.now(UTC),
+            updated_at=datetime.now(UTC)
         )
         
         assert role1 != role2
@@ -543,8 +542,8 @@ class TestRoleDomainEquality:
             permissions=[],
             is_system=False,
             is_active=True,
-            created_at=datetime.now(timezone.utc),
-            updated_at=datetime.now(timezone.utc)
+            created_at=datetime.now(UTC),
+            updated_at=datetime.now(UTC)
         )
         
         role_str = str(role)

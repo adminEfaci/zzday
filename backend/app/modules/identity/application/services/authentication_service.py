@@ -5,37 +5,69 @@ High-level service orchestrating the entire authentication flow including MFA.
 """
 
 import logging
-from datetime import datetime, UTC, timedelta
+from datetime import UTC, datetime, timedelta
 from typing import Any
-from uuid import UUID, uuid4
+from uuid import UUID
 
-from app.modules.identity.domain.interfaces.repositories.user_repository import IUserRepository
-from app.modules.identity.domain.interfaces.repositories.session.session_repository import ISessionRepository
-from app.modules.identity.domain.interfaces.repositories.session.login_attempt_repository import ILoginAttemptRepository
-from app.modules.identity.domain.interfaces.repositories.session.device_registration_repository import IDeviceRegistrationRepository
-from app.modules.identity.domain.interfaces.services.authentication.password_service import IPasswordService
-from app.modules.identity.domain.interfaces.services.authentication.token_generator import ITokenGenerator
-from app.modules.identity.domain.interfaces.services.security.risk_assessment_service import IRiskAssessmentService
-from app.modules.identity.domain.interfaces.services.security.geolocation_service import IGeolocationService
-from app.modules.identity.domain.interfaces.services.infrastructure.event_publisher_port import IEventPublisherPort
-from app.modules.identity.domain.interfaces.services.infrastructure.cache_port import ICachePort
-from app.modules.identity.application.services.mfa_orchestration_service import MFAOrchestrationService
+from app.modules.identity.application.services.mfa_orchestration_service import (
+    MFAOrchestrationService,
+)
 from app.modules.identity.domain.aggregates.user import User
+from app.modules.identity.domain.entities.admin.login_attempt import (
+    LoginAttempt,
+    LoginAttemptStatus,
+)
+from app.modules.identity.domain.entities.device.device_registration import (
+    DeviceRegistration,
+)
 from app.modules.identity.domain.entities.session.session import Session
-from app.modules.identity.domain.entities.session.session_enums import SessionStatus, SessionType
-from app.modules.identity.domain.entities.device.device_registration import DeviceRegistration
-from app.modules.identity.domain.value_objects.ip_address import IpAddress
-from app.modules.identity.domain.value_objects.user_agent import UserAgent
-from app.modules.identity.domain.value_objects.device_fingerprint import DeviceFingerprint
-from app.modules.identity.domain.value_objects.risk_assessment import RiskLevel
+from app.modules.identity.domain.entities.session.session_enums import (
+    SessionStatus,
+    SessionType,
+)
 from app.modules.identity.domain.events import (
+    DeviceRegistered,
+    SessionCreated,
+    SuspiciousLoginDetected,
     UserLoggedIn,
     UserLoginFailed,
-    SuspiciousLoginDetected,
-    DeviceRegistered,
-    SessionCreated
 )
-from app.modules.identity.domain.entities.admin.login_attempt import LoginAttempt, LoginAttemptStatus
+from app.modules.identity.domain.interfaces.repositories.session.device_registration_repository import (
+    IDeviceRegistrationRepository,
+)
+from app.modules.identity.domain.interfaces.repositories.session.login_attempt_repository import (
+    ILoginAttemptRepository,
+)
+from app.modules.identity.domain.interfaces.repositories.session.session_repository import (
+    ISessionRepository,
+)
+from app.modules.identity.domain.interfaces.repositories.user_repository import (
+    IUserRepository,
+)
+from app.modules.identity.domain.interfaces.services.authentication.password_service import (
+    IPasswordService,
+)
+from app.modules.identity.domain.interfaces.services.authentication.token_generator import (
+    ITokenGenerator,
+)
+from app.modules.identity.domain.interfaces.services.infrastructure.cache_port import (
+    ICachePort,
+)
+from app.modules.identity.domain.interfaces.services.infrastructure.event_publisher_port import (
+    IEventPublisherPort,
+)
+from app.modules.identity.domain.interfaces.services.security.geolocation_service import (
+    IGeolocationService,
+)
+from app.modules.identity.domain.interfaces.services.security.risk_assessment_service import (
+    IRiskAssessmentService,
+)
+from app.modules.identity.domain.value_objects.device_fingerprint import (
+    DeviceFingerprint,
+)
+from app.modules.identity.domain.value_objects.ip_address import IpAddress
+from app.modules.identity.domain.value_objects.risk_assessment import RiskLevel
+from app.modules.identity.domain.value_objects.user_agent import UserAgent
 
 logger = logging.getLogger(__name__)
 
@@ -442,7 +474,9 @@ class AuthenticationService:
         
         # Set geolocation if available
         if location:
-            from app.modules.identity.domain.value_objects.geolocation import Geolocation
+            from app.modules.identity.domain.value_objects.geolocation import (
+                Geolocation,
+            )
             session.geolocation = Geolocation(
                 latitude=location.get("latitude"),
                 longitude=location.get("longitude"),

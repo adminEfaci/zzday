@@ -114,7 +114,7 @@ class PasswordServiceAdapter(IPasswordService):
             logger.error(f"Error validating password: {e}")
             return {
                 "is_valid": False,
-                "errors": [f"Validation error: {str(e)}"],
+                "errors": [f"Validation error: {e!s}"],
                 "warnings": [],
                 "score": 0,
                 "strength_level": "unknown",
@@ -480,7 +480,7 @@ class PasswordServiceAdapter(IPasswordService):
             logger.error(f"Error validating password policy: {e}")
             return {
                 "is_valid": False,
-                "errors": [f"Policy validation error: {str(e)}"],
+                "errors": [f"Policy validation error: {e!s}"],
                 "policy_requirements": {},
                 "checks": {},
             }
@@ -609,7 +609,7 @@ class PasswordServiceAdapter(IPasswordService):
         
         for info in user_info:
             if info and len(info) > 2 and info.lower() in password.lower():
-                issues.append(f"Password should not contain personal information")
+                issues.append("Password should not contain personal information")
                 break
         
         return issues
@@ -639,14 +639,13 @@ class PasswordServiceAdapter(IPasswordService):
         """Format time estimate in human-readable format."""
         if seconds < 60:
             return f"{seconds:.1f} seconds"
-        elif seconds < 3600:
+        if seconds < 3600:
             return f"{seconds/60:.1f} minutes"
-        elif seconds < 86400:
+        if seconds < 86400:
             return f"{seconds/3600:.1f} hours"
-        elif seconds < 31536000:
+        if seconds < 31536000:
             return f"{seconds/86400:.1f} days"
-        else:
-            return f"{seconds/31536000:.1f} years"
+        return f"{seconds/31536000:.1f} years"
 
     def _contains_dictionary_words(self, password: str) -> bool:
         """Check if password contains dictionary words."""

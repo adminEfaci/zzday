@@ -5,10 +5,9 @@ Group-specific constants that extend domain-wide constants without duplication.
 """
 
 from dataclasses import dataclass
-from datetime import timedelta
 
 # Import domain-wide constants to extend, not duplicate
-from ...constants import SecurityLimits, ValidationRules
+from ...constants import ValidationRules
 
 
 @dataclass(frozen=True)

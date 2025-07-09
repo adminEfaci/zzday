@@ -8,19 +8,18 @@ Tests cover:
 - State transitions
 """
 
-import pytest
-from datetime import datetime, UTC
-from uuid import uuid4
+from datetime import UTC, datetime
 
-from app.modules.identity.domain.entities.role import Role
+import pytest
+
 from app.modules.identity.domain.entities.permission import Permission
-from app.modules.identity.domain.value_objects.role_id import RoleId
-from app.modules.identity.domain.value_objects.permission_id import PermissionId
+from app.modules.identity.domain.entities.role import Role
 from app.modules.identity.domain.errors import (
-    DomainError,
     BusinessRuleViolation,
-    InvalidStateTransition,
+    DomainError,
 )
+from app.modules.identity.domain.value_objects.permission_id import PermissionId
+from app.modules.identity.domain.value_objects.role_id import RoleId
 
 
 class TestRole:

@@ -13,12 +13,12 @@ from .session_repository import SQLSessionRepository
 from .user_repository import SQLUserRepository
 
 __all__ = [
-    "SQLUserRepository",
-    "SQLSessionRepository",
-    "SQLGroupRepository",
-    "SQLRoleRepository",
-    "SQLDeviceRegistrationRepository",
-    "SQLMFARepository",
     "LoginAttemptRepository",
+    "SQLDeviceRegistrationRepository",
+    "SQLGroupRepository",
+    "SQLMFARepository",
+    "SQLRoleRepository",
+    "SQLSessionRepository",
+    "SQLUserRepository",
     "SecurityEventRepository",
 ]

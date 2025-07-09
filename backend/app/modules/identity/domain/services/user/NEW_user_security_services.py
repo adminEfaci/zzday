@@ -4,12 +4,12 @@ User Security Service
 Domain service for risk assessment, security monitoring, and threat detection.
 """
 
-from datetime import UTC, datetime, timedelta
+from datetime import datetime, timedelta
 from typing import Any
 
 from ..entities.user.login_attempt import LoginAttempt, RiskIndicator
 from ..enums import LoginFailureReason
-from ..value_objects import Geolocation, IpAddress
+from ..value_objects import Geolocation
 
 
 class UserSecurityService:

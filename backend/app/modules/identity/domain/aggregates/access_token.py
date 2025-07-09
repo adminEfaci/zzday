@@ -11,9 +11,9 @@ from datetime import UTC, datetime, timedelta
 from typing import Any
 from uuid import UUID, uuid4
 
-from ..enums import TokenStatus, RefreshStrategy
-from ..events import TokenFamilyRevoked, TokenIssued, TokenRefreshed, TokenRevoked
 from ...shared.base_entity import ExpirableAggregate, SecurityValidationMixin
+from ..enums import RefreshStrategy, TokenStatus
+from ..events import TokenFamilyRevoked, TokenIssued, TokenRefreshed, TokenRevoked
 
 
 @dataclass

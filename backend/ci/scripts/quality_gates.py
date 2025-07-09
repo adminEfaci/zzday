@@ -4,12 +4,11 @@ Quality gates enforcement for CI/CD pipeline
 """
 
 import json
-import sys
 import subprocess
-import os
-from pathlib import Path
-from typing import Dict, List, Tuple, Optional
+import sys
 from datetime import datetime
+from pathlib import Path
+
 
 class QualityGates:
     """Enforce quality standards across the codebase"""
@@ -43,7 +42,7 @@ class QualityGates:
         self.reports_dir = self.project_root / "ci" / "reports"
         self.reports_dir.mkdir(parents=True, exist_ok=True)
     
-    def check_coverage(self) -> Tuple[bool, Dict]:
+    def check_coverage(self) -> tuple[bool, dict]:
         """Check test coverage meets thresholds"""
         try:
             # Run pytest with coverage
@@ -61,7 +60,7 @@ class QualityGates:
                 cwd=self.project_root,
                 capture_output=True,
                 text=True,
-                timeout=300
+                timeout=300, check=False
             )
             
             coverage_file = self.project_root / "coverage.json"
@@ -104,9 +103,9 @@ class QualityGates:
         except subprocess.TimeoutExpired:
             return False, {"error": "Coverage check timed out"}
         except Exception as e:
-            return False, {"error": f"Coverage check failed: {str(e)}"}
+            return False, {"error": f"Coverage check failed: {e!s}"}
     
-    def _analyze_module_coverage(self, files_coverage: Dict) -> Dict[str, float]:
+    def _analyze_module_coverage(self, files_coverage: dict) -> dict[str, float]:
         """Analyze coverage by module type"""
         module_stats = {
             'domain': {'lines': 0, 'covered': 0},
@@ -142,7 +141,7 @@ class QualityGates:
         
         return module_coverage
     
-    def check_code_quality(self) -> Tuple[bool, Dict]:
+    def check_code_quality(self) -> tuple[bool, dict]:
         """Check code quality with ruff"""
         try:
             # Run ruff linter
@@ -152,7 +151,7 @@ class QualityGates:
                 cwd=self.project_root,
                 capture_output=True,
                 text=True,
-                timeout=60
+                timeout=60, check=False
             )
             
             violations = []
@@ -170,7 +169,7 @@ class QualityGates:
                 cwd=self.project_root,
                 capture_output=True,
                 text=True,
-                timeout=60
+                timeout=60, check=False
             )
             
             format_violations = []
@@ -189,9 +188,9 @@ class QualityGates:
         except subprocess.TimeoutExpired:
             return False, {"error": "Code quality check timed out"}
         except Exception as e:
-            return False, {"error": f"Code quality check failed: {str(e)}"}
+            return False, {"error": f"Code quality check failed: {e!s}"}
     
-    def check_type_safety(self) -> Tuple[bool, Dict]:
+    def check_type_safety(self) -> tuple[bool, dict]:
         """Check type safety with mypy"""
         try:
             cmd = ["python", "-m", "mypy", "app", "--config-file", "mypy.ini"]
@@ -200,7 +199,7 @@ class QualityGates:
                 cwd=self.project_root,
                 capture_output=True,
                 text=True,
-                timeout=120
+                timeout=120, check=False
             )
             
             # MyPy returns 0 for success, non-zero for type errors
@@ -223,9 +222,9 @@ class QualityGates:
         except FileNotFoundError:
             return False, {"error": "MyPy configuration not found"}
         except Exception as e:
-            return False, {"error": f"Type checking failed: {str(e)}"}
+            return False, {"error": f"Type checking failed: {e!s}"}
     
-    def check_security(self) -> Tuple[bool, Dict]:
+    def check_security(self) -> tuple[bool, dict]:
         """Check security with bandit"""
         try:
             cmd = ["python", "-m", "bandit", "-r", "app", "-f", "json"]
@@ -234,7 +233,7 @@ class QualityGates:
                 cwd=self.project_root,
                 capture_output=True,
                 text=True,
-                timeout=60
+                timeout=60, check=False
             )
             
             security_issues = []
@@ -265,9 +264,9 @@ class QualityGates:
         except subprocess.TimeoutExpired:
             return False, {"error": "Security check timed out"}
         except Exception as e:
-            return False, {"error": f"Security check failed: {str(e)}"}
+            return False, {"error": f"Security check failed: {e!s}"}
     
-    def check_dependencies(self) -> Tuple[bool, Dict]:
+    def check_dependencies(self) -> tuple[bool, dict]:
         """Check dependency security with safety"""
         try:
             cmd = ["python", "-m", "safety", "check", "--json"]
@@ -276,7 +275,7 @@ class QualityGates:
                 cwd=self.project_root,
                 capture_output=True,
                 text=True,
-                timeout=60
+                timeout=60, check=False
             )
             
             vulnerabilities = []
@@ -301,9 +300,9 @@ class QualityGates:
         except subprocess.TimeoutExpired:
             return False, {"error": "Dependency check timed out"}
         except Exception as e:
-            return False, {"error": f"Dependency check failed: {str(e)}"}
+            return False, {"error": f"Dependency check failed: {e!s}"}
     
-    def run_all_checks(self) -> Dict:
+    def run_all_checks(self) -> dict:
         """Run all quality gate checks"""
         print("🔍 Running Quality Gate Checks...")
         print("=" * 50)
@@ -353,7 +352,7 @@ class QualityGates:
         
         return results
     
-    def _print_summary(self, results: Dict) -> None:
+    def _print_summary(self, results: dict) -> None:
         """Print quality gate summary"""
         checks = results['checks']
         
@@ -389,7 +388,7 @@ class QualityGates:
             if not checks['dependencies']['passed']:
                 print("  - Update vulnerable dependencies")
     
-    def generate_report(self, results: Dict) -> None:
+    def generate_report(self, results: dict) -> None:
         """Generate quality gate report"""
         report_path = self.reports_dir / "quality_gates.json"
         
@@ -401,11 +400,11 @@ class QualityGates:
         with open(self.reports_dir / "quality_gates.md", 'w') as f:
             f.write(md_report)
         
-        print(f"\n📄 Reports generated:")
+        print("\n📄 Reports generated:")
         print(f"  - JSON: {report_path}")
         print(f"  - Markdown: {self.reports_dir / 'quality_gates.md'}")
     
-    def _generate_markdown_report(self, results: Dict) -> str:
+    def _generate_markdown_report(self, results: dict) -> str:
         """Generate markdown formatted report"""
         status = "✅ PASSED" if results['overall_passed'] else "❌ FAILED"
         

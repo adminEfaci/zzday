@@ -20,14 +20,14 @@ from .user_domain_service import (
 
 __all__ = [
     'AuthenticationService',
-    'UserFactory',
     'MFAService',
     'NotificationService',
+    'PasswordPolicy',
     'PasswordService',
     'PreferenceService',
     'ProfileService',
     'RegistrationService',
-    'PasswordPolicy',
     'RiskCalculationPolicy',
     'UserDomainService',
+    'UserFactory',
 ]

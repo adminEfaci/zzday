@@ -44,10 +44,10 @@ from sqlalchemy.ext.asyncio import (
 )
 
 from app.core.config import DatabaseConfig
+from app.core.constants import HEALTH_CHECK_QUERY
 from app.core.enums import HealthStatus
 from app.core.errors import InfrastructureError
 from app.core.logging import get_logger
-from app.core.constants import HEALTH_CHECK_QUERY
 
 logger = get_logger(__name__)
 

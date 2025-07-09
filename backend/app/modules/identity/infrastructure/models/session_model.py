@@ -4,18 +4,24 @@ Session Model
 SQLModel definition for session persistence.
 """
 
-from datetime import datetime, UTC
+from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID
 
-from sqlmodel import Field, SQLModel, Column, JSON
+from sqlmodel import JSON, Column, Field, SQLModel
+
 from app.modules.identity.domain.entities.session.session import Session
-from app.modules.identity.domain.entities.session.session_enums import SessionStatus, SessionType
-from app.modules.identity.domain.value_objects.token import Token, TokenType
-from app.modules.identity.domain.value_objects.ip_address import IpAddress
-from app.modules.identity.domain.value_objects.user_agent import UserAgent
-from app.modules.identity.domain.value_objects.device_fingerprint import DeviceFingerprint
+from app.modules.identity.domain.entities.session.session_enums import (
+    SessionStatus,
+    SessionType,
+)
+from app.modules.identity.domain.value_objects.device_fingerprint import (
+    DeviceFingerprint,
+)
 from app.modules.identity.domain.value_objects.geolocation import Geolocation
+from app.modules.identity.domain.value_objects.ip_address import IpAddress
+from app.modules.identity.domain.value_objects.token import Token, TokenType
+from app.modules.identity.domain.value_objects.user_agent import UserAgent
 
 
 class SessionModel(SQLModel, table=True):

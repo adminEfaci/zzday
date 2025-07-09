@@ -9,6 +9,7 @@ from datetime import UTC, datetime, timedelta
 from uuid import UUID, uuid4
 
 from app.core.domain.base import Entity
+
 from .user_constants import PasswordHistoryPolicy
 
 

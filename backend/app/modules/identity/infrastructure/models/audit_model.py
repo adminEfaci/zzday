@@ -4,13 +4,11 @@ Audit Models
 SQLModel definitions for login attempts and security events persistence.
 """
 
-from datetime import datetime, UTC
+from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID
 
-from sqlmodel import Field, SQLModel, Column, JSON, Text
-from app.modules.identity.domain.enums import LoginFailureReason, SecurityEventType, RiskLevel
-from app.modules.identity.domain.enums_security import SecurityEventStatus
+from sqlmodel import JSON, Column, Field, SQLModel, Text
 
 
 class LoginAttemptModel(SQLModel, table=True):

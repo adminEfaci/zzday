@@ -9,31 +9,31 @@ Tests cover:
 - Invariant protection
 """
 
-import pytest
-from datetime import datetime, timedelta, UTC
+from datetime import UTC, datetime, timedelta
 from uuid import uuid4
 
+import pytest
+
 from app.modules.identity.domain.aggregates.user import User
+from app.modules.identity.domain.enums import UserStatus, UserType
+from app.modules.identity.domain.errors import BusinessRuleViolation
+from app.modules.identity.domain.events.user_events import (
+    UserActivatedEvent,
+    UserCreatedEvent,
+    UserDeactivatedEvent,
+    UserDeletedEvent,
+    UserEmailChangedEvent,
+    UserLockedEvent,
+    UserPasswordChangedEvent,
+    UserProfileUpdatedEvent,
+    UserUnlockedEvent,
+)
 from app.modules.identity.domain.value_objects.email import Email
-from app.modules.identity.domain.value_objects.username import Username
 from app.modules.identity.domain.value_objects.password_hash import PasswordHash
 from app.modules.identity.domain.value_objects.phone_number import PhoneNumber
 from app.modules.identity.domain.value_objects.user_id import UserId
 from app.modules.identity.domain.value_objects.user_profile import UserProfile
-from app.modules.identity.domain.value_objects.security_stamp import SecurityStamp
-from app.modules.identity.domain.enums import UserStatus, UserType
-from app.modules.identity.domain.errors import DomainError, BusinessRuleViolation
-from app.modules.identity.domain.events.user_events import (
-    UserCreatedEvent,
-    UserActivatedEvent,
-    UserDeactivatedEvent,
-    UserLockedEvent,
-    UserUnlockedEvent,
-    UserEmailChangedEvent,
-    UserPasswordChangedEvent,
-    UserProfileUpdatedEvent,
-    UserDeletedEvent,
-)
+from app.modules.identity.domain.value_objects.username import Username
 
 
 class TestUserAggregate:

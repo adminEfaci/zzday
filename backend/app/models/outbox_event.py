@@ -4,8 +4,8 @@ OutboxEvent Model
 Domain entity representing an outbox event for the outbox pattern.
 """
 
-from datetime import datetime, UTC
-from typing import Any, Dict
+from datetime import UTC, datetime
+from typing import Any
 from uuid import UUID, uuid4
 
 from pydantic import BaseModel, Field
@@ -17,7 +17,7 @@ class OutboxEvent(BaseModel):
     id: UUID = Field(default_factory=uuid4)
     aggregate_id: UUID
     event_type: str
-    event_data: Dict[str, Any]
+    event_data: dict[str, Any]
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     processed_at: datetime | None = None
     retry_count: int = 0
@@ -58,7 +58,7 @@ class OutboxEvent(BaseModel):
             }
         )
     
-    def to_domain_event(self) -> Dict[str, Any]:
+    def to_domain_event(self) -> dict[str, Any]:
         """Convert to domain event format for publishing."""
         return {
             "id": str(self.id),

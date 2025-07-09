@@ -15,7 +15,9 @@ async def configure_audit_dependencies(container: Container) -> None:
     try:
         # Core audit services
         from app.modules.audit.domain.interfaces.repositories import IAuditLogRepository
-        from app.modules.audit.infrastructure.repositories.audit_log_repository import AuditLogRepository
+        from app.modules.audit.infrastructure.repositories.audit_log_repository import (
+            AuditLogRepository,
+        )
         
         await container.register(RegistrationRequest(
             interface=IAuditLogRepository,
@@ -36,8 +38,8 @@ async def configure_audit_dependencies(container: Container) -> None:
 
     try:
         # Audit services
-        from app.modules.audit.domain.interfaces.services import IAuditService
         from app.modules.audit.application.services.audit_service import AuditService
+        from app.modules.audit.domain.interfaces.services import IAuditService
         
         await container.register(RegistrationRequest(
             interface=IAuditService,
@@ -57,7 +59,9 @@ async def configure_audit_dependencies(container: Container) -> None:
 
     try:
         # Compliance services
-        from app.modules.audit.application.services.compliance_service import ComplianceService
+        from app.modules.audit.application.services.compliance_service import (
+            ComplianceService,
+        )
         from app.modules.audit.domain.interfaces.services import IComplianceService
         
         await container.register(RegistrationRequest(

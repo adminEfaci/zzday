@@ -8,7 +8,9 @@ from typing import TYPE_CHECKING, Protocol
 from uuid import UUID
 
 if TYPE_CHECKING:
-    from app.modules.identity.domain.entities.admin.emergency_contact import EmergencyContact
+    from app.modules.identity.domain.entities.admin.emergency_contact import (
+        EmergencyContact,
+    )
 
 
 class IEmergencyContactRepository(Protocol):

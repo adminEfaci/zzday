@@ -11,14 +11,12 @@ Date: 2025-07-09
 """
 
 import ast
-import os
+import json
 import re
 import sys
 from collections import defaultdict
-from pathlib import Path
-from typing import Dict, List, Set, Tuple
-import json
 from datetime import datetime
+from pathlib import Path
 
 
 class ArchitectureValidator:
@@ -39,7 +37,7 @@ class ArchitectureValidator:
             "missing_interfaces": 0,
         }
         
-    def validate_all(self) -> Dict:
+    def validate_all(self) -> dict:
         """Run all validation checks."""
         print("🏗️ Running Architecture Validation...")
         print("=" * 60)
@@ -75,14 +73,14 @@ class ArchitectureValidator:
                     
                 self.metrics["total_files_analyzed"] += 1
                 
-                with open(py_file, 'r', encoding='utf-8') as f:
+                with open(py_file, encoding='utf-8') as f:
                     content = f.read()
                     
                 # Parse imports
                 try:
                     tree = ast.parse(content)
                     for node in ast.walk(tree):
-                        if isinstance(node, (ast.Import, ast.ImportFrom)):
+                        if isinstance(node, ast.Import | ast.ImportFrom):
                             self._check_import(node, module, py_file)
                 except Exception as e:
                     print(f"  ⚠️ Failed to parse {py_file}: {e}")
@@ -139,18 +137,17 @@ class ArchitectureValidator:
         if ".domain." in import_path:
             return "critical"
         # Infrastructure imports are high severity
-        elif ".infrastructure." in import_path:
+        if ".infrastructure." in import_path:
             return "high"
         # Application layer imports are medium severity
-        elif ".application." in import_path:
+        if ".application." in import_path:
             return "medium"
         # Presentation layer imports are low severity
-        else:
-            return "low"
+        return "low"
     
     def _find_import_line(self, file_path: Path, import_path: str) -> int:
         """Find the line number of an import."""
-        with open(file_path, 'r', encoding='utf-8') as f:
+        with open(file_path, encoding='utf-8') as f:
             for i, line in enumerate(f, 1):
                 if import_path in line and ("import" in line or "from" in line):
                     return i
@@ -166,7 +163,7 @@ class ArchitectureValidator:
                 continue
                 
             for py_file in models_path.glob("*.py"):
-                with open(py_file, 'r', encoding='utf-8') as f:
+                with open(py_file, encoding='utf-8') as f:
                     content = f.read()
                     
                 # Look for ForeignKey patterns
@@ -217,7 +214,7 @@ class ArchitectureValidator:
                 if "__pycache__" in str(py_file):
                     continue
                     
-                with open(py_file, 'r', encoding='utf-8') as f:
+                with open(py_file, encoding='utf-8') as f:
                     content = f.read()
                     
                 for indicator in external_indicators:
@@ -318,13 +315,12 @@ class ArchitectureValidator:
         
         # This is a more complex check - for now, we'll check basic patterns
         # In a full implementation, we'd trace actual method calls
-        pass
     
-    def generate_report(self) -> Dict:
+    def generate_report(self) -> dict:
         """Generate comprehensive architecture report."""
         total_violations = sum(len(v) for v in self.violations.values())
         
-        report = {
+        return {
             "timestamp": datetime.now().isoformat(),
             "summary": {
                 "total_violations": total_violations,
@@ -338,8 +334,6 @@ class ArchitectureValidator:
             "violations_by_module": dict(self.violations),
             "health_score": self._calculate_health_score(),
         }
-        
-        return report
     
     def _count_by_severity(self, severity: str) -> int:
         """Count violations by severity level."""
@@ -376,7 +370,7 @@ class ArchitectureValidator:
         
         return max(0.0, score)
     
-    def save_report(self, report: Dict):
+    def save_report(self, report: dict):
         """Save report to file."""
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         
@@ -393,11 +387,11 @@ class ArchitectureValidator:
         with open(md_path, 'w') as f:
             f.write(self._generate_markdown_report(report))
         
-        print(f"\n📄 Reports saved:")
+        print("\n📄 Reports saved:")
         print(f"   JSON: {json_path}")
         print(f"   Markdown: {md_path}")
     
-    def _generate_markdown_report(self, report: Dict) -> str:
+    def _generate_markdown_report(self, report: dict) -> str:
         """Generate markdown version of the report."""
         md = f"""# Architecture Validation Report
 

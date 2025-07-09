@@ -7,15 +7,15 @@ SQLModel-based implementation of the user repository interface.
 from typing import Any
 from uuid import UUID
 
-from sqlmodel import Session, select, and_, or_, col, func
+from sqlmodel import Session, and_, col, func, or_, select
+
 from app.core.infrastructure.repository import SQLRepository
 from app.modules.identity.domain.aggregates.user import User
-from app.modules.identity.domain.interfaces.repositories.user_repository import IUserRepository
+from app.modules.identity.domain.interfaces.repositories.user_repository import (
+    IUserRepository,
+)
 from app.modules.identity.domain.specifications.user_specs import UserSpecification
 from app.modules.identity.infrastructure.models.user_model import UserModel
-from app.modules.identity.domain.value_objects.email import Email
-from app.modules.identity.domain.value_objects.username import Username
-from app.modules.identity.domain.value_objects.phone_number import PhoneNumber
 
 
 class SQLUserRepository(SQLRepository[User, UserModel], IUserRepository):
@@ -212,7 +212,7 @@ class SQLUserRepository(SQLRepository[User, UserModel], IUserRepository):
     
     async def update_last_login(self, user_id: UUID, ip_address: str | None = None) -> None:
         """Update user's last login timestamp."""
-        from datetime import datetime, UTC
+        from datetime import UTC, datetime
         
         stmt = select(UserModel).where(UserModel.id == user_id)
         result = await self.session.exec(stmt)

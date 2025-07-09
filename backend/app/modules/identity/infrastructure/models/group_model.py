@@ -4,11 +4,11 @@ Group Model
 SQLModel definition for group persistence.
 """
 
-from datetime import datetime, UTC
+from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID
 
-from sqlmodel import Field, SQLModel, Column, JSON, Relationship
+from sqlmodel import JSON, Column, Field, Relationship, SQLModel
 
 
 class GroupModel(SQLModel, table=True):

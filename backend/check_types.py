@@ -5,6 +5,7 @@ Script to check type annotations in specific files.
 import subprocess
 import sys
 
+
 def check_file_types(filepath):
     """Check types for a specific file."""
     try:
@@ -16,15 +17,14 @@ def check_file_types(filepath):
             '--no-strict-optional',
             '--show-error-codes',
             '--explicit-package-bases'
-        ], capture_output=True, text=True, cwd='.')
+        ], capture_output=True, text=True, cwd='.', check=False)
         
         if result.returncode == 0:
             print(f"✓ {filepath}: No type errors found")
             return True
-        else:
-            print(f"✗ {filepath}: Type errors found")
-            print(result.stdout)
-            return False
+        print(f"✗ {filepath}: Type errors found")
+        print(result.stdout)
+        return False
     except Exception as e:
         print(f"Error checking {filepath}: {e}")
         return False
@@ -54,9 +54,8 @@ def main():
     if passed == total:
         print("🎉 All assigned files have proper type annotations!")
         return 0
-    else:
-        print("❌ Some files still have type errors")
-        return 1
+    print("❌ Some files still have type errors")
+    return 1
 
 if __name__ == "__main__":
     sys.exit(main())

@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any
-from uuid import UUID, uuid4
+from uuid import UUID
 
 if TYPE_CHECKING:
     from app.modules.identity.domain.aggregates.user import User
@@ -15,10 +15,10 @@ if TYPE_CHECKING:
 from ...entities.role.permission import Permission
 from ...entities.role.role import Role
 from ...entities.user.user_events import (
-    UserRoleAssigned,
-    UserRoleRemoved,
     UserPermissionGranted,
     UserPermissionRevoked,
+    UserRoleAssigned,
+    UserRoleRemoved,
 )
 from ...enums import PermissionAction, ResourceType
 from ...value_objects.permission_scope import PermissionScope

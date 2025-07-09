@@ -38,7 +38,7 @@ import time
 from abc import ABC, abstractmethod
 from contextlib import contextmanager, suppress
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID, uuid4
 
@@ -735,7 +735,7 @@ class StructuredLogger:
             "message": message,
             "level": level.level_name,
             "logger": self.name,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             **kwargs,
         }
 
@@ -764,7 +764,7 @@ class StructuredLogger:
                 message, **{k: v for k, v in record.items() if k != "message"}
             )
             self._log_count += 1
-            self._last_log_time = datetime.now(timezone.utc)
+            self._last_log_time = datetime.now(UTC)
             
             # Track metrics
             try:

@@ -10,8 +10,9 @@ Tests cover:
 """
 
 import pytest
-from app.modules.identity.domain.value_objects.username import Username
+
 from app.modules.identity.domain.errors import DomainError
+from app.modules.identity.domain.value_objects.username import Username
 
 
 class TestUsername:

@@ -5,15 +5,14 @@ ensuring events are processed in the correct order across multiple consumers.
 """
 
 import asyncio
-import time
-from collections import defaultdict, deque
+from collections import defaultdict
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
-from typing import Any, Callable, Dict, List, Optional, Set, Tuple
-from uuid import UUID, uuid4
+from datetime import datetime
+from typing import Any
+from uuid import uuid4
 
 from app.core.logging import get_logger
-from app.modules.identity.infrastructure.events.store.schemas import EventRecord
 
 logger = get_logger(__name__)
 
@@ -26,10 +25,10 @@ class OrderedEvent:
     sequence_number: int
     timestamp: datetime
     event_type: str
-    event_data: Dict[str, Any]
-    metadata: Dict[str, Any] = field(default_factory=dict)
-    partition_key: Optional[str] = None
-    ordering_key: Optional[str] = None
+    event_data: dict[str, Any]
+    metadata: dict[str, Any] = field(default_factory=dict)
+    partition_key: str | None = None
+    ordering_key: str | None = None
     
     def __post_init__(self):
         if not self.event_id:
@@ -43,9 +42,9 @@ class EventSequence:
     """Sequence state for ordered event processing."""
     stream_id: str
     last_sequence_number: int
-    pending_events: Dict[int, OrderedEvent] = field(default_factory=dict)
-    consumer_positions: Dict[str, int] = field(default_factory=dict)
-    last_processed_time: Optional[datetime] = None
+    pending_events: dict[int, OrderedEvent] = field(default_factory=dict)
+    consumer_positions: dict[str, int] = field(default_factory=dict)
+    last_processed_time: datetime | None = None
     
     def __post_init__(self):
         if not self.last_processed_time:
@@ -54,7 +53,6 @@ class EventSequence:
 
 class EventOrderingError(Exception):
     """Event ordering specific errors."""
-    pass
 
 
 class SequenceGapError(EventOrderingError):
@@ -71,14 +69,14 @@ class EventSequencer:
     """Manages event sequencing and ordering."""
     
     def __init__(self, max_out_of_order_events: int = 1000):
-        self.sequences: Dict[str, EventSequence] = {}
+        self.sequences: dict[str, EventSequence] = {}
         self.max_out_of_order_events = max_out_of_order_events
         self.total_events_processed = 0
         self.out_of_order_events = 0
         self.sequence_gaps_detected = 0
         self._lock = asyncio.Lock()
     
-    async def add_event(self, event: OrderedEvent) -> List[OrderedEvent]:
+    async def add_event(self, event: OrderedEvent) -> list[OrderedEvent]:
         """Add an event to the sequencer and return any events ready for processing.
         
         Args:
@@ -161,7 +159,7 @@ class EventSequencer:
             
             return ready_events
     
-    async def get_pending_events(self, stream_id: str) -> List[OrderedEvent]:
+    async def get_pending_events(self, stream_id: str) -> list[OrderedEvent]:
         """Get pending events for a stream.
         
         Args:
@@ -177,7 +175,7 @@ class EventSequencer:
             sequence = self.sequences[stream_id]
             return list(sequence.pending_events.values())
     
-    async def force_process_pending(self, stream_id: str, timeout_seconds: int = 30) -> List[OrderedEvent]:
+    async def force_process_pending(self, stream_id: str, timeout_seconds: int = 30) -> list[OrderedEvent]:
         """Force process pending events after timeout.
         
         Args:
@@ -221,7 +219,7 @@ class EventSequencer:
             
             return processed_events
     
-    def get_sequence_stats(self) -> Dict[str, Any]:
+    def get_sequence_stats(self) -> dict[str, Any]:
         """Get sequencing statistics.
         
         Returns:
@@ -244,11 +242,11 @@ class PartitionedEventProcessor:
     
     def __init__(self, num_partitions: int = 16):
         self.num_partitions = num_partitions
-        self.sequencers: Dict[int, EventSequencer] = {}
-        self.partition_assignments: Dict[str, int] = {}
-        self.event_processors: Dict[int, Callable] = {}
-        self.processing_tasks: Dict[int, asyncio.Task] = {}
-        self.event_queues: Dict[int, asyncio.Queue] = {}
+        self.sequencers: dict[int, EventSequencer] = {}
+        self.partition_assignments: dict[str, int] = {}
+        self.event_processors: dict[int, Callable] = {}
+        self.processing_tasks: dict[int, asyncio.Task] = {}
+        self.event_queues: dict[int, asyncio.Queue] = {}
         self.running = False
         
         # Initialize sequencers and queues
@@ -341,7 +339,7 @@ class PartitionedEventProcessor:
                 # Get event from queue with timeout
                 try:
                     event = await asyncio.wait_for(event_queue.get(), timeout=1.0)
-                except asyncio.TimeoutError:
+                except TimeoutError:
                     # Check for pending events that have timed out
                     for stream_id in list(sequencer.sequences.keys()):
                         timeout_events = await sequencer.force_process_pending(stream_id)
@@ -369,7 +367,7 @@ class PartitionedEventProcessor:
         
         logger.info(f"Stopped processing partition {partition}")
     
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """Get processor statistics.
         
         Returns:
@@ -405,8 +403,8 @@ class EventOrderingService:
     
     def __init__(self, num_partitions: int = 16):
         self.processor = PartitionedEventProcessor(num_partitions)
-        self.event_handlers: Dict[str, List[Callable]] = defaultdict(list)
-        self.global_handlers: List[Callable] = []
+        self.event_handlers: dict[str, list[Callable]] = defaultdict(list)
+        self.global_handlers: list[Callable] = []
         self.running = False
     
     def register_handler(self, event_type: str, handler: Callable) -> None:
@@ -496,7 +494,7 @@ class EventOrderingService:
         """
         await self.processor.submit_event(event)
     
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """Get service statistics.
         
         Returns:
@@ -512,7 +510,7 @@ class EventOrderingService:
             "processor_stats": self.processor.get_stats(),
         }
     
-    async def health_check(self) -> Dict[str, Any]:
+    async def health_check(self) -> dict[str, Any]:
         """Perform health check on the service.
         
         Returns:
@@ -529,7 +527,7 @@ class EventOrderingService:
 
 
 # Global event ordering service
-_event_ordering_service: Optional[EventOrderingService] = None
+_event_ordering_service: EventOrderingService | None = None
 
 
 def get_event_ordering_service() -> EventOrderingService:

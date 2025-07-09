@@ -5,18 +5,19 @@ SQLModel-based implementation of the role repository interface.
 """
 
 from datetime import UTC, datetime
-from typing import Any
 from uuid import UUID
 
-from sqlmodel import Session, and_, col, func, or_, select
+from sqlmodel import Session, and_, func, select
 
 from app.core.infrastructure.repository import SQLRepository
 from app.modules.identity.domain.entities.role.role import Role
-from app.modules.identity.domain.interfaces.repositories.role_repository import IRoleRepository
+from app.modules.identity.domain.interfaces.repositories.role_repository import (
+    IRoleRepository,
+)
 from app.modules.identity.infrastructure.models.role_model import (
     RoleModel,
     RolePermissionAssociation,
-    RoleUserAssociation
+    RoleUserAssociation,
 )
 
 

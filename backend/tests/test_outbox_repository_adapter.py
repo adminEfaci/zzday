@@ -2,15 +2,17 @@
 Tests for OutboxRepositoryAdapter.
 """
 
-import pytest
-from datetime import datetime, UTC, timedelta
+from unittest.mock import AsyncMock, Mock
 from uuid import uuid4
-from unittest.mock import Mock, AsyncMock, patch
 
-from app.infrastructure.database.adapters.outbox_repository_adapter import OutboxRepositoryAdapter
-from app.models.outbox_event import OutboxEvent
-from app.infrastructure.database.models.outbox_event_model import OutboxEventModel
+import pytest
+
 from app.core.errors import InfrastructureError
+from app.infrastructure.database.adapters.outbox_repository_adapter import (
+    OutboxRepositoryAdapter,
+)
+from app.infrastructure.database.models.outbox_event_model import OutboxEventModel
+from app.models.outbox_event import OutboxEvent
 
 
 @pytest.fixture

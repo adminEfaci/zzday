@@ -4,20 +4,26 @@ Session Repository Implementation
 SQLModel-based implementation of the session repository interface.
 """
 
-from datetime import datetime, UTC
+from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID
 
-from sqlmodel import Session, select, and_, or_, col, func
+from sqlmodel import Session, and_, col, func, select
+
 from app.core.infrastructure.repository import SQLRepository
-from app.modules.identity.domain.entities.session.session import Session as DomainSession
-from app.modules.identity.domain.entities.session.session_enums import SessionStatus, SessionType
-from app.modules.identity.domain.interfaces.repositories.session.session_repository import ISessionRepository
-from app.modules.identity.domain.specifications.session_specs import SessionSpecification
+from app.modules.identity.domain.entities.session.session import (
+    Session as DomainSession,
+)
+from app.modules.identity.domain.entities.session.session_enums import (
+    SessionStatus,
+)
+from app.modules.identity.domain.interfaces.repositories.session.session_repository import (
+    ISessionRepository,
+)
+from app.modules.identity.domain.specifications.session_specs import (
+    SessionSpecification,
+)
 from app.modules.identity.infrastructure.models.session_model import SessionModel
-from app.modules.identity.domain.value_objects.ip_address import IpAddress
-from app.modules.identity.domain.value_objects.user_agent import UserAgent
-from app.modules.identity.domain.value_objects.device_fingerprint import DeviceFingerprint
 
 
 class SQLSessionRepository(SQLRepository[DomainSession, SessionModel], ISessionRepository):

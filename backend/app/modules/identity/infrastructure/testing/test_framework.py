@@ -7,14 +7,13 @@ integration test support.
 
 import asyncio
 import tempfile
-from contextlib import asynccontextmanager
-from typing import Any, Dict, List, Optional, Type, TypeVar, Union
-from unittest.mock import MagicMock, AsyncMock, patch
-import pytest
+from typing import Any, TypeVar
+from unittest.mock import MagicMock
 from uuid import uuid4
 
+import pytest
+
 from app.core.domain.base import AggregateRoot, Entity
-from app.core.domain.specification import Specification
 from app.modules.identity.infrastructure.config.connection_pool import (
     ConnectionPoolConfig,
     ConnectionPoolManager,
@@ -22,7 +21,6 @@ from app.modules.identity.infrastructure.config.connection_pool import (
 from app.modules.identity.infrastructure.resilience.circuit_breaker import (
     CircuitBreaker,
     CircuitBreakerConfig,
-    CircuitBreakerManager,
 )
 
 TEntity = TypeVar("TEntity", bound=Entity)
@@ -33,10 +31,10 @@ class MockDatabase:
     """Mock database for testing repositories."""
     
     def __init__(self):
-        self.data: Dict[str, Dict[str, Any]] = {}
-        self.sequences: Dict[str, int] = {}
+        self.data: dict[str, dict[str, Any]] = {}
+        self.sequences: dict[str, int] = {}
         self.call_count = 0
-        self.queries: List[str] = []
+        self.queries: list[str] = []
     
     def reset(self):
         """Reset mock database state."""
@@ -51,7 +49,7 @@ class MockDatabase:
             self.data[table_name] = {}
             self.sequences[table_name] = 0
     
-    def insert(self, table_name: str, record: Dict[str, Any]) -> str:
+    def insert(self, table_name: str, record: dict[str, Any]) -> str:
         """Insert a record into the mock database."""
         self.call_count += 1
         self.queries.append(f"INSERT INTO {table_name}")
@@ -65,7 +63,7 @@ class MockDatabase:
         
         return record_id
     
-    def select(self, table_name: str, record_id: str) -> Optional[Dict[str, Any]]:
+    def select(self, table_name: str, record_id: str) -> dict[str, Any] | None:
         """Select a record by ID."""
         self.call_count += 1
         self.queries.append(f"SELECT FROM {table_name} WHERE id = {record_id}")
@@ -75,7 +73,7 @@ class MockDatabase:
         
         return self.data[table_name].get(record_id)
     
-    def select_all(self, table_name: str) -> List[Dict[str, Any]]:
+    def select_all(self, table_name: str) -> list[dict[str, Any]]:
         """Select all records from a table."""
         self.call_count += 1
         self.queries.append(f"SELECT FROM {table_name}")
@@ -85,7 +83,7 @@ class MockDatabase:
         
         return list(self.data[table_name].values())
     
-    def update(self, table_name: str, record_id: str, updates: Dict[str, Any]) -> bool:
+    def update(self, table_name: str, record_id: str, updates: dict[str, Any]) -> bool:
         """Update a record."""
         self.call_count += 1
         self.queries.append(f"UPDATE {table_name} WHERE id = {record_id}")
@@ -128,7 +126,7 @@ class MockSession:
         self.committed = False
         self.rolled_back = False
     
-    async def get(self, model_type: Type, entity_id: str) -> Optional[Any]:
+    async def get(self, model_type: type, entity_id: str) -> Any | None:
         """Get entity by ID."""
         table_name = model_type.__name__.lower()
         record = self.database.select(table_name, entity_id)
@@ -153,7 +151,6 @@ class MockSession:
     def add(self, instance: Any) -> None:
         """Add instance to session."""
         # Mock implementation
-        pass
     
     async def commit(self) -> None:
         """Commit transaction."""
@@ -172,14 +169,13 @@ class MockSession:
     async def delete(self, instance: Any) -> None:
         """Delete instance."""
         # Mock implementation
-        pass
 
 
 class MockCache:
     """Mock cache for testing."""
     
     def __init__(self):
-        self.data: Dict[str, Any] = {}
+        self.data: dict[str, Any] = {}
         self.hits = 0
         self.misses = 0
         self.sets = 0
@@ -193,16 +189,15 @@ class MockCache:
         self.sets = 0
         self.deletes = 0
     
-    async def get(self, key: str) -> Optional[Any]:
+    async def get(self, key: str) -> Any | None:
         """Get value from cache."""
         if key in self.data:
             self.hits += 1
             return self.data[key]
-        else:
-            self.misses += 1
-            return None
+        self.misses += 1
+        return None
     
-    async def set(self, key: str, value: Any, ttl: Optional[int] = None) -> None:
+    async def set(self, key: str, value: Any, ttl: int | None = None) -> None:
         """Set value in cache."""
         self.sets += 1
         self.data[key] = value
@@ -213,7 +208,7 @@ class MockCache:
         if key in self.data:
             del self.data[key]
     
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """Get cache statistics."""
         return {
             "hits": self.hits,
@@ -229,13 +224,13 @@ class MockEventStore:
     """Mock event store for testing."""
     
     def __init__(self):
-        self.events: List[Dict[str, Any]] = []
+        self.events: list[dict[str, Any]] = []
     
     def reset(self):
         """Reset event store state."""
         self.events.clear()
     
-    async def store_events(self, aggregate_id: str, events: List[Any]) -> None:
+    async def store_events(self, aggregate_id: str, events: list[Any]) -> None:
         """Store events for an aggregate."""
         for event in events:
             self.events.append({
@@ -248,11 +243,11 @@ class MockEventStore:
         """Store single event."""
         await self.store_events(aggregate_id, [event])
     
-    def get_events(self, aggregate_id: str) -> List[Dict[str, Any]]:
+    def get_events(self, aggregate_id: str) -> list[dict[str, Any]]:
         """Get events for an aggregate."""
         return [e for e in self.events if e["aggregate_id"] == aggregate_id]
     
-    def get_all_events(self) -> List[Dict[str, Any]]:
+    def get_all_events(self) -> list[dict[str, Any]]:
         """Get all events."""
         return self.events.copy()
 
@@ -260,7 +255,7 @@ class MockEventStore:
 class RepositoryTestCase:
     """Base test case for repository testing."""
     
-    def __init__(self, repository_class: Type, entity_class: Type):
+    def __init__(self, repository_class: type, entity_class: type):
         self.repository_class = repository_class
         self.entity_class = entity_class
         self.mock_database = MockDatabase()
@@ -384,7 +379,7 @@ class RepositoryTestCase:
 class AdapterTestCase:
     """Base test case for adapter testing."""
     
-    def __init__(self, adapter_class: Type):
+    def __init__(self, adapter_class: type):
         self.adapter_class = adapter_class
         self.adapter = None
         self.mock_external_service = MagicMock()
@@ -513,21 +508,21 @@ class InfrastructureTestSuite:
     """Complete test suite for infrastructure testing."""
     
     def __init__(self):
-        self.repository_tests: List[RepositoryTestCase] = []
-        self.adapter_tests: List[AdapterTestCase] = []
+        self.repository_tests: list[RepositoryTestCase] = []
+        self.adapter_tests: list[AdapterTestCase] = []
         self.connection_pool_test = ConnectionPoolTestCase()
     
-    def add_repository_test(self, repository_class: Type, entity_class: Type):
+    def add_repository_test(self, repository_class: type, entity_class: type):
         """Add repository test case."""
         test_case = RepositoryTestCase(repository_class, entity_class)
         self.repository_tests.append(test_case)
     
-    def add_adapter_test(self, adapter_class: Type):
+    def add_adapter_test(self, adapter_class: type):
         """Add adapter test case."""
         test_case = AdapterTestCase(adapter_class)
         self.adapter_tests.append(test_case)
     
-    async def run_all_tests(self) -> Dict[str, Any]:
+    async def run_all_tests(self) -> dict[str, Any]:
         """Run all infrastructure tests."""
         results = {
             "repository_tests": {},
@@ -559,7 +554,7 @@ class InfrastructureTestSuite:
         
         return results
     
-    async def _run_repository_tests(self, test_case: RepositoryTestCase) -> Dict[str, Any]:
+    async def _run_repository_tests(self, test_case: RepositoryTestCase) -> dict[str, Any]:
         """Run repository tests."""
         test_results = {
             "setup": False,
@@ -602,7 +597,7 @@ class InfrastructureTestSuite:
         
         return test_results
     
-    async def _run_adapter_tests(self, test_case: AdapterTestCase) -> Dict[str, Any]:
+    async def _run_adapter_tests(self, test_case: AdapterTestCase) -> dict[str, Any]:
         """Run adapter tests."""
         test_results = {
             "setup": False,
@@ -642,7 +637,7 @@ class InfrastructureTestSuite:
         
         return test_results
     
-    async def _run_connection_pool_tests(self) -> Dict[str, Any]:
+    async def _run_connection_pool_tests(self) -> dict[str, Any]:
         """Run connection pool tests."""
         test_results = {
             "setup": False,
@@ -682,7 +677,7 @@ class InfrastructureTestSuite:
         
         return test_results
     
-    def _calculate_summary(self, results: Dict[str, Any]):
+    def _calculate_summary(self, results: dict[str, Any]):
         """Calculate test summary."""
         summary = results["summary"]
         
@@ -723,7 +718,7 @@ def create_test_database() -> str:
     return f"sqlite:///{temp_file.name}"
 
 
-async def run_infrastructure_tests() -> Dict[str, Any]:
+async def run_infrastructure_tests() -> dict[str, Any]:
     """Run all infrastructure tests."""
     test_suite = InfrastructureTestSuite()
     

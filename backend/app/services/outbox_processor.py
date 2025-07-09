@@ -5,12 +5,11 @@ Background service to process outbox events with retry logic.
 """
 
 import asyncio
-from typing import Any, Dict, List, Optional
-from uuid import UUID
+from typing import Any
 
 from app.core.logging import get_logger
-from app.repositories.outbox_repository import OutboxRepository
 from app.models.outbox_event import OutboxEvent
+from app.repositories.outbox_repository import OutboxRepository
 
 logger = get_logger(__name__)
 
@@ -23,7 +22,7 @@ class EventBus:
     (e.g., RabbitMQ, Redis, Kafka, etc.).
     """
     
-    async def publish(self, event: Dict[str, Any]) -> None:
+    async def publish(self, event: dict[str, Any]) -> None:
         """
         Publish domain event to event bus.
         
@@ -101,7 +100,7 @@ class OutboxProcessor:
         self,
         outbox_repo: OutboxRepository,
         event_bus: EventBus,
-        retry_policy: Optional[RetryPolicy] = None,
+        retry_policy: RetryPolicy | None = None,
         batch_size: int = 100,
         poll_interval: float = 5.0,
         max_concurrent_events: int = 10
@@ -126,7 +125,7 @@ class OutboxProcessor:
         
         # Processing state
         self._running = False
-        self._task: Optional[asyncio.Task] = None
+        self._task: asyncio.Task | None = None
         self._semaphore = asyncio.Semaphore(max_concurrent_events)
     
     async def start(self) -> None:
@@ -337,7 +336,7 @@ class OutboxProcessor:
             failures=failures
         )
     
-    async def get_failed_events(self) -> List[OutboxEvent]:
+    async def get_failed_events(self) -> list[OutboxEvent]:
         """
         Get events that have exhausted retries.
         

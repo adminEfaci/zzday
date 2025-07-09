@@ -9,7 +9,7 @@ from __future__ import annotations
 import secrets
 from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING, Any
-from uuid import UUID, uuid4
+from uuid import uuid4
 
 if TYPE_CHECKING:
     from app.modules.identity.domain.aggregates.user import User
@@ -17,8 +17,6 @@ if TYPE_CHECKING:
 from app.core.security import hash_password
 
 from ...entities.user.user_errors import (
-    DuplicateEmailError,
-    DuplicateUsernameError,
     InvalidRegistrationDataError,
 )
 from ...entities.user.user_events import (

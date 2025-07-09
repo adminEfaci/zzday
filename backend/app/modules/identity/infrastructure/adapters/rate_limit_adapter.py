@@ -6,13 +6,15 @@ Provides rate limiting functionality using sliding window algorithm.
 """
 
 import time
-from datetime import datetime, UTC
+from datetime import UTC, datetime
 from typing import Any
 
 from redis.asyncio import Redis
 
 from app.core.logging import logger
-from app.modules.identity.domain.interfaces.services.monitoring.rate_limit_port import IRateLimitPort
+from app.modules.identity.domain.interfaces.services.monitoring.rate_limit_port import (
+    IRateLimitPort,
+)
 from app.modules.identity.domain.value_objects.rate_limit_status import RateLimitStatus
 
 

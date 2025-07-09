@@ -4,22 +4,27 @@ Database Performance Tests
 Tests database operation performance against established baselines.
 """
 
-import pytest
-import asyncio
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import text
 
-from app.tests.performance.performance_baselines import (
-    PerformanceMonitor,
-    PerformanceRegistry,
-    LoadTestScenario,
+import pytest
+from sqlalchemy import text
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.modules.identity.infrastructure.repositories.role_repository import (
+    SQLRoleRepository,
 )
-from app.tests.builders.user_builder import UserBuilder
+from app.modules.identity.infrastructure.repositories.session_repository import (
+    SQLSessionRepository,
+)
+from app.modules.identity.infrastructure.repositories.user_repository import (
+    SQLUserRepository,
+)
 from app.tests.builders.role_builder import RoleBuilder
 from app.tests.builders.session_builder import SessionBuilder
-from app.modules.identity.infrastructure.repositories.user_repository import SQLUserRepository
-from app.modules.identity.infrastructure.repositories.role_repository import SQLRoleRepository
-from app.modules.identity.infrastructure.repositories.session_repository import SQLSessionRepository
+from app.tests.builders.user_builder import UserBuilder
+from app.tests.performance.performance_baselines import (
+    LoadTestScenario,
+    PerformanceMonitor,
+)
 
 
 @pytest.mark.performance
@@ -368,11 +373,11 @@ class TestDatabaseLoadPerformance:
                 user = random.choice(test_users)
                 found_user = await user_repo.find_by_id(user.id)
                 return found_user is not None
-            else:  # 30% writes
-                user_builder = UserBuilder()
-                user = user_builder.build()
-                await user_repo.save(user)
-                return True
+            # 30% writes
+            user_builder = UserBuilder()
+            user = user_builder.build()
+            await user_repo.save(user)
+            return True
         
         # Run load test
         await scenario.run_load_test(mixed_operation)

@@ -5,17 +5,17 @@ Handles MFA challenge events (completed/failed) from the Identity module
 and creates corresponding audit trails with risk assessment.
 """
 
-import logging
-from datetime import datetime, UTC
-from typing import Any
-from uuid import UUID
 
-from app.modules.identity.domain.events import MFAChallengeCompleted, MFAChallengeFailed
-from app.modules.audit.application.services.audit_service import AuditService
-from app.modules.audit.domain.enums import AuditAction, AuditOutcome, AuditSeverity, AuditCategory
 from app.core.events.handlers import EventHandler
 from app.core.logging import get_logger
-
+from app.modules.audit.application.services.audit_service import AuditService
+from app.modules.audit.domain.enums import (
+    AuditAction,
+    AuditCategory,
+    AuditOutcome,
+    AuditSeverity,
+)
+from app.modules.identity.domain.events import MFAChallengeCompleted, MFAChallengeFailed
 
 logger = get_logger(__name__)
 
@@ -266,7 +266,6 @@ class MFAChallengeFailedEventHandler(EventHandler[MFAChallengeFailed]):
         """
         if attempt >= 5:
             return AuditSeverity.HIGH
-        elif attempt >= 3:
+        if attempt >= 3:
             return AuditSeverity.MEDIUM
-        else:
-            return AuditSeverity.LOW
+        return AuditSeverity.LOW

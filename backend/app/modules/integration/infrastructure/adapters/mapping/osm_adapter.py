@@ -589,7 +589,7 @@ class OSMAdapter(BaseMappingAdapter):
             error_message = (
                 f"OSRM error: {data.get('message', f'HTTP {response.status_code}')}"
             )
-        except (ValueError, TypeError, KeyError) as e:
+        except (ValueError, TypeError, KeyError):
             error_message = f"OSRM error: HTTP {response.status_code}"
 
         is_retryable = response.status_code >= 500

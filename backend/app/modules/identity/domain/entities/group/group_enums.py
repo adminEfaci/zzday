@@ -5,7 +5,6 @@ Enums with rich utility methods for group management and membership.
 """
 
 from enum import Enum
-from typing import List, Set
 
 
 class GroupType(str, Enum):
@@ -49,7 +48,7 @@ class GroupType(str, Enum):
         return self in [self.DEPARTMENT, self.ORGANIZATION, self.CUSTOM]
     
     @classmethod
-    def get_hierarchical_types(cls) -> List['GroupType']:
+    def get_hierarchical_types(cls) -> list['GroupType']:
         """Get types that support hierarchy."""
         return [cls.DEPARTMENT, cls.ORGANIZATION, cls.CUSTOM]
 
@@ -93,7 +92,7 @@ class GroupVisibility(str, Enum):
         return self.privacy_level > other.privacy_level
     
     @classmethod
-    def get_public_levels(cls) -> List['GroupVisibility']:
+    def get_public_levels(cls) -> list['GroupVisibility']:
         """Get visibility levels that are publicly discoverable."""
         return [cls.PUBLIC, cls.INTERNAL]
 
@@ -147,12 +146,12 @@ class GroupMemberRole(str, Enum):
         return self in [self.OWNER, self.ADMIN]
     
     @classmethod
-    def get_management_roles(cls) -> List['GroupMemberRole']:
+    def get_management_roles(cls) -> list['GroupMemberRole']:
         """Get roles that can manage others."""
         return [cls.OWNER, cls.ADMIN, cls.MODERATOR]
     
     @classmethod
-    def get_roles_below(cls, role: 'GroupMemberRole') -> List['GroupMemberRole']:
+    def get_roles_below(cls, role: 'GroupMemberRole') -> list['GroupMemberRole']:
         """Get all roles below the specified role."""
         all_roles = [cls.GUEST, cls.MEMBER, cls.MODERATOR, cls.ADMIN, cls.OWNER]
         role_index = all_roles.index(role)
@@ -199,7 +198,7 @@ class GroupJoinMethod(str, Enum):
         return self in [self.OPEN, self.REQUEST]
     
     @classmethod
-    def get_restrictive_methods(cls) -> List['GroupJoinMethod']:
+    def get_restrictive_methods(cls) -> list['GroupJoinMethod']:
         """Get methods that restrict joining."""
         return [cls.INVITE_ONLY, cls.ADMIN_ADD]
 
@@ -245,7 +244,7 @@ class GroupStatus(str, Enum):
         return self in [self.INACTIVE, self.SUSPENDED, self.ARCHIVED]
     
     @classmethod
-    def get_terminal_states(cls) -> List['GroupStatus']:
+    def get_terminal_states(cls) -> list['GroupStatus']:
         """Get states that are terminal (hard to reverse)."""
         return [cls.ARCHIVED, cls.DELETED]
 
@@ -274,7 +273,7 @@ class GroupInvitationStatus(str, Enum):
         return self == self.PENDING
     
     @classmethod
-    def get_final_states(cls) -> List['GroupInvitationStatus']:
+    def get_final_states(cls) -> list['GroupInvitationStatus']:
         """Get all final states."""
         return [cls.ACCEPTED, cls.DECLINED, cls.EXPIRED, cls.REVOKED]
 
@@ -308,7 +307,7 @@ class GroupMembershipRequestStatus(str, Enum):
         return self == self.APPROVED
     
     @classmethod
-    def get_final_states(cls) -> List['GroupMembershipRequestStatus']:
+    def get_final_states(cls) -> list['GroupMembershipRequestStatus']:
         """Get all final states."""
         return [cls.APPROVED, cls.REJECTED, cls.WITHDRAWN, cls.EXPIRED]
 
@@ -408,12 +407,12 @@ class GroupPermission(str, Enum):
         ]
     
     @classmethod
-    def get_basic_permissions(cls) -> Set['GroupPermission']:
+    def get_basic_permissions(cls) -> set['GroupPermission']:
         """Get basic permissions for regular members."""
         return {cls.VIEW_MEMBERS}
     
     @classmethod
-    def get_management_permissions(cls) -> Set['GroupPermission']:
+    def get_management_permissions(cls) -> set['GroupPermission']:
         """Get permissions for management roles."""
         return {
             cls.VIEW_MEMBERS, cls.ADD_MEMBERS, cls.REMOVE_MEMBERS,

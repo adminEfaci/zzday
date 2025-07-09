@@ -8,26 +8,23 @@ Tests cover:
 - Validation rules
 """
 
-import pytest
-from datetime import datetime, UTC
+from datetime import UTC, datetime
 from uuid import uuid4
+
+import pytest
 from pydantic import ValidationError
 
 from app.modules.identity.application.dtos.request.user_dtos import (
+    ChangePasswordRequest,
+    UserFilterRequest,
     UserRegistrationRequest,
     UserUpdateRequest,
-    ChangePasswordRequest,
-    ResetPasswordRequest,
-    UserSearchRequest,
-    UserFilterRequest,
 )
 from app.modules.identity.application.dtos.response.user_dtos import (
-    UserDTO,
-    UserListDTO,
-    UserProfileDTO,
-    UserRegistrationResponse,
     LoginResponse,
     PaginatedUsersDTO,
+    UserDTO,
+    UserListDTO,
 )
 from app.modules.identity.domain.enums import UserStatus, UserType
 

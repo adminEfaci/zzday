@@ -5,16 +5,16 @@ Tests the foundation of the contract system including
 ContractEvent, ContractCommand, ContractQuery, and ModuleContract.
 """
 
-import pytest
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
+import pytest
+
 from app.core.contracts.base import (
-    ContractEvent,
     ContractCommand,
+    ContractEvent,
     ContractQuery,
-    ContractMessage,
     MessageMetadata,
     ModuleContract,
 )
@@ -145,7 +145,7 @@ class TestContractEvent:
     def test_create_event(self):
         """Test creating a contract event."""
         user_id = uuid4()
-        timestamp = datetime.now(timezone.utc)
+        timestamp = datetime.now(UTC)
         
         event = TestEvent(
             user_id=user_id,
@@ -163,7 +163,7 @@ class TestContractEvent:
         event = TestEvent(
             user_id=uuid4(),
             action="test",
-            timestamp=datetime.now(timezone.utc),
+            timestamp=datetime.now(UTC),
         )
         
         with pytest.raises(AttributeError):
@@ -176,7 +176,7 @@ class TestContractEvent:
         event = TestEvent(
             user_id=uuid4(),
             action="test",
-            timestamp=datetime.now(timezone.utc),
+            timestamp=datetime.now(UTC),
         )
         
         event_with_meta = event.with_metadata(
@@ -192,7 +192,7 @@ class TestContractEvent:
     def test_event_to_dict(self):
         """Test converting event to dictionary."""
         user_id = uuid4()
-        timestamp = datetime.now(timezone.utc)
+        timestamp = datetime.now(UTC)
         
         event = TestEvent(
             user_id=user_id,
@@ -257,7 +257,7 @@ class TestModuleContract:
         event = TestEvent(
             user_id=uuid4(),
             action="test",
-            timestamp=datetime.now(timezone.utc),
+            timestamp=datetime.now(UTC),
         )
         assert contract.validate_event(event) is True
         

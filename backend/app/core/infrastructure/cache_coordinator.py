@@ -57,18 +57,16 @@ Performance Features:
 """
 
 import asyncio
-import hashlib
-import json
 import time
 from abc import ABC, abstractmethod
+from collections.abc import Callable
 from contextlib import asynccontextmanager
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from enum import Enum
-from typing import Any, Callable, Generic, Pattern, TypeVar
-from weakref import WeakKeyDictionary
+from typing import Any, TypeVar
 
-from app.core.errors import InfrastructureError, ValidationError
+from app.core.errors import InfrastructureError
 from app.core.logging import get_logger
 
 try:
@@ -200,42 +198,34 @@ class CacheBackend(ABC):
     @abstractmethod
     async def get(self, key: str) -> CacheEntry | None:
         """Get cache entry by key."""
-        pass
     
     @abstractmethod
     async def set(self, entry: CacheEntry) -> None:
         """Set cache entry."""
-        pass
     
     @abstractmethod
     async def delete(self, key: str) -> bool:
         """Delete cache entry by key."""
-        pass
     
     @abstractmethod
     async def exists(self, key: str) -> bool:
         """Check if key exists in cache."""
-        pass
     
     @abstractmethod
     async def clear(self) -> None:
         """Clear all cache entries."""
-        pass
     
     @abstractmethod
     async def keys(self, pattern: str | None = None) -> list[str]:
         """Get all keys matching pattern."""
-        pass
     
     @abstractmethod
     async def size(self) -> int:
         """Get cache size."""
-        pass
     
     @abstractmethod
     def get_backend_type(self) -> str:
         """Get backend type identifier."""
-        pass
 
 
 class MemoryCacheBackend(CacheBackend):
@@ -375,7 +365,7 @@ class CacheTransaction:
             if op["key"] == key:
                 if op["operation"] == "set":
                     return op["value"]
-                elif op["operation"] == "delete":
+                if op["operation"] == "delete":
                     return None
         
         # Get from coordinator
@@ -857,7 +847,7 @@ class CacheCoordinator:
             yield transaction
             await transaction.commit()
         
-        except Exception as e:
+        except Exception:
             await transaction.rollback()
             raise
         
@@ -971,14 +961,14 @@ def get_cache_coordinator() -> CacheCoordinator:
 # Export main classes and functions
 __all__ = [
     "CacheBackend",
+    "CacheBackendError",
+    "CacheCoordinationError",
     "CacheCoordinator",
     "CacheEntry",
     "CacheTransaction",
+    "CacheTransactionError",
+    "CacheVersionConflictError",
     "ConsistencyLevel",
     "MemoryCacheBackend",
-    "CacheCoordinationError",
-    "CacheVersionConflictError",
-    "CacheTransactionError",
-    "CacheBackendError",
     "get_cache_coordinator",
 ]

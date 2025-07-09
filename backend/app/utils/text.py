@@ -532,6 +532,7 @@ class TextNormalizer:
 
 import warnings
 
+
 def URLValidator(*args, **kwargs):
     """
     DEPRECATED: Duplicate URLValidator removed.

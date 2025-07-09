@@ -6,8 +6,7 @@ to eliminate hardcoded test data and enable parallel test execution.
 """
 
 import uuid
-from datetime import datetime, timezone
-from typing import Optional
+from datetime import UTC, datetime
 
 from app.modules.identity.domain.entities.user import User
 from app.modules.identity.domain.value_objects.email import Email
@@ -26,8 +25,8 @@ class UserBuilder:
         self._security_stamp = SecurityStamp.generate_initial()
         self._is_active = True
         self._is_verified = True
-        self._created_at = datetime.now(timezone.utc)
-        self._updated_at = datetime.now(timezone.utc)
+        self._created_at = datetime.now(UTC)
+        self._updated_at = datetime.now(UTC)
         
     def with_id(self, user_id: uuid.UUID) -> "UserBuilder":
         """Set specific user ID."""
@@ -62,7 +61,7 @@ class UserBuilder:
         self._is_verified = True
         return self
         
-    def with_security_stamp(self, stamp: Optional[str] = None) -> "UserBuilder":
+    def with_security_stamp(self, stamp: str | None = None) -> "UserBuilder":
         """Set specific security stamp or generate new one."""
         if stamp:
             self._security_stamp = SecurityStamp(stamp)

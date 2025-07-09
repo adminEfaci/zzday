@@ -4,17 +4,15 @@ Real integration testing container.
 Provides real infrastructure components for true integration testing.
 """
 
-import asyncio
-from contextlib import asynccontextmanager
-from typing import AsyncGenerator
+from collections.abc import AsyncGenerator
 
 import pytest
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
 
-from app.main import app
 from app.core.database import Base, get_async_session
+from app.main import app
 
 
 class TestContainer:

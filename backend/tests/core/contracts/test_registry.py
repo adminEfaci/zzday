@@ -5,13 +5,13 @@ Tests the contract registry that manages module contracts
 and enables contract discovery.
 """
 
-import pytest
 from dataclasses import dataclass
-from uuid import uuid4
+
+import pytest
 
 from app.core.contracts.base import (
-    ContractEvent,
     ContractCommand,
+    ContractEvent,
     ContractQuery,
     ModuleContract,
 )

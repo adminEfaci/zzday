@@ -162,14 +162,14 @@ class SessionRiskScoreChanged(IdentityDomainEvent):
 __all__ = [
     'SessionCreated',
     'SessionExpired',
-    'SessionRevoked',
-    'SessionSuspended', 
-    'SessionResumed',
-    'TokenRefreshed',
-    'TokenRevoked',
+    'SessionLocationChanged',
     'SessionMFACompleted',
     'SessionPrivilegeElevated',
+    'SessionResumed',
+    'SessionRevoked',
+    'SessionRiskScoreChanged',
     'SessionSecurityEvent',
-    'SessionLocationChanged',
-    'SessionRiskScoreChanged'
+    'SessionSuspended',
+    'TokenRefreshed',
+    'TokenRevoked'
 ]

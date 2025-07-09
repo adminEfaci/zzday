@@ -9,20 +9,20 @@ Tests cover:
 - Session refresh
 """
 
+from datetime import UTC, datetime, timedelta
+
 import pytest
-from datetime import datetime, timedelta, UTC
-from uuid import uuid4
 
 from app.modules.identity.domain.entities.session import Session
-from app.modules.identity.domain.value_objects.session_id import SessionId
-from app.modules.identity.domain.value_objects.user_id import UserId
-from app.modules.identity.domain.value_objects.ip_address import IpAddress
-from app.modules.identity.domain.value_objects.user_agent import UserAgent
 from app.modules.identity.domain.errors import (
-    DomainError,
     BusinessRuleViolation,
+    DomainError,
     InvalidStateTransition,
 )
+from app.modules.identity.domain.value_objects.ip_address import IpAddress
+from app.modules.identity.domain.value_objects.session_id import SessionId
+from app.modules.identity.domain.value_objects.user_agent import UserAgent
+from app.modules.identity.domain.value_objects.user_id import UserId
 
 
 class TestSession:

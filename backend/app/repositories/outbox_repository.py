@@ -5,7 +5,6 @@ Repository interface for outbox event persistence following DDD principles.
 """
 
 from abc import ABC, abstractmethod
-from typing import List
 from uuid import UUID
 
 from app.models.outbox_event import OutboxEvent
@@ -23,7 +22,7 @@ class OutboxRepository(ABC):
     @abstractmethod
     async def store_events(
         self, 
-        events: List[OutboxEvent], 
+        events: list[OutboxEvent], 
         aggregate_id: UUID
     ) -> None:
         """
@@ -39,13 +38,12 @@ class OutboxRepository(ABC):
         Raises:
             InfrastructureError: If storage fails
         """
-        pass
     
     @abstractmethod
     async def get_unprocessed_events(
         self, 
         limit: int = 100
-    ) -> List[OutboxEvent]:
+    ) -> list[OutboxEvent]:
         """
         Get unprocessed events for background processor.
         
@@ -61,7 +59,6 @@ class OutboxRepository(ABC):
         Raises:
             InfrastructureError: If retrieval fails
         """
-        pass
     
     @abstractmethod
     async def mark_processed(
@@ -80,7 +77,6 @@ class OutboxRepository(ABC):
             InfrastructureError: If update fails
             NotFoundError: If event not found
         """
-        pass
     
     @abstractmethod
     async def increment_retry(
@@ -101,13 +97,12 @@ class OutboxRepository(ABC):
             InfrastructureError: If update fails
             NotFoundError: If event not found
         """
-        pass
     
     @abstractmethod
     async def get_failed_events(
         self, 
         limit: int = 100
-    ) -> List[OutboxEvent]:
+    ) -> list[OutboxEvent]:
         """
         Get events that have exhausted retries.
         
@@ -123,7 +118,6 @@ class OutboxRepository(ABC):
         Raises:
             InfrastructureError: If retrieval fails
         """
-        pass
     
     @abstractmethod
     async def cleanup_processed_events(
@@ -145,14 +139,13 @@ class OutboxRepository(ABC):
         Raises:
             InfrastructureError: If cleanup fails
         """
-        pass
     
     @abstractmethod
     async def get_events_by_aggregate(
         self, 
         aggregate_id: UUID,
         limit: int = 100
-    ) -> List[OutboxEvent]:
+    ) -> list[OutboxEvent]:
         """
         Get events for a specific aggregate.
         
@@ -168,4 +161,3 @@ class OutboxRepository(ABC):
         Raises:
             InfrastructureError: If retrieval fails
         """
-        pass

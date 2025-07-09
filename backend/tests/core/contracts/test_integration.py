@@ -5,25 +5,24 @@ Tests the complete contract system including registry,
 adapters, and event translation working together.
 """
 
-import pytest
-import asyncio
 from dataclasses import dataclass
 from datetime import datetime
-from uuid import UUID, uuid4
 from typing import Any
-from unittest.mock import Mock, AsyncMock
+from unittest.mock import AsyncMock, Mock
+from uuid import UUID, uuid4
+
+import pytest
 
 from app.core.contracts import (
-    ContractEvent,
     ContractCommand,
+    ContractEvent,
     ContractQuery,
-    ModuleContract,
     ContractRegistry,
-    get_contract_registry,
+    ModuleContract,
 )
 from app.core.events import EventBus
 from app.core.events.types import DomainEvent
-from app.core.infrastructure.adapters import InternalModuleAdapter, EventTranslator
+from app.core.infrastructure.adapters import EventTranslator, InternalModuleAdapter
 
 
 # Identity Module Contract and Events

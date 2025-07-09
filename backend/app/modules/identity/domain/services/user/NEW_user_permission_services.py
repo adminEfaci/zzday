@@ -7,7 +7,7 @@ Domain service for complex user permission and role management logic.
 from typing import TYPE_CHECKING
 from uuid import UUID
 
-from ..enums import UserRole, AccountType
+from ..enums import AccountType
 
 if TYPE_CHECKING:
     from ..user import User

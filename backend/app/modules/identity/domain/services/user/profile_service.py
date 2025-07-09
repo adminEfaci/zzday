@@ -14,16 +14,15 @@ if TYPE_CHECKING:
 
 from ...entities.user.user_errors import (
     InvalidProfileDataError,
-    ProfileUpdateError,
 )
 from ...entities.user.user_events import (
-    UserProfileUpdated,
     UserAvatarChanged,
+    UserProfileUpdated,
 )
 from ...value_objects import (
-    PhoneNumber,
     DateOfBirth,
     FullName,
+    PhoneNumber,
 )
 
 
@@ -70,7 +69,7 @@ class ProfileService:
                 )
                 updated_fields.append("full_name")
             except ValueError as e:
-                raise InvalidProfileDataError(f"Invalid full name: {str(e)}")
+                raise InvalidProfileDataError(f"Invalid full name: {e!s}")
         
         # Update phone number
         if "phone_number" in profile_data:
@@ -82,7 +81,7 @@ class ProfileService:
                 user.phone_verified = False  # Require re-verification
                 updated_fields.append("phone_number")
             except ValueError as e:
-                raise InvalidProfileDataError(f"Invalid phone number: {str(e)}")
+                raise InvalidProfileDataError(f"Invalid phone number: {e!s}")
         
         # Update date of birth
         if "date_of_birth" in profile_data:
@@ -93,7 +92,7 @@ class ProfileService:
                     user.date_of_birth = None
                 updated_fields.append("date_of_birth")
             except ValueError as e:
-                raise InvalidProfileDataError(f"Invalid date of birth: {str(e)}")
+                raise InvalidProfileDataError(f"Invalid date of birth: {e!s}")
         
         # Update profile metadata
         if "bio" in profile_data:

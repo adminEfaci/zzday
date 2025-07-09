@@ -9,29 +9,26 @@ Tests cover:
 - Session creation
 """
 
+from datetime import UTC, datetime, timedelta
+from unittest.mock import AsyncMock, Mock
+
 import pytest
-from unittest.mock import Mock, AsyncMock
-from datetime import datetime, timedelta, UTC
-from uuid import uuid4
 
 from app.modules.identity.application.commands.user_commands import (
     LoginCommand,
     LoginCommandHandler,
 )
+from app.modules.identity.application.errors import ValidationError
 from app.modules.identity.domain.aggregates.user import User
-from app.modules.identity.domain.value_objects.email import Email
-from app.modules.identity.domain.value_objects.username import Username
-from app.modules.identity.domain.value_objects.password_hash import PasswordHash
-from app.modules.identity.domain.value_objects.ip_address import IpAddress
-from app.modules.identity.domain.value_objects.user_agent import UserAgent
-from app.modules.identity.domain.enums import UserStatus
 from app.modules.identity.domain.errors import (
-    AuthenticationError,
-    InvalidCredentialsError,
     AccountLockedError,
     AccountNotActiveError,
+    AuthenticationError,
+    InvalidCredentialsError,
 )
-from app.modules.identity.application.errors import ValidationError
+from app.modules.identity.domain.value_objects.email import Email
+from app.modules.identity.domain.value_objects.password_hash import PasswordHash
+from app.modules.identity.domain.value_objects.username import Username
 
 
 class TestUserLoginCommand:

@@ -15,10 +15,7 @@ Design Features:
 
 import gzip
 import json
-import pickle
-from datetime import datetime
 from typing import Any
-from uuid import UUID
 
 from app.core.errors import ValidationError
 from app.core.events.types import DomainEvent, EventFactory, EventMetadata
@@ -29,7 +26,6 @@ logger = get_logger(__name__)
 
 class EventSerializationError(ValidationError):
     """Raised when event serialization/deserialization fails."""
-    pass
 
 
 class PostgreSQLEventSerializer:
@@ -352,8 +348,8 @@ def create_postgresql_serializer(
 
 # Export main classes
 __all__ = [
-    "PostgreSQLEventSerializer",
-    "EventStreamSerializer", 
     "EventSerializationError",
+    "EventStreamSerializer",
+    "PostgreSQLEventSerializer",
     "create_postgresql_serializer"
 ]

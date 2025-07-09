@@ -10,24 +10,31 @@ from typing import Any
 from uuid import UUID
 
 from app.core.errors import DomainError, NotFoundError, ValidationError
+from app.core.events.bus import IEventBus
+from app.modules.identity.domain.entities.admin.mfa_device import MFADevice
 from app.modules.identity.domain.entities.session.partial_session import PartialSession
 from app.modules.identity.domain.entities.session.session import Session
-from app.modules.identity.domain.entities.session.session_enums import SessionStatus, SessionType
-from app.modules.identity.domain.entities.admin.mfa_device import MFADevice
+from app.modules.identity.domain.entities.session.session_enums import (
+    SessionType,
+)
 from app.modules.identity.domain.enums import MFAMethod
 from app.modules.identity.domain.events import (
-    SessionCreated,
-    SessionTerminated,
-    MFAChallengeIssued,
     MFAChallengeCompleted,
-    MFAChallengeFailed
+    MFAChallengeFailed,
+    MFAChallengeIssued,
+    SessionCreated,
 )
-from app.modules.identity.domain.interfaces.services.authentication.token_generator import ITokenGenerator
+from app.modules.identity.domain.interfaces.services.authentication.token_generator import (
+    ITokenGenerator,
+)
+from app.modules.identity.domain.value_objects.device_fingerprint import (
+    DeviceFingerprint,
+)
 from app.modules.identity.domain.value_objects.ip_address import IpAddress
 from app.modules.identity.domain.value_objects.user_agent import UserAgent
-from app.modules.identity.domain.value_objects.device_fingerprint import DeviceFingerprint
-from app.modules.identity.infrastructure.services.mfa_provider_factory import MFAProviderFactory
-from app.core.events.bus import IEventBus
+from app.modules.identity.infrastructure.services.mfa_provider_factory import (
+    MFAProviderFactory,
+)
 
 logger = logging.getLogger(__name__)
 

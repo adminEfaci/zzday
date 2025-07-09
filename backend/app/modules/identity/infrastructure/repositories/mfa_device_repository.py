@@ -5,18 +5,26 @@ Adapter implementation of the MFA device repository interface
 that wraps the existing MFA repository and provides domain entities.
 """
 
+from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID
 
 from sqlmodel import Session
-from app.modules.identity.domain.interfaces.repositories.mfa_device_repository import IMFADeviceRepository
-from app.modules.identity.domain.entities.admin.mfa_device import MFADevice, DeviceName, MFASecret
-from app.modules.identity.domain.enums import MFAMethod
-from app.modules.identity.infrastructure.repositories.mfa_repository import SQLMFARepository
+
 from app.core.errors import InfrastructureError
 from app.core.logging import get_logger
-from datetime import datetime, UTC
-
+from app.modules.identity.domain.entities.admin.mfa_device import (
+    DeviceName,
+    MFADevice,
+    MFASecret,
+)
+from app.modules.identity.domain.enums import MFAMethod
+from app.modules.identity.domain.interfaces.repositories.mfa_device_repository import (
+    IMFADeviceRepository,
+)
+from app.modules.identity.infrastructure.repositories.mfa_repository import (
+    SQLMFARepository,
+)
 
 logger = get_logger(__name__)
 
@@ -63,7 +71,7 @@ class SQLMFADeviceRepository(IMFADeviceRepository):
                 device_id=str(device.id),
                 error=str(e)
             )
-            raise InfrastructureError(f"Failed to add MFA device: {str(e)}")
+            raise InfrastructureError(f"Failed to add MFA device: {e!s}")
     
     async def get_by_id(self, device_id: UUID) -> MFADevice | None:
         """Get MFA device by ID.
@@ -88,7 +96,7 @@ class SQLMFADeviceRepository(IMFADeviceRepository):
                 device_id=str(device_id),
                 error=str(e)
             )
-            raise InfrastructureError(f"Failed to get MFA device: {str(e)}")
+            raise InfrastructureError(f"Failed to get MFA device: {e!s}")
     
     async def get_by_user_id(self, user_id: UUID) -> list[MFADevice]:
         """Get all MFA devices for user.
@@ -110,7 +118,7 @@ class SQLMFADeviceRepository(IMFADeviceRepository):
                 user_id=str(user_id),
                 error=str(e)
             )
-            raise InfrastructureError(f"Failed to get user MFA devices: {str(e)}")
+            raise InfrastructureError(f"Failed to get user MFA devices: {e!s}")
     
     async def get_verified_devices(self, user_id: UUID) -> list[MFADevice]:
         """Get verified MFA devices for user.
@@ -132,7 +140,7 @@ class SQLMFADeviceRepository(IMFADeviceRepository):
                 user_id=str(user_id),
                 error=str(e)
             )
-            raise InfrastructureError(f"Failed to get verified devices: {str(e)}")
+            raise InfrastructureError(f"Failed to get verified devices: {e!s}")
     
     async def get_by_user_and_method(
         self,
@@ -167,7 +175,7 @@ class SQLMFADeviceRepository(IMFADeviceRepository):
                 method=method.value,
                 error=str(e)
             )
-            raise InfrastructureError(f"Failed to get devices by method: {str(e)}")
+            raise InfrastructureError(f"Failed to get devices by method: {e!s}")
     
     async def update(self, device: MFADevice) -> None:
         """Update MFA device.
@@ -177,7 +185,9 @@ class SQLMFADeviceRepository(IMFADeviceRepository):
         """
         try:
             # Get the model directly from session
-            from app.modules.identity.infrastructure.models.mfa_model import MFADeviceModel
+            from app.modules.identity.infrastructure.models.mfa_model import (
+                MFADeviceModel,
+            )
             
             model = await self.session.get(MFADeviceModel, device.id)
             if not model:
@@ -220,7 +230,7 @@ class SQLMFADeviceRepository(IMFADeviceRepository):
                 device_id=str(device.id),
                 error=str(e)
             )
-            raise InfrastructureError(f"Failed to update MFA device: {str(e)}")
+            raise InfrastructureError(f"Failed to update MFA device: {e!s}")
     
     async def delete(self, device_id: UUID) -> None:
         """Delete MFA device.
@@ -242,7 +252,7 @@ class SQLMFADeviceRepository(IMFADeviceRepository):
                 device_id=str(device_id),
                 error=str(e)
             )
-            raise InfrastructureError(f"Failed to delete MFA device: {str(e)}")
+            raise InfrastructureError(f"Failed to delete MFA device: {e!s}")
     
     def _dict_to_entity(self, data: dict[str, Any]) -> MFADevice:
         """Convert dictionary data to MFA device entity.

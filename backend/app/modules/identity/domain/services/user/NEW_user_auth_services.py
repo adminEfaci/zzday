@@ -7,7 +7,7 @@ Domain service for complex authentication logic and security assessments.
 from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING
 
-from ..enums import RiskLevel, AccountType
+from ..enums import AccountType, RiskLevel
 
 if TYPE_CHECKING:
     from ..user import User
@@ -61,12 +61,11 @@ class UserAuthenticationService:
         
         if avg_risk >= 0.7:
             return RiskLevel.CRITICAL
-        elif avg_risk >= 0.5:
+        if avg_risk >= 0.5:
             return RiskLevel.HIGH
-        elif avg_risk >= 0.3:
+        if avg_risk >= 0.3:
             return RiskLevel.MEDIUM
-        else:
-            return RiskLevel.LOW
+        return RiskLevel.LOW
     
     def should_require_mfa(self, user: 'User', login_context: dict) -> bool:
         """Determine if MFA should be required for login."""
@@ -138,11 +137,11 @@ class UserAuthenticationService:
         # Progressive lockout duration
         if user.failed_login_count >= 10:
             return True, timedelta(hours=24)
-        elif user.failed_login_count >= 7:
+        if user.failed_login_count >= 7:
             return True, timedelta(hours=4)
-        elif user.failed_login_count >= 5:
+        if user.failed_login_count >= 5:
             return True, timedelta(hours=1)
-        elif user.failed_login_count >= 3:
+        if user.failed_login_count >= 3:
             return True, timedelta(minutes=15)
         
         return False, timedelta(0)
@@ -174,10 +173,9 @@ class UserAuthenticationService:
         """Get appropriate session timeout for user."""
         if user.account_type == AccountType.ADMIN:
             return timedelta(hours=2)  # Shorter for admins
-        elif user.account_type == AccountType.SERVICE:
+        if user.account_type == AccountType.SERVICE:
             return timedelta(hours=24)  # Longer for service accounts
-        else:
-            return timedelta(hours=8)  # Standard timeout
+        return timedelta(hours=8)  # Standard timeout
     
     def validate_account_access(self, user: 'User') -> tuple[bool, str]:
         """Validate if user can access their account."""

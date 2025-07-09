@@ -7,17 +7,25 @@ Factory for instantiating MFA providers based on method type.
 import logging
 from typing import Any, Protocol
 
-from app.modules.identity.domain.enums import MFAMethod
 from app.modules.identity.domain.entities.admin.mfa_device import MFADevice
+from app.modules.identity.domain.enums import MFAMethod
 from app.modules.identity.domain.interfaces.services.communication.notification_service import (
     IEmailService,
-    ISMSService
+    ISMSService,
+)
+from app.modules.identity.infrastructure.services.backup_code_mfa_provider import (
+    BackupCodeMFAProvider,
+)
+from app.modules.identity.infrastructure.services.email_mfa_provider import (
+    EmailMFAProvider,
+)
+from app.modules.identity.infrastructure.services.hardware_key_mfa_provider import (
+    HardwareKeyMFAProvider,
 )
 from app.modules.identity.infrastructure.services.sms_mfa_provider import SMSMFAProvider
-from app.modules.identity.infrastructure.services.email_mfa_provider import EmailMFAProvider
-from app.modules.identity.infrastructure.services.totp_mfa_provider import TOTPMFAProvider
-from app.modules.identity.infrastructure.services.backup_code_mfa_provider import BackupCodeMFAProvider
-from app.modules.identity.infrastructure.services.hardware_key_mfa_provider import HardwareKeyMFAProvider
+from app.modules.identity.infrastructure.services.totp_mfa_provider import (
+    TOTPMFAProvider,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -136,7 +144,7 @@ class MFAProviderFactory:
                 **self._get_sms_config()
             )
         
-        elif method == MFAMethod.EMAIL:
+        if method == MFAMethod.EMAIL:
             if not self.email_service:
                 logger.warning("Email service not configured")
                 return None
@@ -146,18 +154,17 @@ class MFAProviderFactory:
                 **self._get_email_config()
             )
         
-        elif method == MFAMethod.TOTP:
+        if method == MFAMethod.TOTP:
             return TOTPMFAProvider(**self._get_totp_config())
         
-        elif method == MFAMethod.BACKUP_CODE:
+        if method == MFAMethod.BACKUP_CODE:
             return BackupCodeMFAProvider(**self._get_backup_code_config())
         
-        elif method == MFAMethod.HARDWARE_KEY:
+        if method == MFAMethod.HARDWARE_KEY:
             return HardwareKeyMFAProvider(**self._get_hardware_key_config())
         
-        else:
-            logger.warning(f"Unsupported MFA method: {method.value}")
-            return None
+        logger.warning(f"Unsupported MFA method: {method.value}")
+        return None
     
     async def get_available_providers(self) -> list[IMFAProvider]:
         """Get all available MFA providers.
@@ -215,16 +222,13 @@ class MFAProviderFactory:
         if method == MFAMethod.SMS:
             return self.sms_service is not None and await self._check_sms_availability()
         
-        elif method == MFAMethod.EMAIL:
+        if method == MFAMethod.EMAIL:
             return self.email_service is not None and await self._check_email_availability()
         
-        elif method == MFAMethod.TOTP:
+        if method == MFAMethod.TOTP or method == MFAMethod.BACKUP_CODE:
             return True  # Always available
         
-        elif method == MFAMethod.BACKUP_CODE:
-            return True  # Always available
-        
-        elif method == MFAMethod.HARDWARE_KEY:
+        if method == MFAMethod.HARDWARE_KEY:
             return self._is_hardware_key_supported()
         
         return False

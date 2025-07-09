@@ -5,17 +5,21 @@ Pure domain tests for value objects isolated from infrastructure.
 Tests business rules and domain logic for value objects.
 """
 
-import pytest
-from datetime import datetime, timezone, timedelta
+from datetime import UTC, datetime, timedelta
 
-from app.modules.identity.domain.value_objects.email import Email
-from app.modules.identity.domain.value_objects.password_hash import PasswordHash, HashAlgorithm
-from app.modules.identity.domain.value_objects.security_stamp import SecurityStamp
+import pytest
+
 from app.modules.identity.domain.exceptions import (
     InvalidEmailError,
     InvalidPasswordError,
     InvalidSecurityStampError,
 )
+from app.modules.identity.domain.value_objects.email import Email
+from app.modules.identity.domain.value_objects.password_hash import (
+    HashAlgorithm,
+    PasswordHash,
+)
+from app.modules.identity.domain.value_objects.security_stamp import SecurityStamp
 
 
 @pytest.mark.unit
@@ -282,7 +286,7 @@ class TestSecurityStampValueObject:
         assert stamp.value is not None
         assert len(stamp.value) == 32  # 32 character hex string
         assert stamp.created_at is not None
-        assert stamp.created_at <= datetime.now(timezone.utc)
+        assert stamp.created_at <= datetime.now(UTC)
     
     def test_generate_new_security_stamp(self):
         """Test generating new security stamp."""
@@ -291,7 +295,7 @@ class TestSecurityStampValueObject:
         assert stamp.value is not None
         assert len(stamp.value) == 32  # 32 character hex string
         assert stamp.created_at is not None
-        assert stamp.created_at <= datetime.now(timezone.utc)
+        assert stamp.created_at <= datetime.now(UTC)
     
     def test_security_stamps_are_unique(self):
         """Test security stamps are unique."""
@@ -303,7 +307,7 @@ class TestSecurityStampValueObject:
     def test_security_stamp_from_value(self):
         """Test creating security stamp from value."""
         stamp_value = "abcdef1234567890abcdef1234567890"
-        created_at = datetime.now(timezone.utc)
+        created_at = datetime.now(UTC)
         
         stamp = SecurityStamp.from_value(stamp_value, created_at)
         
@@ -320,7 +324,7 @@ class TestSecurityStampValueObject:
         ]
         
         for valid_value in valid_values:
-            stamp = SecurityStamp.from_value(valid_value, datetime.now(timezone.utc))
+            stamp = SecurityStamp.from_value(valid_value, datetime.now(UTC))
             assert stamp.value == valid_value
         
         # Invalid values
@@ -334,7 +338,7 @@ class TestSecurityStampValueObject:
         
         for invalid_value in invalid_values:
             with pytest.raises(InvalidSecurityStampError):
-                SecurityStamp.from_value(invalid_value, datetime.now(timezone.utc))
+                SecurityStamp.from_value(invalid_value, datetime.now(UTC))
     
     def test_security_stamp_expiry(self):
         """Test security stamp expiry."""
@@ -343,13 +347,13 @@ class TestSecurityStampValueObject:
         assert not fresh_stamp.is_expired()
         
         # Old stamp
-        old_created_at = datetime.now(timezone.utc) - timedelta(days=100)
+        old_created_at = datetime.now(UTC) - timedelta(days=100)
         old_stamp = SecurityStamp.from_value("abcdef1234567890abcdef1234567890", old_created_at)
         assert old_stamp.is_expired()
     
     def test_security_stamp_age(self):
         """Test security stamp age calculation."""
-        created_at = datetime.now(timezone.utc) - timedelta(hours=2)
+        created_at = datetime.now(UTC) - timedelta(hours=2)
         stamp = SecurityStamp.from_value("abcdef1234567890abcdef1234567890", created_at)
         
         age = stamp.age()
@@ -358,7 +362,7 @@ class TestSecurityStampValueObject:
     def test_security_stamp_equality(self):
         """Test security stamp equality."""
         stamp_value = "abcdef1234567890abcdef1234567890"
-        created_at = datetime.now(timezone.utc)
+        created_at = datetime.now(UTC)
         
         stamp1 = SecurityStamp.from_value(stamp_value, created_at)
         stamp2 = SecurityStamp.from_value(stamp_value, created_at)
@@ -385,7 +389,7 @@ class TestSecurityStampValueObject:
             stamp.value = "changed"
         
         with pytest.raises(AttributeError):
-            stamp.created_at = datetime.now(timezone.utc)
+            stamp.created_at = datetime.now(UTC)
     
     def test_security_stamp_refresh(self):
         """Test security stamp refresh."""
@@ -403,7 +407,7 @@ class TestSecurityStampValueObject:
         assert stamp.is_valid()
         
         # Simulate invalidation by creating an old stamp
-        old_created_at = datetime.now(timezone.utc) - timedelta(days=100)
+        old_created_at = datetime.now(UTC) - timedelta(days=100)
         old_stamp = SecurityStamp.from_value(stamp.value, old_created_at)
         
         assert not old_stamp.is_valid()

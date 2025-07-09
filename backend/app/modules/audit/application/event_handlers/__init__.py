@@ -6,48 +6,49 @@ and create appropriate audit trails and compliance records.
 
 from typing import TYPE_CHECKING
 
+from app.modules.identity.domain.entities.user.user_events import (
+    AccountLockedOut,
+    LoginFailed,
+    LoginSuccessful,
+    MFADisabled,
+    MFAEnabled,
+    UserActivated,
+    UserCreated,
+    UserDeactivated,
+    UserDeleted,
+    UserSuspended,
+)
+
 # Import Identity domain events
 from app.modules.identity.domain.events import (
     MFAChallengeCompleted,
     MFAChallengeFailed,
 )
-from app.modules.identity.domain.entities.user.user_events import (
-    UserCreated,
-    UserDeleted,
-    UserSuspended,
-    UserActivated,
-    UserDeactivated,
-    LoginSuccessful,
-    LoginFailed,
-    AccountLockedOut,
-    MFAEnabled,
-    MFADisabled,
-)
 
 # Import existing event handlers
 from .data_sync_completed_event_handler import DataSyncCompletedEventHandler
-from .notification_sent_event_handler import NotificationSentEventHandler
-from .user_authenticated_event_handler import UserAuthenticatedEventHandler
-from .user_registered_event_handler import UserRegisteredEventHandler
-from .user_role_changed_event_handler import UserRoleChangedEventHandler
-from .webhook_received_event_handler import WebhookReceivedEventHandler
-
-# Import new Identity event handlers
-from .mfa_enabled_event_handler import MFAEnabledEventHandler
+from .login_event_handlers import (
+    AccountLockedOutEventHandler,
+    LoginFailedEventHandler,
+    LoginSuccessfulEventHandler,
+)
 from .mfa_challenge_event_handlers import (
     MFAChallengeCompletedEventHandler,
     MFAChallengeFailedEventHandler,
 )
-from .login_event_handlers import (
-    LoginSuccessfulEventHandler,
-    LoginFailedEventHandler,
-    AccountLockedOutEventHandler,
-)
+
+# Import new Identity event handlers
+from .mfa_enabled_event_handler import MFAEnabledEventHandler
+from .notification_sent_event_handler import NotificationSentEventHandler
+from .user_authenticated_event_handler import UserAuthenticatedEventHandler
 from .user_lifecycle_event_handlers import (
     UserCreatedEventHandler,
     UserDeletedEventHandler,
     UserSuspendedEventHandler,
 )
+from .user_registered_event_handler import UserRegisteredEventHandler
+from .user_role_changed_event_handler import UserRoleChangedEventHandler
+from .webhook_received_event_handler import WebhookReceivedEventHandler
 
 if TYPE_CHECKING:
     from app.core.events.bus import EventBus

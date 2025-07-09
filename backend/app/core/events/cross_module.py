@@ -12,12 +12,11 @@ Design Features:
 - Docker environment integration
 """
 
-import asyncio
 from typing import Any
 
 from app.core.errors import ConfigurationError
 from app.core.events.bus import HybridEventBus, InMemoryEventBus
-from app.core.events.registry import EventProcessingMode, EventPriority, get_registry
+from app.core.events.registry import EventPriority, EventProcessingMode, get_registry
 from app.core.events.types import IEventBus
 from app.core.logging import get_logger
 
@@ -183,17 +182,18 @@ class CrossModuleEventOrchestrator:
         
         try:
             # Import Identity events
+            # Import Audit event listeners
+            from app.modules.audit.application.event_listeners import (
+                IdentityAuditListener,
+            )
             from app.modules.identity.domain.entities.user.user_events import (
                 LoginFailed,
                 LoginSuccessful,
                 PasswordChanged,
                 UserCreated,
                 UserDeleted,
-                UserUpdated
+                UserUpdated,
             )
-            
-            # Import Audit event listeners
-            from app.modules.audit.application.event_listeners import IdentityAuditListener
             
             # Create audit listener
             audit_listener = IdentityAuditListener()
@@ -246,11 +246,13 @@ class CrossModuleEventOrchestrator:
                 EmailVerified,
                 LoginFailed,
                 PasswordChanged,
-                UserCreated
+                UserCreated,
             )
-            
+
             # Import Notification event listeners
-            from app.modules.notification.application.event_listeners import IdentityNotificationListener
+            from app.modules.notification.application.event_listeners import (
+                IdentityNotificationListener,
+            )
             
             # Create notification listener
             notification_listener = IdentityNotificationListener()
@@ -299,21 +301,22 @@ class CrossModuleEventOrchestrator:
         
         try:
             # Import Integration events
-            from app.modules.integration.domain.events.webhook_events import (
-                WebhookFailed,
-                WebhookProcessed,
-                WebhookReceived
+            # Import Audit event listeners
+            from app.modules.audit.application.event_listeners import (
+                IntegrationAuditListener,
             )
             from app.modules.integration.domain.events.integration_events import (
                 ApiCallFailedEvent,
                 ApiCallMadeEvent,
                 DataSyncCompletedEvent,
                 DataSyncFailedEvent,
-                DataSyncStartedEvent
+                DataSyncStartedEvent,
             )
-            
-            # Import Audit event listeners
-            from app.modules.audit.application.event_listeners import IntegrationAuditListener
+            from app.modules.integration.domain.events.webhook_events import (
+                WebhookFailed,
+                WebhookProcessed,
+                WebhookReceived,
+            )
             
             # Create audit listener
             audit_listener = IntegrationAuditListener()
@@ -377,12 +380,16 @@ class CrossModuleEventOrchestrator:
             from app.modules.audit.domain.events.audit_events import (
                 AuditEntryRecorded,
                 AuditReportGenerated,
-                HighRiskAuditDetected
+                HighRiskAuditDetected,
             )
-            
+            from app.modules.integration.application.event_listeners import (
+                AuditIntegrationListener,
+            )
+
             # Import listeners from other modules for audit completion
-            from app.modules.notification.application.event_listeners import AuditNotificationListener
-            from app.modules.integration.application.event_listeners import AuditIntegrationListener
+            from app.modules.notification.application.event_listeners import (
+                AuditNotificationListener,
+            )
             
             # Create listeners
             notification_listener = AuditNotificationListener()

@@ -12,8 +12,6 @@ from uuid import UUID
 from app.core.cqrs import Command, CommandHandler
 from app.core.events import EventBus
 from app.core.infrastructure import UnitOfWork
-from app.modules.identity.domain.interfaces.services.infrastructure.cache_port import ICachePort as ICacheService
-from app.modules.identity.domain.interfaces.repositories.user_repository import IUserRepository
 from app.modules.identity.application.decorators import (
     audit_action,
     rate_limit,
@@ -30,6 +28,12 @@ from app.modules.identity.domain.exceptions import (
     ExternalServiceError,
     InvalidOperationError,
     UserNotFoundError,
+)
+from app.modules.identity.domain.interfaces.repositories.user_repository import (
+    IUserRepository,
+)
+from app.modules.identity.domain.interfaces.services.infrastructure.cache_port import (
+    ICachePort as ICacheService,
 )
 from app.modules.identity.domain.services import SecurityService
 

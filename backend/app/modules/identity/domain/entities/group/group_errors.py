@@ -4,8 +4,8 @@ Group Entity Errors
 Error classes with rich context for group operations.
 """
 
-from uuid import UUID
 from typing import Any
+from uuid import UUID
 
 from ...errors import AuthorizationError, BusinessRuleError, IdentityDomainError
 

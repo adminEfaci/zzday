@@ -13,7 +13,6 @@ from pydantic import Field
 
 from ...events import IdentityDomainEvent
 
-
 # =============================================================================
 # User Lifecycle Events
 # =============================================================================

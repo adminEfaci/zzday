@@ -5,8 +5,8 @@ This adapter handles all communication with the Identity module
 through its contract, replacing direct domain imports.
 """
 
-from uuid import UUID
 from typing import Any
+from uuid import UUID
 
 from app.core.contracts import ContractCommand, ContractQuery
 from app.core.events import IEventBus

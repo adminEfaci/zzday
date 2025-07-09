@@ -10,48 +10,16 @@ from typing import Any
 from uuid import UUID
 
 from app.core.infrastructure.pagination import PagedResult
+
+# Import extended repository interfaces for application-specific queries
 from app.modules.identity.application.dtos.query import (
     AccessLogQuery,
     ActivityQuery,
-    SessionQuery,
 )
 
 # Import repository interfaces from domain layer - DO NOT DUPLICATE
-from app.modules.identity.domain.interfaces.repositories.user_repository import (
-    IUserRepository,
-)
-from app.modules.identity.domain.interfaces.repositories.session_repository import (
-    ISessionRepository,
-)
-from app.modules.identity.domain.interfaces.repositories.role_repository import (
-    IRoleRepository,
-)
-from app.modules.identity.domain.interfaces.repositories.permission_repository import (
-    IPermissionRepository,
-)
-from app.modules.identity.domain.interfaces.repositories.mfa_repository import (
-    IMFARepository,
-)
-from app.modules.identity.domain.interfaces.repositories.device_registration_repository import (
-    IDeviceRegistrationRepository as IDeviceRepository,
-)
-from app.modules.identity.domain.interfaces.repositories.emergency_contact_repository import (
-    IEmergencyContactRepository,
-)
-from app.modules.identity.domain.interfaces.repositories.password_history_repository import (
-    IPasswordHistoryRepository,
-)
-
-# Import extended repository interfaces for application-specific queries
-from app.modules.identity.application.contracts.extended_repositories import (
-    IExtendedUserRepository,
-    IExtendedSessionRepository,
-)
 
 # Import cache interface from domain
-from app.modules.identity.domain.interfaces.services.infrastructure.cache_port import (
-    ICachePort as ICacheService,
-)
 
 
 # Application-specific repository interfaces that don't have domain equivalents

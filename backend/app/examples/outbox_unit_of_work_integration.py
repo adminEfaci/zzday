@@ -5,9 +5,9 @@ This example shows how the outbox pattern integrates with the Unit of Work
 to ensure atomic event-database operations, resolving the split-brain scenario.
 """
 
-from typing import List, Any, Dict
+from datetime import UTC, datetime
+from typing import Any
 from uuid import UUID
-from datetime import datetime, UTC
 
 from app.models.outbox_event import OutboxEvent
 from app.repositories.outbox_repository import OutboxRepository
@@ -16,7 +16,7 @@ from app.repositories.outbox_repository import OutboxRepository
 class DomainEvent:
     """Base class for domain events."""
     
-    def __init__(self, event_type: str, aggregate_id: UUID, event_data: Dict[str, Any]):
+    def __init__(self, event_type: str, aggregate_id: UUID, event_data: dict[str, Any]):
         self.event_type = event_type
         self.aggregate_id = aggregate_id
         self.event_data = event_data
@@ -41,7 +41,7 @@ class SimplifiedUnitOfWork:
         """
         self._session = session
         self._outbox_repo = outbox_repo
-        self._events: List[DomainEvent] = []
+        self._events: list[DomainEvent] = []
     
     def add_event(self, event: DomainEvent) -> None:
         """
@@ -105,7 +105,7 @@ class UserService:
         self._user_repository = user_repository
         self._unit_of_work = unit_of_work
     
-    async def create_user(self, user_data: Dict[str, Any]) -> UUID:
+    async def create_user(self, user_data: dict[str, Any]) -> UUID:
         """
         Create user with atomic event storage.
         
@@ -175,7 +175,6 @@ async def example_usage():
 
 def get_database_session():
     """Mock function to get database session."""
-    pass
 
 
 # Benefits of this approach:

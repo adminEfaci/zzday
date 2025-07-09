@@ -4,7 +4,6 @@ Security Service Adapter
 Production-ready implementation for security monitoring, threat detection, and incident management.
 """
 
-import hashlib
 from datetime import UTC, datetime, timedelta
 from typing import Any
 from uuid import UUID, uuid4
@@ -88,7 +87,7 @@ class SecurityServiceAdapter(ISecurityService):
                 {
                     "type": "detection_error",
                     "severity": "medium",
-                    "description": f"Anomaly detection failed: {str(e)}",
+                    "description": f"Anomaly detection failed: {e!s}",
                     "detected_at": datetime.now(UTC).isoformat(),
                 }
             ]
@@ -215,7 +214,7 @@ class SecurityServiceAdapter(ISecurityService):
                 {
                     "type": "scan_error",
                     "severity": "medium",
-                    "description": f"Threat scan failed: {str(e)}",
+                    "description": f"Threat scan failed: {e!s}",
                     "detected_at": datetime.now(UTC).isoformat(),
                 }
             ]

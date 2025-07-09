@@ -18,12 +18,19 @@ from ...value_objects.geolocation import Geolocation
 from ...value_objects.ip_address import IpAddress
 from ...value_objects.token import Token, TokenType
 from ...value_objects.user_agent import UserAgent
-from .session_enums import SessionType
-from .session_errors import SessionExpiredError, InvalidTokenError
 from .session_constants import (
-    MFA_CHALLENGE_TIMEOUT, MFA_SESSION_TIMEOUT, MAX_MFA_ATTEMPTS, MFA_EXTENSION_MINUTES
+    MAX_MFA_ATTEMPTS,
+    MFA_CHALLENGE_TIMEOUT,
+    MFA_EXTENSION_MINUTES,
+    MFA_SESSION_TIMEOUT,
 )
-from .session_mixins import RiskManagementMixin, RateLimitingMixin, SessionValidationMixin
+from .session_enums import SessionType
+from .session_errors import InvalidTokenError, SessionExpiredError
+from .session_mixins import (
+    RateLimitingMixin,
+    RiskManagementMixin,
+    SessionValidationMixin,
+)
 
 
 @dataclass

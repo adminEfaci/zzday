@@ -7,10 +7,9 @@ Addresses the service explosion issue by grouping related MFA operations.
 
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
-from typing import Any, Optional
 from uuid import UUID
 
-from app.core.cqrs import Command, CommandHandler
+from app.core.cqrs import Command
 from app.core.events import EventBus
 from app.core.infrastructure import UnitOfWork
 from app.modules.identity.application.contracts.ports import (
@@ -39,14 +38,17 @@ from app.modules.identity.application.dtos.request import (
     DisableMFARequest,
     GenerateBackupCodesRequest,
     SetupMFARequest,
-    VerifyMFAChallengeRequest,
-    VerifyMFASetupRequest,
 )
 from app.modules.identity.application.dtos.response import (
     BackupCodesResponse,
-    MFAChallengeResponse,
     MFASetupResponse,
     MFAVerificationResponse,
+)
+from app.modules.identity.application.services.shared.security_utils import (
+    SecurityUtils,
+)
+from app.modules.identity.application.services.shared.validation_utils import (
+    ValidationUtils,
 )
 from app.modules.identity.domain.entities import MFADevice, Session, User
 from app.modules.identity.domain.enums import (
@@ -68,16 +70,14 @@ from app.modules.identity.domain.events import (
 from app.modules.identity.domain.exceptions import (
     InvalidCodeError,
     InvalidOperationError,
-    MFANotEnabledError,
     MaxAttemptsExceededError,
+    MFANotEnabledError,
     SessionNotFoundError,
     UserNotFoundError,
 )
 from app.modules.identity.domain.services import MFADomainService
 from app.modules.identity.domain.specifications import ActiveUserSpecification
 from app.modules.identity.domain.value_objects import UserId
-from app.modules.identity.application.services.shared.security_utils import SecurityUtils
-from app.modules.identity.application.services.shared.validation_utils import ValidationUtils
 
 
 # Consolidated Commands

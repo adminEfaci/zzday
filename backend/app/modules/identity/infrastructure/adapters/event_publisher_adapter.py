@@ -10,8 +10,9 @@ from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID, uuid4
 
-from app.modules.identity.domain.interfaces.services.infrastructure.event_publisher_port import IEventPublisherPort
-
+from app.modules.identity.domain.interfaces.services.infrastructure.event_publisher_port import (
+    IEventPublisherPort,
+)
 
 logger = logging.getLogger(__name__)
 

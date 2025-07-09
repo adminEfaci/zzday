@@ -10,13 +10,15 @@ from uuid import UUID
 
 from app.core.cqrs import Query, QueryHandler
 from app.core.infrastructure import UnitOfWork
-from app.modules.identity.domain.interfaces.repositories.session_repository import ISessionRepository
 from app.modules.identity.application.decorators import (
     rate_limit,
     require_permission,
     validate_request,
 )
 from app.modules.identity.application.dtos.response import UserSessionsResponse
+from app.modules.identity.domain.interfaces.repositories.session_repository import (
+    ISessionRepository,
+)
 
 
 @dataclass

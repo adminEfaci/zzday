@@ -1987,7 +1987,7 @@ class DistributedTransactionManager:
                     })
                     continue
                     
-                elif recovery_decision["action"] == "dead_letter":
+                if recovery_decision["action"] == "dead_letter":
                     logger.warning(
                         "Moving transaction to dead letter queue",
                         transaction_id=transaction_id,

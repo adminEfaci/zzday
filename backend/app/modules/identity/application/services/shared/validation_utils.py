@@ -6,8 +6,6 @@ Addresses the static methods issue by extracting stateless validation logic.
 """
 
 import re
-from typing import Any
-from uuid import UUID
 
 
 class ValidationUtils:

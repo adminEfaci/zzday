@@ -4,12 +4,17 @@ Access Token Model
 SQLModel definition for access token persistence.
 """
 
-from datetime import datetime, UTC
+from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID
 
-from sqlmodel import Field, SQLModel, Column, JSON
-from app.modules.identity.domain.entities.admin.access_token import AccessToken, TokenStatus, RefreshStrategy
+from sqlmodel import JSON, Column, Field, SQLModel
+
+from app.modules.identity.domain.entities.admin.access_token import (
+    AccessToken,
+    RefreshStrategy,
+    TokenStatus,
+)
 
 
 class AccessTokenModel(SQLModel, table=True):

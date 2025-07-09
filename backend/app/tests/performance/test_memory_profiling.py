@@ -4,28 +4,34 @@ Memory Profiling Tests
 Tests memory usage patterns and detects memory leaks.
 """
 
-import pytest
 import asyncio
 import gc
-from typing import List, Dict, Any
-import psutil
 import tracemalloc
+from typing import Any
 
-from app.tests.performance.performance_baselines import PerformanceMonitor
-from app.tests.builders.user_builder import UserBuilder
+import psutil
+import pytest
+
+from app.modules.identity.infrastructure.repositories.role_repository import (
+    SQLRoleRepository,
+)
+from app.modules.identity.infrastructure.repositories.session_repository import (
+    SQLSessionRepository,
+)
+from app.modules.identity.infrastructure.repositories.user_repository import (
+    SQLUserRepository,
+)
 from app.tests.builders.role_builder import RoleBuilder
 from app.tests.builders.session_builder import SessionBuilder
-from app.modules.identity.infrastructure.repositories.user_repository import SQLUserRepository
-from app.modules.identity.infrastructure.repositories.role_repository import SQLRoleRepository
-from app.modules.identity.infrastructure.repositories.session_repository import SQLSessionRepository
+from app.tests.builders.user_builder import UserBuilder
 
 
 class MemoryProfiler:
     """Memory profiler for detecting memory leaks and usage patterns."""
     
     def __init__(self):
-        self.snapshots: List[tracemalloc.Snapshot] = []
-        self.memory_usage: List[Dict[str, Any]] = []
+        self.snapshots: list[tracemalloc.Snapshot] = []
+        self.memory_usage: list[dict[str, Any]] = []
         self.process = psutil.Process()
     
     def start_profiling(self):
@@ -64,7 +70,7 @@ class MemoryProfiler:
         memory_increase = end_memory - start_memory
         return memory_increase > threshold_mb
     
-    def get_memory_stats(self) -> Dict[str, Any]:
+    def get_memory_stats(self) -> dict[str, Any]:
         """Get memory statistics."""
         if not self.snapshots:
             return {}
@@ -86,7 +92,7 @@ class MemoryProfiler:
             "process_memory": self.memory_usage[-1] if self.memory_usage else None
         }
     
-    def compare_snapshots(self, start_idx: int = 0, end_idx: int = -1) -> List[Dict[str, Any]]:
+    def compare_snapshots(self, start_idx: int = 0, end_idx: int = -1) -> list[dict[str, Any]]:
         """Compare memory snapshots."""
         if len(self.snapshots) < 2:
             return []

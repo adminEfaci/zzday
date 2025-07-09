@@ -9,25 +9,22 @@ Tests cover:
 - Error scenarios
 """
 
+from unittest.mock import AsyncMock, Mock, patch
+
 import pytest
-from unittest.mock import Mock, AsyncMock, patch
-from datetime import datetime, UTC
 
 from app.modules.identity.application.commands.user_commands import (
     RegisterUserCommand,
     RegisterUserCommandHandler,
 )
-from app.modules.identity.application.dtos.request.user_dtos import UserRegistrationRequest
-from app.modules.identity.domain.aggregates.user import User
-from app.modules.identity.domain.value_objects.email import Email
-from app.modules.identity.domain.value_objects.username import Username
-from app.modules.identity.domain.value_objects.password_hash import PasswordHash
-from app.modules.identity.domain.errors import DomainError, BusinessRuleViolation
 from app.modules.identity.application.errors import (
     ApplicationError,
-    ValidationError,
     ConflictError,
+    ValidationError,
 )
+from app.modules.identity.domain.value_objects.email import Email
+from app.modules.identity.domain.value_objects.password_hash import PasswordHash
+from app.modules.identity.domain.value_objects.username import Username
 
 
 class TestUserRegistrationCommand:

@@ -5,19 +5,22 @@ Handles user lifecycle events (created/deleted/suspended) from the Identity modu
 and creates corresponding audit trails with compliance tracking.
 """
 
-import logging
-from datetime import datetime, UTC
-from typing import Any
-from uuid import UUID
+from datetime import UTC, datetime
 
-from app.modules.identity.domain.entities.user.user_events import (
-    UserCreated, UserDeleted, UserSuspended, UserActivated, UserDeactivated
-)
-from app.modules.audit.application.services.audit_service import AuditService
-from app.modules.audit.domain.enums import AuditAction, AuditOutcome, AuditSeverity, AuditCategory
 from app.core.events.handlers import EventHandler
 from app.core.logging import get_logger
-
+from app.modules.audit.application.services.audit_service import AuditService
+from app.modules.audit.domain.enums import (
+    AuditAction,
+    AuditCategory,
+    AuditOutcome,
+    AuditSeverity,
+)
+from app.modules.identity.domain.entities.user.user_events import (
+    UserCreated,
+    UserDeleted,
+    UserSuspended,
+)
 
 logger = get_logger(__name__)
 
@@ -135,7 +138,7 @@ class UserCreatedEventHandler(EventHandler[UserCreated]):
             user_id=event.created_by,
             action_type=AuditAction.ADMIN_ACTION,
             operation="admin.user_provisioned",
-            description=f"Administrator created new user account",
+            description="Administrator created new user account",
             resource_type="admin_action",
             resource_id=str(event.user_id),
             outcome=AuditOutcome.SUCCESS,
@@ -416,10 +419,9 @@ class UserSuspendedEventHandler(EventHandler[UserSuspended]):
         reason_lower = event.reason.lower()
         if any(reason in reason_lower for reason in high_severity_reasons):
             return AuditSeverity.HIGH
-        elif any(reason in reason_lower for reason in medium_severity_reasons):
+        if any(reason in reason_lower for reason in medium_severity_reasons):
             return AuditSeverity.MEDIUM
-        else:
-            return AuditSeverity.LOW
+        return AuditSeverity.LOW
     
     def _is_security_suspension(self, reason: str) -> bool:
         """Check if suspension is security-related.
@@ -457,11 +459,10 @@ class UserSuspendedEventHandler(EventHandler[UserSuspended]):
         reason_lower = reason.lower()
         if "breach" in reason_lower:
             return "security_breach"
-        elif "fraud" in reason_lower:
+        if "fraud" in reason_lower:
             return "fraud_attempt"
-        elif "abuse" in reason_lower:
+        if "abuse" in reason_lower:
             return "service_abuse"
-        elif "suspicious" in reason_lower:
+        if "suspicious" in reason_lower:
             return "suspicious_activity"
-        else:
-            return "policy_violation"
+        return "policy_violation"

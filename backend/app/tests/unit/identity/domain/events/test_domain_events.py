@@ -8,32 +8,33 @@ Tests cover:
 - Event ordering and causality
 """
 
-import pytest
-from datetime import datetime, UTC
-from uuid import uuid4
 import json
+from datetime import UTC, datetime
+from uuid import uuid4
 
+import pytest
+
+from app.modules.identity.domain.errors import DomainError
 from app.modules.identity.domain.events.base import DomainEvent
 from app.modules.identity.domain.events.user_events import (
-    UserCreatedEvent,
     UserActivatedEvent,
+    UserCreatedEvent,
     UserDeactivatedEvent,
     UserDeletedEvent,
+    UserEmailChangedEvent,
+    UserLockedEvent,
     UserLoggedInEvent,
     UserLoggedOutEvent,
-    UserPasswordChangedEvent,
-    UserEmailChangedEvent,
-    UserProfileUpdatedEvent,
-    UserLockedEvent,
-    UserUnlockedEvent,
-    UserMFAEnabledEvent,
     UserMFADisabledEvent,
+    UserMFAEnabledEvent,
+    UserPasswordChangedEvent,
+    UserProfileUpdatedEvent,
+    UserUnlockedEvent,
 )
-from app.modules.identity.domain.value_objects.user_id import UserId
 from app.modules.identity.domain.value_objects.email import Email
-from app.modules.identity.domain.value_objects.username import Username
 from app.modules.identity.domain.value_objects.ip_address import IpAddress
-from app.modules.identity.domain.errors import DomainError
+from app.modules.identity.domain.value_objects.user_id import UserId
+from app.modules.identity.domain.value_objects.username import Username
 
 
 class TestDomainEventBase:

@@ -711,7 +711,7 @@ class MapboxAdapter(BaseMappingAdapter):
             error_message = data.get(
                 "message", f"Mapbox error: HTTP {response.status_code}"
             )
-        except (ValueError, TypeError, KeyError) as e:
+        except (ValueError, TypeError, KeyError):
             error_message = f"Mapbox error: HTTP {response.status_code}"
 
         if response.status_code == 401:

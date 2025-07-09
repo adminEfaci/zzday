@@ -6,7 +6,7 @@ Production-ready implementation for biometric authentication operations.
 
 import hashlib
 import secrets
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID, uuid4
 
@@ -343,9 +343,8 @@ class BiometricServiceAdapter(IBiometricService):
         try:
             if self._encryption:
                 return await self._encryption.encrypt(template)
-            else:
-                # Fallback encryption
-                return self._fernet.encrypt(template)
+            # Fallback encryption
+            return self._fernet.encrypt(template)
                 
         except Exception as e:
             logger.error(f"Error encrypting biometric template: {e}")
@@ -356,9 +355,8 @@ class BiometricServiceAdapter(IBiometricService):
         try:
             if self._encryption:
                 return await self._encryption.decrypt(encrypted_template)
-            else:
-                # Fallback decryption
-                return self._fernet.decrypt(encrypted_template)
+            # Fallback decryption
+            return self._fernet.decrypt(encrypted_template)
                 
         except Exception as e:
             logger.error(f"Error decrypting biometric template: {e}")
@@ -381,7 +379,7 @@ class BiometricServiceAdapter(IBiometricService):
                 return 0.0
             
             # Simple Hamming distance calculation
-            matches = sum(b1 == b2 for b1, b2 in zip(template1, template2))
+            matches = sum(b1 == b2 for b1, b2 in zip(template1, template2, strict=False))
             similarity = matches / len(template1)
             
             # Add biometric-type specific adjustments
@@ -402,13 +400,12 @@ class BiometricServiceAdapter(IBiometricService):
         """Get device information for biometric registration."""
         if self._device:
             return await self._device.get_current_device_info()
-        else:
-            return {
-                "device_type": "unknown",
-                "os": "unknown",
-                "browser": "unknown",
-                "captured_at": datetime.now(UTC).isoformat(),
-            }
+        return {
+            "device_type": "unknown",
+            "os": "unknown",
+            "browser": "unknown",
+            "captured_at": datetime.now(UTC).isoformat(),
+        }
 
     async def _supersede_existing_biometric(self, user_id: UUID, biometric_type: str) -> None:
         """Mark existing biometric registration as superseded."""
@@ -488,7 +485,7 @@ class BiometricServiceAdapter(IBiometricService):
                     await self._repo.health_check()
                     health["repository_status"] = "connected"
                 except Exception as e:
-                    health["repository_status"] = f"error: {str(e)}"
+                    health["repository_status"] = f"error: {e!s}"
                     health["status"] = "degraded"
             
             return health

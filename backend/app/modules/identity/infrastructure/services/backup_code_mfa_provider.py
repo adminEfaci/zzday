@@ -7,11 +7,13 @@ Backup recovery codes for Multi-Factor Authentication.
 import logging
 import secrets
 import string
-from datetime import datetime, UTC
+from datetime import UTC, datetime
 from typing import Any
 
 from app.modules.identity.domain.entities.admin.mfa_device import MFADevice, MFAMethod
-from app.modules.identity.infrastructure.services.mfa_provider_factory import IMFAProvider
+from app.modules.identity.infrastructure.services.mfa_provider_factory import (
+    IMFAProvider,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -117,11 +119,10 @@ class BackupCodeMFAProvider(IMFAProvider):
                 metadata['warning'] = f'Only {remaining} backup codes remaining. Generate new codes soon.'
             
             return True, metadata
-        else:
-            return False, {
-                'error': 'Invalid or already used backup code',
-                'remaining_codes': device.get_remaining_backup_codes()
-            }
+        return False, {
+            'error': 'Invalid or already used backup code',
+            'remaining_codes': device.get_remaining_backup_codes()
+        }
     
     async def setup_device(
         self,

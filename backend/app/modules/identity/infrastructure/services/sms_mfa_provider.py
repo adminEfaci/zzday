@@ -7,13 +7,17 @@ SMS-based Multi-Factor Authentication provider.
 import logging
 import random
 import string
-from datetime import datetime, UTC, timedelta
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from app.modules.identity.domain.entities.admin.mfa_device import MFADevice
 from app.modules.identity.domain.enums import MFAMethod
-from app.modules.identity.domain.interfaces.services.communication.notification_service import ISMSService
-from app.modules.identity.infrastructure.services.mfa_provider_factory import IMFAProvider
+from app.modules.identity.domain.interfaces.services.communication.notification_service import (
+    ISMSService,
+)
+from app.modules.identity.infrastructure.services.mfa_provider_factory import (
+    IMFAProvider,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -238,11 +242,10 @@ class SMSMFAProvider(IMFAProvider):
                 f"This code expires in {self.code_expiry_minutes} minutes.\n"
                 f"If you didn't request this, please ignore."
             )
-        else:
-            return (
-                f"Your {app_name} verification code is: {code}\n"
-                f"Valid for {self.code_expiry_minutes} minutes."
-            )
+        return (
+            f"Your {app_name} verification code is: {code}\n"
+            f"Valid for {self.code_expiry_minutes} minutes."
+        )
     
     def _mask_phone_number(self, phone: str) -> str:
         """Mask phone number for display.

@@ -172,7 +172,7 @@ class VariableResolver:
             try:
                 # Parse ISO format
                 date_obj = datetime.fromisoformat(value.replace("Z", "+00:00")).date()
-            except (ValueError, TypeError) as e:
+            except (ValueError, TypeError):
                 return str(value)
         else:
             return str(value)
@@ -192,7 +192,7 @@ class VariableResolver:
             try:
                 # Parse ISO format
                 dt_obj = datetime.fromisoformat(value.replace("Z", "+00:00"))
-            except (ValueError, TypeError) as e:
+            except (ValueError, TypeError):
                 return str(value)
         else:
             return str(value)

@@ -4,11 +4,12 @@ OutboxEvent SQLModel
 SQLModel definition for outbox event persistence.
 """
 
-from datetime import datetime, UTC
-from typing import Any, Dict
+from datetime import UTC, datetime
+from typing import Any
 from uuid import UUID
 
-from sqlmodel import Field, SQLModel, Column, JSON
+from sqlmodel import JSON, Column, Field, SQLModel
+
 from app.models.outbox_event import OutboxEvent
 
 
@@ -21,7 +22,7 @@ class OutboxEventModel(SQLModel, table=True):
     id: UUID = Field(primary_key=True)
     aggregate_id: UUID = Field(index=True)
     event_type: str = Field(max_length=100, index=True)
-    event_data: Dict[str, Any] = Field(sa_column=Column(JSON))
+    event_data: dict[str, Any] = Field(sa_column=Column(JSON))
     
     # Timestamps
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC), index=True)

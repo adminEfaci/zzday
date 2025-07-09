@@ -8,16 +8,17 @@ IMPORTANT: This demonstrates the correct pattern. The original
 login_event_handlers.py should be updated to follow this pattern.
 """
 
-import logging
-from datetime import datetime, UTC
-from typing import Any
+from datetime import datetime
 from uuid import UUID
 
-from app.modules.audit.application.services.audit_service import AuditService
-from app.modules.audit.domain.enums import AuditAction, AuditOutcome, AuditSeverity, AuditCategory
-from app.core.events.handlers import EventHandler
 from app.core.logging import get_logger
-
+from app.modules.audit.application.services.audit_service import AuditService
+from app.modules.audit.domain.enums import (
+    AuditAction,
+    AuditCategory,
+    AuditOutcome,
+    AuditSeverity,
+)
 
 logger = get_logger(__name__)
 
@@ -246,12 +247,11 @@ class LoginEventHandlerService:
         """Determine severity based on number of failed attempts."""
         if attempt_number >= 5:
             return AuditSeverity.CRITICAL
-        elif attempt_number >= 3:
+        if attempt_number >= 3:
             return AuditSeverity.HIGH
-        elif attempt_number >= 2:
+        if attempt_number >= 2:
             return AuditSeverity.MEDIUM
-        else:
-            return AuditSeverity.LOW
+        return AuditSeverity.LOW
     
     async def _create_security_audit(
         self,

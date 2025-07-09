@@ -5,14 +5,15 @@ Tests the event translation system that converts between
 domain events and contract events.
 """
 
-import pytest
 from dataclasses import dataclass
 from datetime import datetime
-from uuid import UUID, uuid4
 from typing import Any
+from uuid import UUID, uuid4
+
+import pytest
 
 from app.core.contracts import ContractEvent
-from app.core.events.types import DomainEvent, EventMetadata
+from app.core.events.types import DomainEvent
 from app.core.infrastructure.adapters import EventTranslator
 
 
@@ -85,14 +86,13 @@ class TestEventTranslator(EventTranslator):
                 "email": domain_event.email,
                 "created_at": domain_event.created_at,
             }
-        elif isinstance(domain_event, UserUpdatedDomainEvent):
+        if isinstance(domain_event, UserUpdatedDomainEvent):
             return {
                 "user_id": domain_event.user_id,
                 "field": domain_event.field,
                 "value": domain_event.value,
             }
-        else:
-            raise ValueError(f"Unknown domain event type: {type(domain_event)}")
+        raise ValueError(f"Unknown domain event type: {type(domain_event)}")
     
     def _extract_domain_data(
         self,
@@ -106,14 +106,13 @@ class TestEventTranslator(EventTranslator):
                 "email": contract_event.email,
                 "created_at": contract_event.created_at,
             }
-        elif isinstance(contract_event, UserUpdatedContractEvent):
+        if isinstance(contract_event, UserUpdatedContractEvent):
             return {
                 "user_id": contract_event.user_id,
                 "field": contract_event.field,
                 "value": contract_event.value,
             }
-        else:
-            raise ValueError(f"Unknown contract event type: {type(contract_event)}")
+        raise ValueError(f"Unknown contract event type: {type(contract_event)}")
 
 
 class TestEventTranslatorClass:

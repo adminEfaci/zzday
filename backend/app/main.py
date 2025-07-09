@@ -347,8 +347,13 @@ async def lifespan(app: FastAPI) -> AsyncGenerator:
 async def _test_postgresql_setup() -> None:
     """Test PostgreSQL database setup and extensions."""
     try:
-        from app.core.constants import POSTGRESQL_VERSION_QUERY, POSTGIS_VERSION_QUERY, JSON_SUPPORT_QUERY
         from sqlalchemy import text
+
+        from app.core.constants import (
+            JSON_SUPPORT_QUERY,
+            POSTGIS_VERSION_QUERY,
+            POSTGRESQL_VERSION_QUERY,
+        )
         
         async with get_session() as session:
             # Test PostgreSQL version

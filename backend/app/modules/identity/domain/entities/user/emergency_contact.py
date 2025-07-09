@@ -10,10 +10,10 @@ from typing import Any
 from uuid import UUID, uuid4
 
 from app.core.domain.base import Entity
+from app.modules.identity.domain.value_objects import ContactInfo
 from app.shared.value_objects.address import Address
 from app.shared.value_objects.email import EmailAddress
 from app.shared.value_objects.phone import PhoneNumber
-from app.modules.identity.domain.value_objects import ContactInfo
 
 from .user_enums import Relationship as ContactRelationship
 

@@ -170,11 +170,11 @@ class AUTH_CONSTANTS:
 # Export commonly used constants for easy importing
 __all__ = [
     "AUTH_CONSTANTS",
-    "TokenType", 
-    "JWTClaims",
-    "AuthenticationMethod",
-    "TokenScope",
-    "TokenExpiry",
-    "SecurityConstants", 
     "AuthErrorCode",
+    "AuthenticationMethod",
+    "JWTClaims",
+    "SecurityConstants",
+    "TokenExpiry",
+    "TokenScope",
+    "TokenType",
 ] 

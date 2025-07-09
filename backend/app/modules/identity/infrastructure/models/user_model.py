@@ -4,20 +4,21 @@ User Model
 SQLModel definition for user persistence.
 """
 
-from datetime import datetime, UTC
+from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID
 
-from sqlmodel import Field, SQLModel, Column, JSON
+from sqlmodel import JSON, Column, Field, SQLModel
+
 from app.modules.identity.domain.aggregates.user import User
-from app.modules.identity.domain.value_objects.email import Email
-from app.modules.identity.domain.value_objects.username import Username
-from app.modules.identity.domain.value_objects.phone_number import PhoneNumber
-from app.modules.identity.domain.value_objects.person_name import PersonName
-from app.modules.identity.domain.value_objects.date_of_birth import DateOfBirth
-from app.modules.identity.domain.value_objects.password_hash import PasswordHash
+from app.modules.identity.domain.entities.user.user_enums import Gender, UserStatus
 from app.modules.identity.domain.value_objects.address import Address
-from app.modules.identity.domain.entities.user.user_enums import UserStatus, Gender
+from app.modules.identity.domain.value_objects.date_of_birth import DateOfBirth
+from app.modules.identity.domain.value_objects.email import Email
+from app.modules.identity.domain.value_objects.password_hash import PasswordHash
+from app.modules.identity.domain.value_objects.person_name import PersonName
+from app.modules.identity.domain.value_objects.phone_number import PhoneNumber
+from app.modules.identity.domain.value_objects.username import Username
 
 
 class UserModel(SQLModel, table=True):

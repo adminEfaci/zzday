@@ -4,15 +4,22 @@ Access Token Repository Implementation
 SQLModel-based implementation of the access token repository interface.
 """
 
-from datetime import datetime, UTC
-from typing import Any
+from datetime import UTC, datetime
 from uuid import UUID
 
-from sqlmodel import Session, select, and_, or_, col, func
+from sqlmodel import Session, and_, or_, select
+
 from app.core.infrastructure.repository import SQLRepository
-from app.modules.identity.domain.entities.admin.access_token import AccessToken, TokenStatus
-from app.modules.identity.domain.interfaces.repositories.access_token_repository import IAccessTokenRepository
-from app.modules.identity.infrastructure.models.access_token_model import AccessTokenModel
+from app.modules.identity.domain.entities.admin.access_token import (
+    AccessToken,
+    TokenStatus,
+)
+from app.modules.identity.domain.interfaces.repositories.access_token_repository import (
+    IAccessTokenRepository,
+)
+from app.modules.identity.infrastructure.models.access_token_model import (
+    AccessTokenModel,
+)
 
 
 class SQLAccessTokenRepository(SQLRepository[AccessToken, AccessTokenModel], IAccessTokenRepository):

@@ -8,7 +8,7 @@ from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID
 
-from sqlmodel import Column, Field, JSON, SQLModel
+from sqlmodel import JSON, Column, Field, SQLModel
 
 from app.modules.identity.domain.entities.role.role import Role
 from app.modules.identity.domain.entities.role.role_enums import InheritanceMode
@@ -93,7 +93,9 @@ class RoleModel(SQLModel, table=True):
     
     def to_domain(self) -> Role:
         """Convert to domain entity."""
-        from app.modules.identity.domain.value_objects.permission_scope import PermissionScope
+        from app.modules.identity.domain.value_objects.permission_scope import (
+            PermissionScope,
+        )
         
         role = Role(
             id=self.id,

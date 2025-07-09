@@ -4,11 +4,11 @@ User Preference Entity
 Represents user preferences and settings.
 """
 
+import re
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID
-import re
 
 from app.core.domain.base import Entity
 

@@ -4,13 +4,18 @@ User Preference Model
 SQLModel definition for user preference persistence.
 """
 
-from datetime import datetime, UTC
+from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID
 
-from sqlmodel import Field, SQLModel, Column, JSON
+from sqlmodel import JSON, Column, Field, SQLModel
+
 from app.modules.identity.domain.entities.user.preference import UserPreference
-from app.modules.identity.domain.entities.user.user_enums import Language, DateFormat, TimeFormat
+from app.modules.identity.domain.entities.user.user_enums import (
+    DateFormat,
+    Language,
+    TimeFormat,
+)
 
 
 class UserPreferenceModel(SQLModel, table=True):

@@ -4,18 +4,23 @@ Device Registration Repository Implementation
 SQLModel-based implementation of the device registration repository interface.
 """
 
-from datetime import datetime, UTC
-from typing import Any
+from datetime import UTC, datetime
 from uuid import UUID
 
-from sqlmodel import Session, select, and_, or_, col, func
-from app.modules.identity.domain.entities.device.device_registration import DeviceRegistration
-from app.modules.identity.domain.enums import DeviceType, DevicePlatform
-from app.modules.identity.domain.interfaces.repositories.device_registration_repository import IDeviceRegistrationRepository
-from app.modules.identity.infrastructure.models.device_model import DeviceRegistrationModel
+from sqlmodel import Session, and_, func, select
+
 from app.core.errors import InfrastructureError
 from app.core.logging import get_logger
-
+from app.modules.identity.domain.entities.device.device_registration import (
+    DeviceRegistration,
+)
+from app.modules.identity.domain.enums import DevicePlatform, DeviceType
+from app.modules.identity.domain.interfaces.repositories.device_registration_repository import (
+    IDeviceRegistrationRepository,
+)
+from app.modules.identity.infrastructure.models.device_model import (
+    DeviceRegistrationModel,
+)
 
 logger = get_logger(__name__)
 
@@ -95,7 +100,7 @@ class SQLDeviceRegistrationRepository(IDeviceRegistrationRepository):
                 user_id=str(user_id),
                 error=str(e)
             )
-            raise InfrastructureError(f"Failed to register device: {str(e)}")
+            raise InfrastructureError(f"Failed to register device: {e!s}")
     
     async def find_by_id(self, device_id: UUID) -> dict | None:
         """Find device registration by ID.
@@ -121,7 +126,7 @@ class SQLDeviceRegistrationRepository(IDeviceRegistrationRepository):
                 device_id=str(device_id),
                 error=str(e)
             )
-            raise InfrastructureError(f"Failed to find device: {str(e)}")
+            raise InfrastructureError(f"Failed to find device: {e!s}")
     
     async def find_by_user(self, user_id: UUID) -> list[dict]:
         """Find all registered devices for user.
@@ -148,7 +153,7 @@ class SQLDeviceRegistrationRepository(IDeviceRegistrationRepository):
                 user_id=str(user_id),
                 error=str(e)
             )
-            raise InfrastructureError(f"Failed to find user devices: {str(e)}")
+            raise InfrastructureError(f"Failed to find user devices: {e!s}")
     
     async def find_by_fingerprint(
         self, 
@@ -179,7 +184,7 @@ class SQLDeviceRegistrationRepository(IDeviceRegistrationRepository):
                 fingerprint=device_fingerprint,
                 error=str(e)
             )
-            raise InfrastructureError(f"Failed to find device: {str(e)}")
+            raise InfrastructureError(f"Failed to find device: {e!s}")
     
     async def trust_device(self, device_id: UUID) -> bool:
         """Mark device as trusted.
@@ -221,7 +226,7 @@ class SQLDeviceRegistrationRepository(IDeviceRegistrationRepository):
                 device_id=str(device_id),
                 error=str(e)
             )
-            raise InfrastructureError(f"Failed to trust device: {str(e)}")
+            raise InfrastructureError(f"Failed to trust device: {e!s}")
     
     async def revoke_trust(self, device_id: UUID) -> bool:
         """Revoke trust from device.
@@ -263,7 +268,7 @@ class SQLDeviceRegistrationRepository(IDeviceRegistrationRepository):
                 device_id=str(device_id),
                 error=str(e)
             )
-            raise InfrastructureError(f"Failed to revoke device trust: {str(e)}")
+            raise InfrastructureError(f"Failed to revoke device trust: {e!s}")
     
     async def update_last_seen(
         self, 
@@ -312,7 +317,7 @@ class SQLDeviceRegistrationRepository(IDeviceRegistrationRepository):
                 device_id=str(device_id),
                 error=str(e)
             )
-            raise InfrastructureError(f"Failed to update device: {str(e)}")
+            raise InfrastructureError(f"Failed to update device: {e!s}")
     
     async def delete_device(self, device_id: UUID) -> bool:
         """Delete device registration.
@@ -345,7 +350,7 @@ class SQLDeviceRegistrationRepository(IDeviceRegistrationRepository):
                 device_id=str(device_id),
                 error=str(e)
             )
-            raise InfrastructureError(f"Failed to delete device: {str(e)}")
+            raise InfrastructureError(f"Failed to delete device: {e!s}")
     
     async def cleanup_inactive_devices(self, inactive_days: int = 90) -> int:
         """Clean up inactive devices.
@@ -386,7 +391,7 @@ class SQLDeviceRegistrationRepository(IDeviceRegistrationRepository):
                 "Failed to cleanup inactive devices",
                 error=str(e)
             )
-            raise InfrastructureError(f"Failed to cleanup devices: {str(e)}")
+            raise InfrastructureError(f"Failed to cleanup devices: {e!s}")
     
     async def count_by_user(self, user_id: UUID) -> int:
         """Count devices for a user.
@@ -410,7 +415,7 @@ class SQLDeviceRegistrationRepository(IDeviceRegistrationRepository):
                 user_id=str(user_id),
                 error=str(e)
             )
-            raise InfrastructureError(f"Failed to count devices: {str(e)}")
+            raise InfrastructureError(f"Failed to count devices: {e!s}")
     
     async def count_trusted_by_user(self, user_id: UUID) -> int:
         """Count trusted devices for a user.
@@ -437,7 +442,7 @@ class SQLDeviceRegistrationRepository(IDeviceRegistrationRepository):
                 user_id=str(user_id),
                 error=str(e)
             )
-            raise InfrastructureError(f"Failed to count trusted devices: {str(e)}")
+            raise InfrastructureError(f"Failed to count trusted devices: {e!s}")
     
     async def find_trusted_by_user(self, user_id: UUID) -> list[dict]:
         """Find all trusted devices for a user.
@@ -467,7 +472,7 @@ class SQLDeviceRegistrationRepository(IDeviceRegistrationRepository):
                 user_id=str(user_id),
                 error=str(e)
             )
-            raise InfrastructureError(f"Failed to find trusted devices: {str(e)}")
+            raise InfrastructureError(f"Failed to find trusted devices: {e!s}")
     
     async def update_device_info(
         self,
@@ -518,4 +523,4 @@ class SQLDeviceRegistrationRepository(IDeviceRegistrationRepository):
                 device_id=str(device_id),
                 error=str(e)
             )
-            raise InfrastructureError(f"Failed to update device: {str(e)}")
+            raise InfrastructureError(f"Failed to update device: {e!s}")

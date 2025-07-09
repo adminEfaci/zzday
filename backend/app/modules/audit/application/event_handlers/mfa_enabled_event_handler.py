@@ -5,17 +5,19 @@ Handles MFA enablement events from the Identity module and creates
 corresponding audit trails with security and compliance categorization.
 """
 
-import logging
-from datetime import datetime, UTC
-from typing import Any
+from datetime import UTC, datetime
 from uuid import UUID
 
-from app.modules.identity.domain.entities.user.user_events import MFAEnabled
-from app.modules.audit.application.services.audit_service import AuditService
-from app.modules.audit.domain.enums import AuditAction, AuditOutcome, AuditSeverity, AuditCategory
 from app.core.events.handlers import EventHandler
 from app.core.logging import get_logger
-
+from app.modules.audit.application.services.audit_service import AuditService
+from app.modules.audit.domain.enums import (
+    AuditAction,
+    AuditCategory,
+    AuditOutcome,
+    AuditSeverity,
+)
+from app.modules.identity.domain.entities.user.user_events import MFAEnabled
 
 logger = get_logger(__name__)
 

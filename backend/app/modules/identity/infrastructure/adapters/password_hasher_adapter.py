@@ -13,7 +13,7 @@ from app.core.logging import logger
 from app.modules.identity.domain.interfaces.services.authentication.password_hasher import (
     IPasswordHasher,
 )
-from app.modules.identity.domain.value_objects import PasswordHash
+from app.modules.identity.domain.value_objects.password_hash import PasswordHash
 from app.modules.identity.domain.value_objects.password_hash import HashAlgorithm
 
 
@@ -38,7 +38,7 @@ class PasswordPolicy:
             ]
 
 
-class PasswordHasherService(IPasswordHasher):
+class PasswordHasherAdapter(IPasswordHasher):
     """Service for hashing and verifying passwords."""
     
     def __init__(self, config: dict[str, Any] | None = None):
@@ -55,7 +55,7 @@ class PasswordHasherService(IPasswordHasher):
             salt_len=self.config.get("argon2_salt_len", 16)
         )
         
-        logger.info(f"PasswordHasherService initialized with algorithm: {self.algorithm}")
+        logger.info(f"PasswordHasherAdapter initialized with algorithm: {self.algorithm}")
     
     async def hash_password(self, password: str, user_context: dict[str, Any] | None = None) -> PasswordHash:
         """Hash a password using the configured algorithm."""

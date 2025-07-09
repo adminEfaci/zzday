@@ -14,6 +14,8 @@ from app.modules.identity.domain.interfaces.services.security.risk_assessment_se
     IRiskAssessmentService,
 )
 from app.modules.identity.domain.value_objects.ip_address import IpAddress
+from app.modules.identity.domain.value_objects.risk_assessment import RiskAssessment
+from app.modules.identity.domain.enums import RiskLevel
 
 
 class RiskAssessmentAdapter(IRiskAssessmentService):
@@ -37,7 +39,7 @@ class RiskAssessmentAdapter(IRiskAssessmentService):
         ip_address: IpAddress,
         user_agent: str,
         device_fingerprint: str | None = None,
-    ) -> dict[str, Any]:
+    ) -> RiskAssessment:
         """Assess login risk using multiple factors."""
         try:
             factors = await self._collect_risk_factors(
@@ -47,39 +49,34 @@ class RiskAssessmentAdapter(IRiskAssessmentService):
             risk_score = await self._calculate_risk_score(factors)
             risk_level = self._determine_risk_level(risk_score)
 
-            assessment = {
-                "user_id": str(user_id),
-                "risk_level": risk_level,
-                "risk_score": risk_score,
-                "factors": factors,
-                "recommendations": await self._get_risk_recommendations(user_id, risk_score),
-                "assessed_at": datetime.now(UTC).isoformat(),
-                "valid_until": (datetime.now(UTC) + timedelta(minutes=15)).isoformat()
-            }
+            assessment = RiskAssessment(
+                level=risk_level,
+                score=risk_score,
+                factors=factors,
+                confidence=0.95
+            )
 
             cache_key = f"risk:{user_id}:{hash(str(ip_address))}"
             self._risk_cache[cache_key] = assessment
 
-            logger.info(f"Login risk assessed: {risk_level} (score: {risk_score:.2f}) for user {user_id}")
+            logger.info(f"Login risk assessed: {risk_level.name} (score: {risk_score:.2f}) for user {user_id}")
             return assessment
 
         except Exception as e:
             logger.error(f"Error assessing login risk for user {user_id}: {e}")
-            return {
-                "user_id": str(user_id),
-                "risk_level": "medium",
-                "risk_score": 0.5,
-                "factors": {"error": str(e)},
-                "recommendations": [],
-                "assessed_at": datetime.now(UTC).isoformat()
-            }
+            return RiskAssessment(
+                level=RiskLevel.MEDIUM,
+                score=0.5,
+                factors={"error": str(e)},
+                confidence=0.1
+            )
 
     async def assess_transaction_risk(
         self,
         user_id: UUID,
         transaction_type: str,
         transaction_data: dict[str, Any],
-    ) -> dict[str, Any]:
+    ) -> RiskAssessment:
         """Assess transaction risk."""
         try:
             factors = {
@@ -96,31 +93,24 @@ class RiskAssessmentAdapter(IRiskAssessmentService):
             risk_score = await self._calculate_transaction_risk_score(factors)
             risk_level = self._determine_risk_level(risk_score)
 
-            assessment = {
-                "user_id": str(user_id),
-                "transaction_type": transaction_type,
-                "risk_level": risk_level,
-                "risk_score": risk_score,
-                "factors": factors,
-                "recommendations": await self._get_transaction_recommendations(
-                    user_id, transaction_type, risk_score
-                ),
-                "assessed_at": datetime.now(UTC).isoformat()
-            }
+            assessment = RiskAssessment(
+                level=risk_level,
+                score=risk_score,
+                factors=factors,
+                confidence=0.90
+            )
 
-            logger.info(f"Transaction risk assessed: {risk_level} for {transaction_type} by user {user_id}")
+            logger.info(f"Transaction risk assessed: {risk_level.name} for {transaction_type} by user {user_id}")
             return assessment
 
         except Exception as e:
             logger.error(f"Error assessing transaction risk: {e}")
-            return {
-                "user_id": str(user_id),
-                "transaction_type": transaction_type,
-                "risk_level": "medium",
-                "risk_score": 0.5,
-                "factors": {"error": str(e)},
-                "recommendations": []
-            }
+            return RiskAssessment(
+                level=RiskLevel.MEDIUM,
+                score=0.5,
+                factors={"error": str(e)},
+                confidence=0.1
+            )
 
     async def update_risk_profile(
         self,
@@ -263,14 +253,16 @@ class RiskAssessmentAdapter(IRiskAssessmentService):
             logger.error(f"Error calculating risk score: {e}")
             return 0.5
 
-    def _determine_risk_level(self, risk_score: float) -> str:
+    def _determine_risk_level(self, risk_score: float) -> RiskLevel:
         """Determine risk level from score."""
-        if risk_score >= 0.8:
-            return "high"
-        elif risk_score >= 0.5:
-            return "medium"
+        if risk_score >= 0.9:
+            return RiskLevel.CRITICAL
+        elif risk_score >= 0.7:
+            return RiskLevel.HIGH
+        elif risk_score >= 0.4:
+            return RiskLevel.MEDIUM
         else:
-            return "low"
+            return RiskLevel.LOW
 
     async def _is_new_location(self, user_id: UUID, location: dict) -> bool:
         """Check if location is new for user."""

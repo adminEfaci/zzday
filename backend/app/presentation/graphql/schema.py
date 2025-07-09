@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 # Identity Module
 try:
-    from app.modules.identity.presentation.graphql.identity_schema import (
+    from app.modules.identity.presentation.graphql.schema import (
         IdentityMutations,
         IdentityQueries,
     )
@@ -335,6 +335,7 @@ async def get_context(request: Any, response: Any = None) -> dict:
     - DI container for service injection
     - Request and response objects
     - Database session factory
+    - DataLoader registry for efficient data fetching
 
     Args:
         request: The incoming request object
@@ -344,6 +345,7 @@ async def get_context(request: Any, response: Any = None) -> dict:
         dict: Context dictionary for GraphQL resolvers
     """
     from app.core.database import get_session
+    from app.presentation.graphql.dataloaders import create_loaders
 
     context = {
         "request": request,
@@ -360,6 +362,13 @@ async def get_context(request: Any, response: Any = None) -> dict:
 
     # Add any additional context needed by modules
     context["is_authenticated"] = context["user"] is not None
+    
+    # Create dataloaders for this request
+    if context["container"]:
+        context["loaders"] = create_loaders(context["container"])
+    else:
+        context["loaders"] = None
+        logger.warning("No container available for dataloader creation")
 
     return context
 

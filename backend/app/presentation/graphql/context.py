@@ -4,7 +4,9 @@ GraphQL Context Utilities
 Provides utilities for accessing context in GraphQL resolvers.
 """
 
-from typing import TYPE_CHECKING, Any
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any, Optional, Union
 
 from strawberry.types import Info
 
@@ -14,6 +16,7 @@ if TYPE_CHECKING:
     from app.core.cache import CacheManager
     from app.core.dependencies import Container
     from app.core.events.types import IEventBus
+    from app.presentation.graphql.dataloaders import DataLoaderRegistry
 
 
 class GraphQLContext:
@@ -58,6 +61,11 @@ class GraphQLContext:
     def cache_manager(self) -> "CacheManager" | None:
         """Get the cache manager instance."""
         return self.context.get("cache_manager")
+    
+    @property
+    def loaders(self) -> Optional["DataLoaderRegistry"]:
+        """Get the dataloader registry."""
+        return self.context.get("loaders")
 
     async def get_db_session(self) -> "AsyncSession":
         """

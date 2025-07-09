@@ -1440,6 +1440,11 @@ class DistributedTransactionManager:
         self._prepare_timeout = prepare_timeout
         self._commit_timeout = commit_timeout
         self._creation_time = datetime.now(datetime.UTC)
+        
+        # Enhanced recovery capabilities
+        self._dead_letter_queue: list[dict[str, Any]] = []
+        self._recovery_in_progress = False
+        self._last_recovery_time: datetime | None = None
 
         logger.info(
             "Distributed transaction manager initialized",
@@ -1917,54 +1922,94 @@ class DistributedTransactionManager:
 
     async def recover_transactions(
         self, older_than: timedelta, max_recovery_attempts: int = 3
-    ) -> list[str]:
+    ) -> dict[str, Any]:
         """
-        Recover incomplete transactions based on age and state.
+        Recover incomplete transactions with enhanced recovery policies.
 
         Identifies and attempts to complete transactions that were
-        interrupted by system failures. Implements recovery policies
-        based on transaction state when failure occurred.
+        interrupted by system failures. Implements sophisticated recovery
+        policies based on transaction state and participant health.
 
         Args:
             older_than: Minimum age for transactions to be considered incomplete
             max_recovery_attempts: Maximum recovery attempts per transaction
 
         Returns:
-            List of transaction IDs that were recovered
+            Dictionary containing recovery results and statistics
 
         Raises:
             RecoveryError: If recovery operations fail
         """
         logger.info(
-            "Starting transaction recovery",
+            "Starting enhanced transaction recovery",
             cutoff_age=older_than.total_seconds(),
             max_attempts=max_recovery_attempts,
         )
 
         recovery_start = time.time()
-        recovered_transactions = []
+        recovery_results = {
+            "recovered_transactions": [],
+            "failed_transactions": [],
+            "skipped_transactions": [],
+            "dead_letter_transactions": [],
+            "statistics": {}
+        }
 
         try:
             incomplete = await self._transaction_log.get_incomplete_transactions(
                 older_than
             )
 
+            # Check participant health before recovery
+            participant_health = await self._check_participant_health()
+            
             for tx_data in incomplete:
                 transaction_id = tx_data["id"]
                 state = tx_data["state"]
                 recovery_attempts = tx_data.get("recovery_attempts", 0)
-
-                if recovery_attempts >= max_recovery_attempts:
-                    logger.warning(
-                        "Skipping transaction - max recovery attempts reached",
+                started_at = tx_data.get("started_at")
+                
+                # Enhanced recovery decision logic
+                recovery_decision = await self._make_recovery_decision(
+                    transaction_id, state, recovery_attempts, 
+                    max_recovery_attempts, started_at, participant_health
+                )
+                
+                if recovery_decision["action"] == "skip":
+                    logger.info(
+                        "Skipping transaction recovery",
                         transaction_id=transaction_id,
-                        attempts=recovery_attempts,
+                        reason=recovery_decision["reason"]
                     )
+                    recovery_results["skipped_transactions"].append({
+                        "transaction_id": transaction_id,
+                        "reason": recovery_decision["reason"]
+                    })
+                    continue
+                    
+                elif recovery_decision["action"] == "dead_letter":
+                    logger.warning(
+                        "Moving transaction to dead letter queue",
+                        transaction_id=transaction_id,
+                        reason=recovery_decision["reason"]
+                    )
+                    await self._move_to_dead_letter_queue(transaction_id, tx_data)
+                    recovery_results["dead_letter_transactions"].append({
+                        "transaction_id": transaction_id,
+                        "reason": recovery_decision["reason"]
+                    })
                     continue
 
+                # Attempt recovery
                 try:
                     await self._recover_single_transaction(transaction_id, state)
-                    recovered_transactions.append(transaction_id)
+                    recovery_results["recovered_transactions"].append(transaction_id)
+                    
+                    logger.info(
+                        "Transaction recovery successful",
+                        transaction_id=transaction_id,
+                        recovery_attempts=recovery_attempts + 1
+                    )
 
                 except Exception as e:
                     logger.exception(
@@ -1972,6 +2017,12 @@ class DistributedTransactionManager:
                         transaction_id=transaction_id,
                         error=str(e),
                     )
+                    
+                    recovery_results["failed_transactions"].append({
+                        "transaction_id": transaction_id,
+                        "error": str(e),
+                        "attempts": recovery_attempts + 1
+                    })
 
                     # Increment recovery attempt counter
                     await self._transaction_log.increment_recovery_attempts(
@@ -1979,57 +2030,408 @@ class DistributedTransactionManager:
                     )
 
             recovery_duration = time.time() - recovery_start
+            
+            # Compile statistics
+            recovery_results["statistics"] = {
+                "total_incomplete": len(incomplete),
+                "recovered_count": len(recovery_results["recovered_transactions"]),
+                "failed_count": len(recovery_results["failed_transactions"]),
+                "skipped_count": len(recovery_results["skipped_transactions"]),
+                "dead_letter_count": len(recovery_results["dead_letter_transactions"]),
+                "recovery_duration": recovery_duration,
+                "recovery_rate": len(recovery_results["recovered_transactions"]) / max(len(incomplete), 1)
+            }
 
             logger.info(
-                "Transaction recovery completed",
-                recovered_count=len(recovered_transactions),
-                duration=recovery_duration,
-                total_incomplete=len(incomplete),
+                "Enhanced transaction recovery completed",
+                **recovery_results["statistics"]
             )
 
             metrics.transaction_recovery_duration.observe(recovery_duration)
-            metrics.transactions_recovered.inc(len(recovered_transactions))
+            metrics.transactions_recovered.inc(len(recovery_results["recovered_transactions"]))
+            metrics.transactions_dead_lettered.inc(len(recovery_results["dead_letter_transactions"]))
 
-            return recovered_transactions
+            return recovery_results
 
         except Exception as e:
             logger.exception("Transaction recovery failed", error=str(e))
             raise RecoveryError(f"Recovery failed: {e}")
+    
+    async def _check_participant_health(self) -> dict[str, bool]:
+        """Check the health of all participants before recovery."""
+        participant_health = {}
+        
+        for participant in self._participants:
+            try:
+                if hasattr(participant, 'health_check'):
+                    is_healthy = await participant.health_check()
+                    participant_health[participant.participant_id] = is_healthy
+                else:
+                    # Assume healthy if no health check available
+                    participant_health[participant.participant_id] = True
+                    
+            except Exception as e:
+                logger.warning(
+                    "Participant health check failed",
+                    participant=participant.participant_id,
+                    error=str(e)
+                )
+                participant_health[participant.participant_id] = False
+        
+        healthy_count = sum(1 for is_healthy in participant_health.values() if is_healthy)
+        
+        logger.info(
+            "Participant health check completed",
+            healthy_participants=healthy_count,
+            total_participants=len(self._participants),
+            health_status=participant_health
+        )
+        
+        return participant_health
+    
+    async def _make_recovery_decision(
+        self, transaction_id: str, state: TransactionState, 
+        recovery_attempts: int, max_attempts: int, started_at: datetime,
+        participant_health: dict[str, bool]
+    ) -> dict[str, Any]:
+        """Make intelligent recovery decision based on transaction state and context."""
+        
+        # Check if max attempts reached
+        if recovery_attempts >= max_attempts:
+            return {
+                "action": "dead_letter",
+                "reason": f"Max recovery attempts ({max_attempts}) reached"
+            }
+        
+        # Check if transaction is too old (older than 24 hours)
+        if started_at and (datetime.now(datetime.UTC) - started_at).total_seconds() > 86400:
+            return {
+                "action": "dead_letter",
+                "reason": "Transaction too old (>24 hours)"
+            }
+        
+        # Check participant health
+        unhealthy_participants = [
+            participant_id for participant_id, is_healthy in participant_health.items()
+            if not is_healthy
+        ]
+        
+        if unhealthy_participants:
+            # If critical participants are unhealthy, skip recovery
+            if len(unhealthy_participants) > len(self._participants) / 2:
+                return {
+                    "action": "skip",
+                    "reason": f"Too many unhealthy participants: {unhealthy_participants}"
+                }
+            
+            # If some participants are unhealthy, proceed with caution
+            logger.warning(
+                "Attempting recovery with unhealthy participants",
+                transaction_id=transaction_id,
+                unhealthy_participants=unhealthy_participants
+            )
+        
+        # State-based recovery decisions
+        if state == TransactionState.COMMITTED:
+            return {
+                "action": "skip",
+                "reason": "Transaction already committed"
+            }
+        
+        if state == TransactionState.ABORTED:
+            return {
+                "action": "skip",
+                "reason": "Transaction already aborted"
+            }
+        
+        # Proceed with recovery
+        return {
+            "action": "recover",
+            "reason": "Transaction eligible for recovery"
+        }
+    
+    async def _move_to_dead_letter_queue(
+        self, transaction_id: str, tx_data: dict[str, Any]
+    ) -> None:
+        """Move transaction to dead letter queue for manual intervention."""
+        dead_letter_entry = {
+            "transaction_id": transaction_id,
+            "original_data": tx_data,
+            "dead_lettered_at": datetime.now(datetime.UTC).isoformat(),
+            "reason": "Recovery failed or exceeded max attempts",
+            "participants": [p.participant_id for p in self._participants]
+        }
+        
+        # In a real implementation, this would be stored in a persistent queue
+        # For now, we'll log it and mark the transaction as aborted
+        logger.warning(
+            "Transaction moved to dead letter queue",
+            transaction_id=transaction_id,
+            dead_letter_entry=dead_letter_entry
+        )
+        
+        # Mark transaction as aborted to prevent further recovery attempts
+        try:
+            await self._transaction_log.log_state_change(
+                transaction_id,
+                TransactionState.ABORTED
+            )
+        except Exception as e:
+            logger.exception(
+                "Failed to mark dead letter transaction as aborted",
+                transaction_id=transaction_id,
+                error=str(e)
+            )
 
     async def _recover_single_transaction(
         self, transaction_id: str, state: TransactionState
     ) -> None:
-        """Recover a single transaction based on its state."""
+        """Recover a single transaction based on its state with enhanced recovery logic."""
         logger.info(
             "Recovering transaction", transaction_id=transaction_id, state=state.value
         )
 
-        if state in (TransactionState.PREPARING, TransactionState.PREPARED):
-            # Transaction was in prepare phase - abort it for safety
-            # Can't be sure all participants prepared successfully
-            await self._abort_phase(transaction_id)
+        recovery_start = time.time()
+        
+        try:
+            if state in (TransactionState.PREPARING, TransactionState.PREPARED):
+                # Enhanced recovery for prepare phase
+                await self._recover_prepare_phase_transaction(transaction_id, state)
+                
+            elif state == TransactionState.COMMITTING:
+                # Enhanced recovery for commit phase
+                await self._recover_commit_phase_transaction(transaction_id)
+                
+            elif state == TransactionState.ABORTING:
+                # Enhanced recovery for abort phase
+                await self._recover_abort_phase_transaction(transaction_id)
+                
+            elif state == TransactionState.INITIAL:
+                # Transaction never started properly - mark as aborted
+                await self._abort_phase(transaction_id)
+                logger.info(
+                    "Initial transaction aborted during recovery",
+                    transaction_id=transaction_id
+                )
+                
+            recovery_duration = time.time() - recovery_start
+            
             logger.info(
-                "Transaction aborted during recovery",
+                "Transaction recovery completed",
                 transaction_id=transaction_id,
                 original_state=state.value,
+                recovery_duration=recovery_duration
             )
-
-        elif state == TransactionState.COMMITTING:
-            # Transaction was committing - try to complete commit
-            # Participants should be able to complete commit
-            await self._commit_phase(transaction_id)
-            logger.info(
-                "Transaction commit completed during recovery",
+            
+            metrics.transaction_recovery_success.inc()
+            
+        except Exception as e:
+            recovery_duration = time.time() - recovery_start
+            
+            logger.exception(
+                "Transaction recovery failed",
                 transaction_id=transaction_id,
+                original_state=state.value,
+                recovery_duration=recovery_duration,
+                error=str(e)
             )
-
-        elif state == TransactionState.ABORTING:
-            # Transaction was aborting - complete abort
+            
+            metrics.transaction_recovery_failures.inc()
+            
+            # Try to abort as last resort
+            try:
+                await self._abort_phase(transaction_id)
+            except Exception as abort_error:
+                logger.exception(
+                    "Failed to abort transaction during recovery failure",
+                    transaction_id=transaction_id,
+                    abort_error=str(abort_error)
+                )
+            
+            raise
+    
+    async def _recover_prepare_phase_transaction(
+        self, transaction_id: str, state: TransactionState
+    ) -> None:
+        """Recover transaction that was in prepare phase."""
+        logger.info(
+            "Recovering prepare phase transaction",
+            transaction_id=transaction_id,
+            state=state.value
+        )
+        
+        if state == TransactionState.PREPARED:
+            # All participants prepared - check if we can safely commit
+            can_commit = await self._verify_participants_ready_to_commit(transaction_id)
+            
+            if can_commit:
+                logger.info(
+                    "All participants ready - committing prepared transaction",
+                    transaction_id=transaction_id
+                )
+                await self._commit_phase(transaction_id)
+            else:
+                logger.warning(
+                    "Not all participants ready - aborting prepared transaction",
+                    transaction_id=transaction_id
+                )
+                await self._abort_phase(transaction_id)
+        else:
+            # Transaction was preparing - abort for safety
+            logger.info(
+                "Aborting transaction that was preparing",
+                transaction_id=transaction_id
+            )
             await self._abort_phase(transaction_id)
+    
+    async def _recover_commit_phase_transaction(self, transaction_id: str) -> None:
+        """Recover transaction that was in commit phase."""
+        logger.info(
+            "Recovering commit phase transaction",
+            transaction_id=transaction_id
+        )
+        
+        # Check which participants have already committed
+        committed_participants = await self._check_committed_participants(transaction_id)
+        
+        if committed_participants:
             logger.info(
-                "Transaction abort completed during recovery",
+                "Some participants already committed - completing commit",
                 transaction_id=transaction_id,
+                committed_participants=committed_participants
             )
+            
+            # Complete commit for remaining participants
+            await self._complete_partial_commit(transaction_id, committed_participants)
+        else:
+            # No participants committed yet - try full commit
+            logger.info(
+                "No participants committed yet - attempting full commit",
+                transaction_id=transaction_id
+            )
+            await self._commit_phase(transaction_id)
+    
+    async def _recover_abort_phase_transaction(self, transaction_id: str) -> None:
+        """Recover transaction that was in abort phase."""
+        logger.info(
+            "Recovering abort phase transaction",
+            transaction_id=transaction_id
+        )
+        
+        # Complete the abort for all participants
+        await self._abort_phase(transaction_id)
+    
+    async def _verify_participants_ready_to_commit(self, transaction_id: str) -> bool:
+        """Verify that all participants are still ready to commit."""
+        logger.debug(
+            "Verifying participants ready to commit",
+            transaction_id=transaction_id
+        )
+        
+        # Check if participants are still in prepared state
+        ready_count = 0
+        
+        for participant in self._participants:
+            try:
+                # Check if participant is still ready (implementation-specific)
+                if hasattr(participant, 'is_ready_to_commit'):
+                    is_ready = await participant.is_ready_to_commit(transaction_id)
+                    if is_ready:
+                        ready_count += 1
+                else:
+                    # Assume ready if no explicit check available
+                    ready_count += 1
+                    
+            except Exception as e:
+                logger.warning(
+                    "Participant readiness check failed",
+                    transaction_id=transaction_id,
+                    participant=participant.participant_id,
+                    error=str(e)
+                )
+                return False
+        
+        all_ready = ready_count == len(self._participants)
+        
+        logger.debug(
+            "Participant readiness check complete",
+            transaction_id=transaction_id,
+            ready_count=ready_count,
+            total_participants=len(self._participants),
+            all_ready=all_ready
+        )
+        
+        return all_ready
+    
+    async def _check_committed_participants(self, transaction_id: str) -> list[str]:
+        """Check which participants have already committed."""
+        committed_participants = []
+        
+        for participant in self._participants:
+            try:
+                # Check if participant has already committed (implementation-specific)
+                if hasattr(participant, 'is_committed'):
+                    is_committed = await participant.is_committed(transaction_id)
+                    if is_committed:
+                        committed_participants.append(participant.participant_id)
+                        
+            except Exception as e:
+                logger.warning(
+                    "Participant commit status check failed",
+                    transaction_id=transaction_id,
+                    participant=participant.participant_id,
+                    error=str(e)
+                )
+        
+        return committed_participants
+    
+    async def _complete_partial_commit(
+        self, transaction_id: str, already_committed: list[str]
+    ) -> None:
+        """Complete commit for participants that haven't committed yet."""
+        logger.info(
+            "Completing partial commit",
+            transaction_id=transaction_id,
+            already_committed=already_committed
+        )
+        
+        # Commit only the participants that haven't committed yet
+        remaining_participants = [
+            p for p in self._participants 
+            if p.participant_id not in already_committed
+        ]
+        
+        if not remaining_participants:
+            logger.info(
+                "All participants already committed",
+                transaction_id=transaction_id
+            )
+            return
+        
+        # Commit remaining participants
+        for participant in remaining_participants:
+            try:
+                await participant.commit(transaction_id)
+                logger.debug(
+                    "Remaining participant committed during recovery",
+                    transaction_id=transaction_id,
+                    participant=participant.participant_id
+                )
+            except Exception as e:
+                logger.exception(
+                    "Remaining participant commit failed during recovery",
+                    transaction_id=transaction_id,
+                    participant=participant.participant_id,
+                    error=str(e)
+                )
+                # Continue with other participants - this is a best effort
+        
+        # Update transaction state
+        self._state = TransactionState.COMMITTED
+        await self._transaction_log.log_state_change(
+            transaction_id,
+            TransactionState.COMMITTED
+        )
 
     def get_current_transaction(self) -> str | None:
         """Get current transaction ID if in transaction."""

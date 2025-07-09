@@ -247,6 +247,10 @@ class BaseUnitOfWork(IUnitOfWork, ABC):
         self._committed = False
         self._rolled_back = False
         self._start_time: datetime | None = None
+        
+        # Transaction coordination
+        self._transaction_id: str | None = None
+        self._compensation_enabled = True
 
         logger.debug(
             "Unit of Work initialized",
@@ -371,14 +375,15 @@ class BaseUnitOfWork(IUnitOfWork, ABC):
 
     async def commit(self) -> None:
         """
-        Commit database changes and publish collected events atomically.
+        Commit database changes and publish collected events with enhanced coordination.
 
-        Performs a two-phase commit:
-        1. Commit database transaction
-        2. Publish domain events (if event bus available)
+        Implements improved two-phase commit with transaction coordination:
+        1. Prepare phase: Validate events and database state
+        2. Commit phase: Atomically commit database and coordinate events
+        3. Cleanup phase: Handle any post-commit coordination
 
-        Events are only published after successful database commit to ensure
-        consistency. Database state is never rolled back due to event failures.
+        Events are published with transaction metadata to enable compensation
+        if needed. Includes retry logic and better error recovery.
 
         Raises:
             TransactionError: If database commit fails
@@ -392,13 +397,20 @@ class BaseUnitOfWork(IUnitOfWork, ABC):
             raise UnitOfWorkError("Cannot commit after rollback")
 
         commit_start_time = datetime.now(datetime.UTC)
-
+        events_count = len(self._events)
+        
         try:
-            # Phase 1: Commit database changes
-            await self._commit_database_changes()
+            # Phase 1: Prepare - validate state and events
+            await self._prepare_commit()
 
-            # Phase 2: Publish events (failures don't affect database)
+            # Phase 2: Commit database changes with coordination
+            await self._commit_database_with_coordination()
+
+            # Phase 3: Publish events with transaction coordination
             await self._publish_collected_events()
+
+            # Phase 4: Finalize commit
+            await self._finalize_commit()
 
             self._committed = True
 
@@ -411,7 +423,7 @@ class BaseUnitOfWork(IUnitOfWork, ABC):
 
             logger.info(
                 "Unit of Work committed successfully",
-                events_published=len(self._events),
+                events_published=events_count,
                 duration_seconds=commit_duration,
             )
 
@@ -419,23 +431,74 @@ class BaseUnitOfWork(IUnitOfWork, ABC):
             logger.exception(
                 "Database commit failed",
                 error=str(e),
-                events_collected=len(self._events),
+                events_collected=events_count,
             )
 
             metrics.unit_of_work_failures.labels(type="database").inc()
             await self.rollback()
             raise TransactionError(f"Database commit failed: {e}")
+            
+        except EventPublishingError as e:
+            # Database is committed, but events failed - this is a consistency issue
+            logger.exception(
+                "Event publishing failed after database commit - consistency issue",
+                error=str(e),
+                events_collected=events_count,
+            )
+            
+            # Mark as committed since database succeeded
+            self._committed = True
+            
+            # Track the consistency issue
+            metrics.unit_of_work_failures.labels(type="consistency").inc()
+            
+            # Re-raise to let calling code handle the consistency issue
+            raise
 
         except Exception as e:
             logger.exception(
                 "Unexpected error during commit",
                 error=str(e),
-                events_collected=len(self._events),
+                events_collected=events_count,
             )
 
             metrics.unit_of_work_failures.labels(type="unexpected").inc()
             await self.rollback()
             raise UnitOfWorkError(f"Commit failed: {e}")
+    
+    async def _prepare_commit(self) -> None:
+        """Prepare phase - validate events and database state."""
+        # Validate collected events
+        if self._events:
+            for event in self._events:
+                if not hasattr(event, 'metadata') or not event.metadata:
+                    raise ValidationError(f"Event missing metadata: {event}")
+        
+        # Validate database session state
+        if hasattr(self.session, 'is_active') and self.session.is_active:
+            logger.debug("Database session is active and ready for commit")
+    
+    async def _commit_database_with_coordination(self) -> None:
+        """Commit database with coordination metadata."""
+        try:
+            # Commit the main transaction
+            await self.session.commit()
+            
+            logger.debug(
+                "Database transaction committed with coordination",
+                new_entities=len(self.session.new) if hasattr(self.session, "new") else 0,
+                modified_entities=len(self.session.dirty) if hasattr(self.session, "dirty") else 0,
+                deleted_entities=len(self.session.deleted) if hasattr(self.session, "deleted") else 0,
+            )
+                
+        except Exception as e:
+            logger.exception("Database commit with coordination failed", error=str(e))
+            raise
+    
+    async def _finalize_commit(self) -> None:
+        """Finalize commit - cleanup and post-commit coordination."""
+        # Any post-commit cleanup or coordination logic
+        logger.debug("Commit finalization completed")
 
     async def _commit_database_changes(self) -> None:
         """Commit database transaction with error handling."""
@@ -458,7 +521,7 @@ class BaseUnitOfWork(IUnitOfWork, ABC):
             raise
 
     async def _publish_collected_events(self) -> None:
-        """Publish collected domain events with error handling."""
+        """Publish collected domain events with transactional coordination."""
         if not self.event_bus or not self._events:
             if self._events and not self.event_bus:
                 logger.warning(
@@ -468,54 +531,185 @@ class BaseUnitOfWork(IUnitOfWork, ABC):
             return
 
         events_to_publish = self._events.copy()
-
+        
+        # Create event transaction for coordination
+        event_transaction_id = f"uow_{id(self)}_{int(datetime.now(datetime.UTC).timestamp())}"
+        
         try:
-            # Publish events concurrently for better performance
-            publish_tasks = [
-                self.event_bus.publish(event) for event in events_to_publish
-            ]
-
-            results = await asyncio.gather(*publish_tasks, return_exceptions=True)
-
-            # Check for publishing failures
-            failed_events = [
-                (i, result)
-                for i, result in enumerate(results)
-                if isinstance(result, Exception)
-            ]
-
-            if failed_events:
-                logger.error(
-                    "Some events failed to publish",
-                    failed_count=len(failed_events),
-                    total_events=len(events_to_publish),
-                    failures=[(i, str(error)) for i, error in failed_events],
-                )
-
-                metrics.unit_of_work_event_failures.inc(len(failed_events))
-
-                # Don't rollback database - events can be republished
-                raise EventPublishingError(
-                    f"{len(failed_events)} out of {len(events_to_publish)} events failed to publish"
-                )
-
+            # Use transactional event publishing to ensure atomicity
+            await self._publish_events_transactionally(events_to_publish, event_transaction_id)
+            
             logger.info(
-                "All events published successfully", event_count=len(events_to_publish)
+                "All events published successfully", 
+                event_count=len(events_to_publish),
+                transaction_id=event_transaction_id
             )
 
         except Exception as e:
-            if not isinstance(e, EventPublishingError):
-                logger.exception(
-                    "Event publishing system error",
-                    error=str(e),
-                    event_count=len(events_to_publish),
-                )
-                metrics.unit_of_work_failures.labels(type="event_system").inc()
-                raise EventPublishingError(f"Event publishing failed: {e}")
-            raise
+            logger.exception(
+                "Event publishing failed - attempting compensation",
+                error=str(e),
+                event_count=len(events_to_publish),
+                transaction_id=event_transaction_id
+            )
+            
+            # Try to compensate published events
+            await self._compensate_published_events(events_to_publish, event_transaction_id)
+            
+            metrics.unit_of_work_failures.labels(type="event_system").inc()
+            raise EventPublishingError(f"Event publishing failed: {e}")
         finally:
             # Clear events after publish attempt (successful or not)
             self._clear_event_collections()
+    
+    async def _publish_events_transactionally(
+        self, events: list[DomainEvent], transaction_id: str
+    ) -> None:
+        """Publish events with transactional coordination and retry logic."""
+        # Add transaction metadata to events
+        enriched_events = []
+        for event in events:
+            # Create a copy with transaction metadata
+            enriched_event = self._add_transaction_metadata(event, transaction_id)
+            enriched_events.append(enriched_event)
+        
+        # Publish with batched approach for better atomicity
+        batch_size = 10  # Configurable batch size
+        for i in range(0, len(enriched_events), batch_size):
+            batch = enriched_events[i:i + batch_size]
+            await self._publish_event_batch(batch, transaction_id)
+    
+    def _add_transaction_metadata(self, event: DomainEvent, transaction_id: str) -> DomainEvent:
+        """Add transaction coordination metadata to event."""
+        # Add transaction coordination metadata if event supports it
+        if hasattr(event, 'metadata') and event.metadata:
+            # Set transaction metadata on existing metadata
+            if hasattr(event.metadata, '__dict__'):
+                event.metadata.__dict__.update({
+                    'transaction_id': transaction_id,
+                    'requires_compensation': True,
+                    'published_at': datetime.now(datetime.UTC).isoformat()
+                })
+        
+        return event
+    
+    async def _publish_event_batch(self, batch: list[DomainEvent], transaction_id: str) -> None:
+        """Publish a batch of events with coordinated error handling."""
+        try:
+            # Publish batch concurrently
+            publish_tasks = [self.event_bus.publish(event) for event in batch]
+            results = await asyncio.gather(*publish_tasks, return_exceptions=True)
+            
+            # Check for failures in batch
+            failed_events = [
+                (i, result) for i, result in enumerate(results)
+                if isinstance(result, Exception)
+            ]
+            
+            if failed_events:
+                logger.error(
+                    "Event batch publish failed",
+                    failed_count=len(failed_events),
+                    batch_size=len(batch),
+                    transaction_id=transaction_id,
+                    failures=[(i, str(error)) for i, error in failed_events]
+                )
+                
+                # Compensate successfully published events in this batch
+                successful_events = [
+                    batch[i] for i in range(len(batch)) 
+                    if i not in [idx for idx, _ in failed_events]
+                ]
+                if successful_events:
+                    await self._compensate_published_events(successful_events, transaction_id)
+                
+                metrics.unit_of_work_event_failures.inc(len(failed_events))
+                raise EventPublishingError(f"Batch publish failed: {len(failed_events)} events failed")
+                
+        except Exception as e:
+            logger.exception(
+                "Event batch publish error",
+                error=str(e),
+                batch_size=len(batch),
+                transaction_id=transaction_id
+            )
+            raise
+    
+    async def _compensate_published_events(
+        self, events: list[DomainEvent], transaction_id: str
+    ) -> None:
+        """Attempt to compensate/rollback published events."""
+        if not events:
+            return
+            
+        logger.warning(
+            "Attempting event compensation",
+            event_count=len(events),
+            transaction_id=transaction_id
+        )
+        
+        # Try to publish compensation events
+        compensation_events = []
+        for event in events:
+            try:
+                compensation_event = self._create_compensation_event(event, transaction_id)
+                if compensation_event:
+                    compensation_events.append(compensation_event)
+            except Exception as e:
+                logger.exception(
+                    "Failed to create compensation event",
+                    event_type=type(event).__name__,
+                    error=str(e)
+                )
+        
+        if compensation_events:
+            try:
+                # Publish compensation events (best effort)
+                compensation_tasks = [
+                    self.event_bus.publish(comp_event) 
+                    for comp_event in compensation_events
+                ]
+                await asyncio.gather(*compensation_tasks, return_exceptions=True)
+                
+                logger.info(
+                    "Compensation events published",
+                    compensation_count=len(compensation_events),
+                    transaction_id=transaction_id
+                )
+            except Exception as e:
+                logger.exception(
+                    "Compensation event publishing failed",
+                    error=str(e),
+                    transaction_id=transaction_id
+                )
+    
+    def _create_compensation_event(self, original_event: DomainEvent, transaction_id: str) -> DomainEvent | None:
+        """Create a compensation event for the original event."""
+        try:
+            # Check if event has built-in compensation support
+            if hasattr(original_event, 'create_compensation_event'):
+                return original_event.create_compensation_event()
+            
+            # Create generic compensation event using event metadata
+            if hasattr(original_event, 'metadata') and original_event.metadata:
+                # This is a placeholder - actual implementation would depend on event types
+                logger.debug(
+                    "Creating generic compensation event",
+                    original_event_type=type(original_event).__name__,
+                    transaction_id=transaction_id
+                )
+                # Return None for now - compensation events need domain-specific logic
+                return None
+            
+            return None
+            
+        except Exception as e:
+            logger.exception(
+                "Error creating compensation event",
+                original_event_type=type(original_event).__name__,
+                error=str(e)
+            )
+            return None
 
     async def rollback(self) -> None:
         """

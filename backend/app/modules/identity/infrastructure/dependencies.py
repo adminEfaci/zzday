@@ -286,68 +286,9 @@ async def configure_identity_dependencies(container: Container) -> None:
             description="Security event repository implementation"
         ))
 
-    try:
-        # Authentication services
-        from app.modules.identity.domain.interfaces.services import IAuthenticationService
-        from app.modules.identity.application.services.authentication_service import AuthenticationService
-        
-        await container.register(RegistrationRequest(
-            interface=IAuthenticationService,
-            implementation=AuthenticationService,
-            lifetime=ServiceLifetime.SINGLETON,
-            name="authentication_service",
-            description="User authentication service"
-        ))
-        
-    except ImportError:
-        await container.register(RegistrationRequest(
-            interface=type('IAuthenticationService', (), {}),
-            implementation=lambda: None,
-            lifetime=ServiceLifetime.SINGLETON,
-            name="auth_service_placeholder"
-        ))
-
-    try:
-        # User management services
-        from app.modules.identity.application.services.user_service import UserService
-        from app.modules.identity.domain.interfaces.services import IUserService
-        
-        await container.register(RegistrationRequest(
-            interface=IUserService,
-            implementation=UserService,
-            lifetime=ServiceLifetime.SINGLETON,
-            name="user_service",
-            description="User management service"
-        ))
-        
-    except ImportError:
-        await container.register(RegistrationRequest(
-            interface=type('IUserService', (), {}),
-            implementation=lambda: None,
-            lifetime=ServiceLifetime.SINGLETON,
-            name="user_service_placeholder"
-        ))
-
-    try:
-        # Session management
-        from app.modules.identity.domain.interfaces.services import ISessionService
-        from app.modules.identity.application.services.session_service import SessionService
-        
-        await container.register(RegistrationRequest(
-            interface=ISessionService,
-            implementation=SessionService,
-            lifetime=ServiceLifetime.SCOPED,
-            name="session_service",
-            description="User session management service"
-        ))
-        
-    except ImportError:
-        await container.register(RegistrationRequest(
-            interface=type('ISessionService', (), {}),
-            implementation=lambda: None,
-            lifetime=ServiceLifetime.SCOPED,
-            name="session_service_placeholder"
-        ))
+    # NOTE: Application services should be registered in the application layer
+    # This infrastructure module should only register infrastructure concerns
+    # Application services are registered through the application dependency module
 
     try:
         # Password services

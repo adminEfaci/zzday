@@ -10,7 +10,8 @@ from datetime import datetime, UTC, timedelta
 from typing import Any
 from uuid import UUID
 
-from app.modules.identity.application.contracts.ports import ICacheService, IMFAChallengeRepository
+from app.modules.identity.domain.interfaces.services.infrastructure.cache_port import ICachePort as ICacheService
+from app.modules.identity.domain.interfaces.repositories.mfa_challenge_repository import IMFAChallengeRepository
 from app.core.errors import InfrastructureError
 from app.core.logging import get_logger
 

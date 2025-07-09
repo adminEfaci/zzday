@@ -18,16 +18,10 @@ from uuid import UUID
 from app.core.cqrs import Command, CommandHandler
 from app.core.events import EventBus
 from app.core.infrastructure import UnitOfWork
-from app.modules.identity.application.contracts.ports import (
-    IAuditIntegrationRepository,
-    IAuditRepository,
-    IAuditService,
-    IEmailService,
-    IFileStorageService,
-    IHttpService,
-    INotificationService,
-    IUserRepository,
-)
+from app.modules.identity.domain.interfaces.repositories.audit_repository import IAuditRepository
+from app.modules.identity.domain.interfaces.services.communication.notification_service import IEmailService
+from app.modules.identity.domain.interfaces.services.communication.notification_service import INotificationService
+from app.modules.identity.domain.interfaces.repositories.user_repository import IUserRepository
 from app.modules.identity.application.decorators import (
     audit_action,
     rate_limit,
@@ -262,7 +256,7 @@ class AuditIntegrationCommandHandler(CommandHandler[AuditIntegrationCommand, Aud
         is_new = True
         
         if command.integration_id:
-            integration = await self._audit_integration_repository.get_by_id(command.integration_id)
+            integration = await self._audit_integration_repository.find_by_id(command.integration_id)
             if integration:
                 is_new = False
             else:
@@ -600,7 +594,7 @@ class AuditIntegrationCommandHandler(CommandHandler[AuditIntegrationCommand, Aud
     async def _handle_audit_export(self, command: AuditIntegrationCommand) -> AuditIntegrationResponse:
         """Handle audit data export operation."""
         # 1. Load integration configuration
-        integration = await self._audit_integration_repository.get_by_id(command.integration_id)
+        integration = await self._audit_integration_repository.find_by_id(command.integration_id)
         if not integration:
             raise AuditConfigurationError(f"Integration {command.integration_id} not found")
         

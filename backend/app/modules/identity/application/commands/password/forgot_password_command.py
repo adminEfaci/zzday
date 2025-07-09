@@ -10,14 +10,10 @@ from uuid import UUID
 from app.core.cqrs import Command, CommandHandler
 from app.core.events import EventBus
 from app.core.infrastructure import UnitOfWork
-from app.modules.identity.application.contracts.ports import (
-    ICacheService,
-    IEmailService,
-    IGeolocationService,
-    IPasswordResetAttemptRepository,
-    IPasswordResetTokenRepository,
-    IUserRepository,
-)
+from app.modules.identity.domain.interfaces.services.infrastructure.cache_port import ICachePort as ICacheService
+from app.modules.identity.domain.interfaces.services.communication.notification_service import IEmailService
+from app.modules.identity.domain.interfaces.services.security.geolocation_service import IGeolocationService
+from app.modules.identity.domain.interfaces.repositories.user_repository import IUserRepository
 from app.modules.identity.application.decorators import (
     audit_action,
     rate_limit,
@@ -123,7 +119,7 @@ class ForgotPasswordCommandHandler(CommandHandler[ForgotPasswordCommand, Passwor
             await self._check_reset_attempts(command.ip_address, command.email)
             
             # 2. Find user by email
-            user = await self._user_repository.get_by_email(command.email.lower())
+            user = await self._user_repository.find_by_email(command.email.lower())
             
             # Always proceed to prevent email enumeration
             if not user:

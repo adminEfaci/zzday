@@ -6,7 +6,7 @@ from uuid import UUID
 
 from app.core.cqrs import Query, QueryHandler
 from app.core.infrastructure import UnitOfWork
-from app.modules.identity.application.contracts.ports import IAuthorizationRepository
+
 from app.modules.identity.application.decorators import (
     rate_limit,
     require_permission,

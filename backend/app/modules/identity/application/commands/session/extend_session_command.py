@@ -10,11 +10,9 @@ from uuid import UUID
 from app.core.cqrs import Command, CommandHandler
 from app.core.events import EventBus
 from app.core.infrastructure import UnitOfWork
-from app.modules.identity.application.contracts.ports import (
-    ICacheService,
-    ISessionRepository,
-    IUserRepository,
-)
+from app.modules.identity.domain.interfaces.services.infrastructure.cache_port import ICachePort as ICacheService
+from app.modules.identity.domain.interfaces.repositories.session_repository import ISessionRepository
+from app.modules.identity.domain.interfaces.repositories.user_repository import IUserRepository
 from app.modules.identity.application.decorators import (
     audit_action,
     rate_limit,
@@ -118,7 +116,7 @@ class ExtendSessionCommandHandler(CommandHandler[ExtendSessionCommand, BaseRespo
         """
         async with self._unit_of_work:
             # 1. Load session
-            session = await self._session_repository.get_by_id(command.session_id)
+            session = await self._session_repository.find_by_id(command.session_id)
             
             if not session:
                 raise SessionNotFoundError(f"Session {command.session_id} not found")
@@ -215,7 +213,7 @@ class ExtendSessionCommandHandler(CommandHandler[ExtendSessionCommand, BaseRespo
     async def _get_max_session_duration(self, session: Session) -> timedelta:
         """Get maximum allowed session duration."""
         # Load user to check for special policies
-        user = await self._user_repository.get_by_id(session.user_id)
+        user = await self._user_repository.find_by_id(session.user_id)
         
         # Different limits based on session type and user
         if session.session_type.value == "api":

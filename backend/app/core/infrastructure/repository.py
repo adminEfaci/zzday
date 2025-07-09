@@ -1560,6 +1560,7 @@ class SQLRepository(BaseRepository[TEntity, TId]):
         # Infer entity type from generic type if not provided
         if entity_type is None:
             # Try to infer from class generic parameters
+            import inspect
             orig_bases = getattr(self.__class__, '__orig_bases__', ())
             if orig_bases:
                 for base in orig_bases:
@@ -1574,7 +1575,7 @@ class SQLRepository(BaseRepository[TEntity, TId]):
         self.session = session
         self.model_type = model_type
     
-    def _entity_to_model(self, entity: TEntity) -> object:
+    def _entity_to_model(self, entity: TEntity) -> TModel:
         """
         Convert domain entity to SQL model.
         
@@ -1582,19 +1583,19 @@ class SQLRepository(BaseRepository[TEntity, TId]):
             entity: Domain entity
             
         Returns:
-            object: SQL model instance
+            TModel: SQL model instance
         """
-        from_domain_method = getattr(self.model_type, 'from_domain', None)
-        if from_domain_method is not None and callable(from_domain_method):
-            return from_domain_method(entity)  # type: ignore[misc]
-        # Generic conversion - assumes model constructor accepts entity attributes
-        try:
-            entity_dict = entity.__dict__ if hasattr(entity, '__dict__') else {}
-            return self.model_type(**entity_dict)  # type: ignore[misc]
-        except Exception as e:
-            raise InfrastructureError(f"Failed to convert entity to model: {e}") from e
+        if hasattr(self.model_type, 'from_domain'):
+            return self.model_type.from_domain(entity)
+        else:
+            # Generic conversion - assumes model constructor accepts entity attributes
+            try:
+                entity_dict = entity.__dict__ if hasattr(entity, '__dict__') else {}
+                return self.model_type(**entity_dict)
+            except Exception as e:
+                raise InfrastructureError(f"Failed to convert entity to model: {e}")
     
-    def _model_to_entity(self, model: object) -> TEntity:
+    def _model_to_entity(self, model: TModel) -> TEntity:
         """
         Convert SQL model to domain entity.
         
@@ -1604,15 +1605,15 @@ class SQLRepository(BaseRepository[TEntity, TId]):
         Returns:
             TEntity: Domain entity
         """
-        to_domain_method = getattr(model, 'to_domain', None)
-        if to_domain_method is not None and callable(to_domain_method):
-            return to_domain_method()  # type: ignore[misc]
-        # Generic conversion - assumes entity constructor accepts model attributes
-        try:
-            model_dict = model.__dict__ if hasattr(model, '__dict__') else {}
-            return self.entity_type(**model_dict)
-        except Exception as e:
-            raise InfrastructureError(f"Failed to convert model to entity: {e}") from e
+        if hasattr(model, 'to_domain'):
+            return model.to_domain()
+        else:
+            # Generic conversion - assumes entity constructor accepts model attributes
+            try:
+                model_dict = model.__dict__ if hasattr(model, '__dict__') else {}
+                return self.entity_type(**model_dict)
+            except Exception as e:
+                raise InfrastructureError(f"Failed to convert model to entity: {e}")
     
     async def find_by_id(self, entity_id: TId) -> TEntity | None:
         """Find entity by ID using SQL query."""
@@ -1627,7 +1628,7 @@ class SQLRepository(BaseRepository[TEntity, TId]):
                     entity_id=str(entity_id),
                     error=str(e),
                 )
-                raise InfrastructureError(f"Failed to find entity by ID: {e}") from e
+                raise InfrastructureError(f"Failed to find entity by ID: {e}")
     
     async def find_all(
         self, limit: int | None = None, offset: int = 0
@@ -1656,7 +1657,7 @@ class SQLRepository(BaseRepository[TEntity, TId]):
                     offset=offset,
                     error=str(e),
                 )
-                raise InfrastructureError(f"Failed to find all entities: {e}") from e
+                raise InfrastructureError(f"Failed to find all entities: {e}")
     
     async def save(self, entity: TEntity) -> TEntity:
         """Save entity to database."""
@@ -1690,7 +1691,7 @@ class SQLRepository(BaseRepository[TEntity, TId]):
                     entity_type=self.entity_type.__name__,
                     error=str(e),
                 )
-                raise InfrastructureError(f"Failed to save entity: {e}") from e
+                raise InfrastructureError(f"Failed to save entity: {e}")
     
     async def delete(self, entity_id: TId) -> bool:
         """Delete entity by ID."""
@@ -1702,6 +1703,7 @@ class SQLRepository(BaseRepository[TEntity, TId]):
                 
                 await self.session.delete(model)
                 await self.session.commit()
+                return True
                 
             except Exception as e:
                 await self.session.rollback()
@@ -1711,15 +1713,14 @@ class SQLRepository(BaseRepository[TEntity, TId]):
                     entity_id=str(entity_id),
                     error=str(e),
                 )
-                raise InfrastructureError(f"Failed to delete entity: {e}") from e
-            else:
-                return True
+                raise InfrastructureError(f"Failed to delete entity: {e}")
     
     async def exists(self, entity_id: TId) -> bool:
         """Check if entity exists."""
         async with self.operation_context("exists"):
             try:
                 model = await self.session.get(self.model_type, entity_id)
+                return model is not None
             except Exception as e:
                 logger.exception(
                     "Failed to check entity existence",
@@ -1727,19 +1728,16 @@ class SQLRepository(BaseRepository[TEntity, TId]):
                     entity_id=str(entity_id),
                     error=str(e),
                 )
-                raise InfrastructureError(f"Failed to check entity existence: {e}") from e
-            else:
-                return model is not None
+                raise InfrastructureError(f"Failed to check entity existence: {e}")
     
     async def count(self) -> int:
         """Count total entities."""
         async with self.operation_context("count"):
             try:
                 # Import here to avoid circular imports
-                from sqlmodel import func, select
+                from sqlmodel import select, func
                 
-                # Use generic count approach that works with any model
-                stmt = select(func.count()).select_from(self.model_type)
+                stmt = select(func.count(self.model_type.id))
                 result = await self.session.exec(stmt)
                 return result.first() or 0
             except Exception as e:
@@ -1748,7 +1746,7 @@ class SQLRepository(BaseRepository[TEntity, TId]):
                     repository=self.__class__.__name__,
                     error=str(e),
                 )
-                raise InfrastructureError(f"Failed to count entities: {e}") from e
+                raise InfrastructureError(f"Failed to count entities: {e}")
     
     async def find_by_specification(
         self, specification: Specification[TEntity]
@@ -1767,7 +1765,7 @@ class SQLRepository(BaseRepository[TEntity, TId]):
                     specification=type(specification).__name__,
                     error=str(e),
                 )
-                raise InfrastructureError(f"Failed to find entities by specification: {e}") from e
+                raise InfrastructureError(f"Failed to find entities by specification: {e}")
     
     async def find_one_by_specification(
         self, specification: Specification[TEntity]
@@ -1808,6 +1806,7 @@ __all__ = [
     "CacheableRepository",
     "EventSourcedRepository",
     "ReadOnlyRepository",
+    "SQLRepository",
     # Interfaces
     "Repository",
     # Factory

@@ -13,16 +13,11 @@ import jwt
 from app.core.cqrs import Command, CommandHandler
 from app.core.events import EventBus
 from app.core.infrastructure import UnitOfWork
-from app.modules.identity.application.contracts.ports import (
-    IAuditService,
-    IDeviceRepository,
-    IEmailService,
-    INotificationService,
-    IOAuthRepository,
-    IOAuthService,
-    ISessionRepository,
-    IUserRepository,
-)
+from app.modules.identity.domain.interfaces.repositories.device_registration_repository import IDeviceRepository
+from app.modules.identity.domain.interfaces.services.communication.notification_service import IEmailService
+from app.modules.identity.domain.interfaces.services.communication.notification_service import INotificationService
+from app.modules.identity.domain.interfaces.repositories.session_repository import ISessionRepository
+from app.modules.identity.domain.interfaces.repositories.user_repository import IUserRepository
 from app.modules.identity.application.decorators import (
     audit_action,
     rate_limit,
@@ -206,7 +201,7 @@ class OAuthProviderCommandHandler(CommandHandler[OAuthProviderCommand, OAuthProv
     async def _handle_authentication(self, command: OAuthProviderCommand) -> OAuthProviderResponse:
         """Handle OAuth authentication flow."""
         # 1. Load OAuth provider configuration
-        oauth_provider = await self._oauth_repository.get_by_id(command.oauth_provider_id)
+        oauth_provider = await self._oauth_repository.find_by_id(command.oauth_provider_id)
         if not oauth_provider:
             raise OAuthConfigurationError(f"OAuth provider {command.oauth_provider_id} not found")
         

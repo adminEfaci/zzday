@@ -11,12 +11,9 @@ from uuid import UUID
 from app.core.cqrs import Command, CommandHandler
 from app.core.events import EventBus
 from app.core.infrastructure import UnitOfWork
-from app.modules.identity.application.contracts.ports import (
-    ICacheService,
-    INotificationService,
-    IPasswordPolicyRepository,
-    IUserRepository,
-)
+from app.modules.identity.domain.interfaces.services.infrastructure.cache_port import ICachePort as ICacheService
+from app.modules.identity.domain.interfaces.services.communication.notification_service import INotificationService
+from app.modules.identity.domain.interfaces.repositories.user_repository import IUserRepository
 from app.modules.identity.application.decorators import (
     audit_action,
     rate_limit,
@@ -152,9 +149,9 @@ class UpdatePasswordPolicyCommandHandler(CommandHandler[UpdatePasswordPolicyComm
         async with self._unit_of_work:
             # 1. Load existing policy
             if command.policy_id:
-                policy = await self._password_policy_repository.get_by_id(command.policy_id)
+                policy = await self._password_policy_repository.find_by_id(command.policy_id)
             elif command.policy_name:
-                policy = await self._password_policy_repository.get_by_name(command.policy_name)
+                policy = await self._password_policy_repository.find_by_name(command.policy_name)
             else:
                 raise ValidationError("Either policy_id or policy_name must be provided")
             
@@ -380,7 +377,7 @@ class UpdatePasswordPolicyCommandHandler(CommandHandler[UpdatePasswordPolicyComm
         
         # Check for naming conflicts
         if command.policy_name and command.policy_name != policy.name:
-            existing = await self._password_policy_repository.get_by_name(
+            existing = await self._password_policy_repository.find_by_name(
                 command.policy_name
             )
             if existing:
@@ -398,7 +395,7 @@ class UpdatePasswordPolicyCommandHandler(CommandHandler[UpdatePasswordPolicyComm
         affected_users = []
         
         for user_id in user_ids:
-            user = await self._user_repository.get_by_id(user_id)
+            user = await self._user_repository.find_by_id(user_id)
             if user:
                 await self._password_policy_repository.assign_to_user(
                     policy_id=policy_id,

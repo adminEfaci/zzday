@@ -13,12 +13,9 @@ from uuid import UUID
 
 from app.core.cqrs import Query, QueryHandler
 from app.core.infrastructure import UnitOfWork
-from app.modules.identity.application.contracts.ports import (
-    IAccessRepository,
-    IAuditRepository,
-    ISessionRepository,
-    IUserRepository,
-)
+from app.modules.identity.domain.interfaces.repositories.audit_repository import IAuditRepository
+from app.modules.identity.domain.interfaces.repositories.session_repository import ISessionRepository
+from app.modules.identity.domain.interfaces.repositories.user_repository import IUserRepository
 from app.modules.identity.application.decorators import (
     rate_limit,
     require_permission,
@@ -148,7 +145,7 @@ class GetUserActivityQueryHandler(
                 await self._validate_activity_access(query)
                 
                 # Verify target user exists
-                target_user = await self.user_repository.get_by_id(query.user_id)
+                target_user = await self.user_repository.find_by_id(query.user_id)
                 if not target_user:
                     raise InvalidUserError(f"User {query.user_id} not found")
                 

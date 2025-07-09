@@ -10,15 +10,12 @@ from uuid import UUID
 from app.core.cqrs import Command, CommandHandler
 from app.core.events import EventBus
 from app.core.infrastructure import UnitOfWork
-from app.modules.identity.application.contracts.ports import (
-    ICacheService,
-    IEmailService,
-    INotificationService,
-    IPasswordHistoryRepository,
-    IPasswordResetTokenRepository,
-    ISessionRepository,
-    IUserRepository,
-)
+from app.modules.identity.domain.interfaces.services.infrastructure.cache_port import ICachePort as ICacheService
+from app.modules.identity.domain.interfaces.services.communication.notification_service import IEmailService
+from app.modules.identity.domain.interfaces.services.communication.notification_service import INotificationService
+from app.modules.identity.domain.interfaces.repositories.password_history_repository import IPasswordHistoryRepository
+from app.modules.identity.domain.interfaces.repositories.session_repository import ISessionRepository
+from app.modules.identity.domain.interfaces.repositories.user_repository import IUserRepository
 from app.modules.identity.application.decorators import (
     audit_action,
     rate_limit,
@@ -139,7 +136,7 @@ class ResetPasswordCommandHandler(CommandHandler[ResetPasswordCommand, BaseRespo
         """
         async with self._unit_of_work:
             # 1. Find and validate token
-            reset_token = await self._token_repository.get_by_token(command.token)
+            reset_token = await self._token_repository.find_by_token(command.token)
             
             if not reset_token:
                 raise InvalidTokenError("Invalid or expired reset token")
@@ -159,7 +156,7 @@ class ResetPasswordCommandHandler(CommandHandler[ResetPasswordCommand, BaseRespo
                 raise TokenExpiredError("Reset token has expired")
             
             # 3. Load user
-            user = await self._user_repository.get_by_id(reset_token.user_id)
+            user = await self._user_repository.find_by_id(reset_token.user_id)
             
             if not user:
                 raise UserNotFoundError("User not found")
@@ -254,7 +251,7 @@ class ResetPasswordCommandHandler(CommandHandler[ResetPasswordCommand, BaseRespo
         command: ResetPasswordCommand
     ) -> None:
         """Handle potential token reuse attack."""
-        user = await self._user_repository.get_by_id(token.user_id)
+        user = await self._user_repository.find_by_id(token.user_id)
         
         if user:
             # Log security incident
@@ -323,7 +320,7 @@ class ResetPasswordCommandHandler(CommandHandler[ResetPasswordCommand, BaseRespo
     
     async def _revoke_all_sessions(self, user_id: UUID) -> int:
         """Revoke all user sessions for security."""
-        sessions = await self._session_repository.get_active_sessions(user_id)
+        sessions = await self._session_repository.find_active_by_user(user_id)
         
         for session in sessions:
             await self._session_service.revoke_session(

@@ -6,7 +6,7 @@ from typing import Any
 
 from app.core.cqrs import Query, QueryHandler
 from app.core.infrastructure import UnitOfWork
-from app.modules.identity.application.contracts.ports import IConfigurationPort
+
 from app.modules.identity.application.decorators import (
     rate_limit,
     require_permission,

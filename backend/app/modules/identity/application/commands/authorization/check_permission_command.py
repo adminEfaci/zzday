@@ -12,15 +12,10 @@ from uuid import UUID
 from app.core.cqrs import Command, CommandHandler
 from app.core.events import EventBus
 from app.core.infrastructure import UnitOfWork
-from app.modules.identity.application.contracts.ports import (
-    IAuditService,
-    ICacheService,
-    IPermissionRepository,
-    IRoleRepository,
-    IUserPermissionRepository,
-    IUserRepository,
-    IUserRoleRepository,
-)
+from app.modules.identity.domain.interfaces.services.infrastructure.cache_port import ICachePort as ICacheService
+from app.modules.identity.domain.interfaces.repositories.permission_repository import IPermissionRepository
+from app.modules.identity.domain.interfaces.repositories.role_repository import IRoleRepository
+from app.modules.identity.domain.interfaces.repositories.user_repository import IUserRepository
 from app.modules.identity.application.decorators import (
     audit_action,
     cache_result,
@@ -173,7 +168,7 @@ class CheckPermissionCommandHandler(CommandHandler[CheckPermissionCommand, Permi
         """
         async with self._unit_of_work:
             # 1. Load user
-            user = await self._user_repository.get_by_id(command.user_id)
+            user = await self._user_repository.find_by_id(command.user_id)
             if not user:
                 raise UserNotFoundError(f"User {command.user_id} not found")
             
@@ -421,7 +416,7 @@ class CheckPermissionCommandHandler(CommandHandler[CheckPermissionCommand, Permi
                 continue
             
             # Get role
-            role = await self._role_repository.get_by_id(user_role.role_id)
+            role = await self._role_repository.find_by_id(user_role.role_id)
             if not role or not role.is_active:
                 continue
             
@@ -759,7 +754,7 @@ class CheckPermissionCommandHandler(CommandHandler[CheckPermissionCommand, Permi
         # Role paths
         user_roles = await self._user_role_repository.find_active_by_user(user_id)
         for user_role in user_roles:
-            role = await self._role_repository.get_by_id(user_role.role_id)
+            role = await self._role_repository.find_by_id(user_role.role_id)
             if role and permission.id in role.permissions:
                 tree["paths"].append({
                     "type": "role",
@@ -791,7 +786,7 @@ class CheckPermissionCommandHandler(CommandHandler[CheckPermissionCommand, Permi
         user_roles = await self._user_role_repository.find_active_by_user(user_id)
         
         for user_role in user_roles:
-            role = await self._role_repository.get_by_id(user_role.role_id)
+            role = await self._role_repository.find_by_id(user_role.role_id)
             if role:
                 role_info = {
                     "id": str(role.id),

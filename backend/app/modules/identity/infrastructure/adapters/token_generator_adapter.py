@@ -16,11 +16,11 @@ from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 
 from app.core.caching import cache
 from app.core.logging import logger
-from app.modules.identity.domain.interfaces.services.authentication.token_generator import ITokenGenerator
-from app.modules.identity.domain.value_objects.token import TokenType
+from app.modules.identity.domain.contracts.interfaces import ITokenGenerator
+from app.modules.identity.domain.value_objects import TokenType
 
 
-class TokenGeneratorAdapter(ITokenGenerator):
+class TokenGeneratorService(ITokenGenerator):
     """Service for generating and validating various types of tokens."""
     
     def __init__(self, config: dict[str, Any] | None = None):
@@ -42,7 +42,7 @@ class TokenGeneratorAdapter(ITokenGenerator):
         if self.jwt_algorithm in ["RS256", "RS384", "RS512"]:
             self._init_rsa_keys()
         
-        logger.info(f"TokenGeneratorAdapter initialized with algorithm: {self.jwt_algorithm}")
+        logger.info(f"TokenGeneratorService initialized with algorithm: {self.jwt_algorithm}")
     
     async def generate_access_token(
         self,

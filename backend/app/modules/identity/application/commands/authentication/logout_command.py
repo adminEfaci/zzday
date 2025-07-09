@@ -10,11 +10,8 @@ from uuid import UUID
 from app.core.cqrs import Command, CommandHandler
 from app.core.events import EventBus
 from app.core.infrastructure import UnitOfWork
-from app.modules.identity.application.contracts.ports import (
-    ICacheService,
-    ISessionRepository,
-    ITokenBlocklistService,
-)
+from app.modules.identity.domain.interfaces.services.infrastructure.cache_port import ICachePort as ICacheService
+from app.modules.identity.domain.interfaces.repositories.session_repository import ISessionRepository
 from app.modules.identity.application.decorators import (
     audit_action,
     require_auth,
@@ -109,7 +106,7 @@ class LogoutCommandHandler(CommandHandler[LogoutCommand, BaseResponse]):
         """
         async with self._unit_of_work:
             # 1. Validate session
-            session = await self._session_repository.get_by_id(command.session_id)
+            session = await self._session_repository.find_by_id(command.session_id)
             
             if not session:
                 raise SessionNotFoundError(f"Session {command.session_id} not found")
@@ -187,7 +184,7 @@ class LogoutCommandHandler(CommandHandler[LogoutCommand, BaseResponse]):
     
     async def _logout_all_sessions(self, user_id: UUID) -> None:
         """Logout all user sessions."""
-        active_sessions = await self._session_repository.get_active_sessions(user_id)
+        active_sessions = await self._session_repository.find_active_by_user(user_id)
         
         for session in active_sessions:
             await self._session_service.revoke_session(
@@ -197,7 +194,7 @@ class LogoutCommandHandler(CommandHandler[LogoutCommand, BaseResponse]):
     
     async def _count_active_sessions(self, user_id: UUID) -> int:
         """Count active sessions before logout."""
-        sessions = await self._session_repository.get_active_sessions(user_id)
+        sessions = await self._session_repository.find_active_by_user(user_id)
         return len(sessions)
     
     async def _clear_session_caches(self, user_id: UUID, session_id: UUID) -> None:

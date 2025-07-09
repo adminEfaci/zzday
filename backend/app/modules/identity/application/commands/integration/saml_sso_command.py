@@ -12,16 +12,11 @@ from uuid import UUID
 from app.core.cqrs import Command, CommandHandler
 from app.core.events import EventBus
 from app.core.infrastructure import UnitOfWork
-from app.modules.identity.application.contracts.ports import (
-    IAuditService,
-    IDeviceRepository,
-    IEmailService,
-    INotificationService,
-    ISamlRepository,
-    ISamlService,
-    ISessionRepository,
-    IUserRepository,
-)
+from app.modules.identity.domain.interfaces.repositories.device_registration_repository import IDeviceRepository
+from app.modules.identity.domain.interfaces.services.communication.notification_service import IEmailService
+from app.modules.identity.domain.interfaces.services.communication.notification_service import INotificationService
+from app.modules.identity.domain.interfaces.repositories.session_repository import ISessionRepository
+from app.modules.identity.domain.interfaces.repositories.user_repository import IUserRepository
 from app.modules.identity.application.decorators import (
     audit_action,
     rate_limit,
@@ -188,7 +183,7 @@ class SamlSsoCommandHandler(CommandHandler[SamlSsoCommand, SamlSsoResponse]):
         """
         async with self._unit_of_work:
             # 1. Load SAML provider configuration
-            saml_provider = await self._saml_repository.get_by_id(command.saml_provider_id)
+            saml_provider = await self._saml_repository.find_by_id(command.saml_provider_id)
             if not saml_provider:
                 raise SamlConfigurationError(f"SAML provider {command.saml_provider_id} not found")
             

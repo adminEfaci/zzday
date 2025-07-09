@@ -11,15 +11,13 @@ from uuid import UUID
 from app.core.cqrs import Command, CommandHandler
 from app.core.events import EventBus
 from app.core.infrastructure import UnitOfWork
-from app.modules.identity.application.contracts.ports import (
-    IAuditRepository,
-    ICacheService,
-    IEmailService,
-    IPermissionRepository,
-    IRoleRepository,
-    ISessionRepository,
-    IUserRepository,
-)
+from app.modules.identity.domain.interfaces.repositories.audit_repository import IAuditRepository
+from app.modules.identity.domain.interfaces.services.infrastructure.cache_port import ICachePort as ICacheService
+from app.modules.identity.domain.interfaces.services.communication.notification_service import IEmailService
+from app.modules.identity.domain.interfaces.repositories.permission_repository import IPermissionRepository
+from app.modules.identity.domain.interfaces.repositories.role_repository import IRoleRepository
+from app.modules.identity.domain.interfaces.repositories.session_repository import ISessionRepository
+from app.modules.identity.domain.interfaces.repositories.user_repository import IUserRepository
 from app.modules.identity.application.decorators import (
     audit_action,
     rate_limit,
@@ -138,8 +136,8 @@ class MergeUsersCommandHandler(CommandHandler[MergeUsersCommand, MergeUsersRespo
         """
         async with self._unit_of_work:
             # 1. Load both users
-            source_user = await self._user_repository.get_by_id(command.source_user_id)
-            target_user = await self._user_repository.get_by_id(command.target_user_id)
+            source_user = await self._user_repository.find_by_id(command.source_user_id)
+            target_user = await self._user_repository.find_by_id(command.target_user_id)
             
             if not source_user:
                 raise UserNotFoundError(f"Source user {command.source_user_id} not found")
@@ -315,8 +313,8 @@ class MergeUsersCommandHandler(CommandHandler[MergeUsersCommand, MergeUsersRespo
         }
         
         # Role conflicts
-        source_roles = await self._role_repository.get_user_roles(source_user.id)
-        target_roles = await self._role_repository.get_user_roles(target_user.id)
+        source_roles = await self._role_repository.find_by_user(source_user.id)
+        target_roles = await self._role_repository.find_by_user(target_user.id)
         
         conflicting_roles = []
         for role in source_roles:
@@ -385,7 +383,7 @@ class MergeUsersCommandHandler(CommandHandler[MergeUsersCommand, MergeUsersRespo
         }
         
         # Plan permission migration
-        source_perms = await self._permission_repository.get_user_permissions(
+        source_perms = await self._permission_repository.find_by_user(
             source_user.id
         )
         plan['migrations'].append({
@@ -395,7 +393,7 @@ class MergeUsersCommandHandler(CommandHandler[MergeUsersCommand, MergeUsersRespo
         })
         
         # Plan role migration
-        source_roles = await self._role_repository.get_user_roles(source_user.id)
+        source_roles = await self._role_repository.find_by_user(source_user.id)
         plan['migrations'].append({
             'type': 'roles',
             'count': len(source_roles),
@@ -403,7 +401,7 @@ class MergeUsersCommandHandler(CommandHandler[MergeUsersCommand, MergeUsersRespo
         })
         
         # Plan session handling
-        active_sessions = await self._session_repository.get_active_sessions(
+        active_sessions = await self._session_repository.find_active_by_user(
             source_user.id
         )
         plan['migrations'].append({
@@ -479,7 +477,7 @@ class MergeUsersCommandHandler(CommandHandler[MergeUsersCommand, MergeUsersRespo
     
     async def _revoke_all_sessions(self, user_id: UUID) -> None:
         """Revoke all sessions for a user."""
-        sessions = await self._session_repository.get_active_sessions(user_id)
+        sessions = await self._session_repository.find_active_by_user(user_id)
         
         for session in sessions:
             session.revoke("User account merged")

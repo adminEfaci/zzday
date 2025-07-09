@@ -11,13 +11,9 @@ from uuid import UUID
 from app.core.cqrs import Command, CommandHandler
 from app.core.events import EventBus
 from app.core.infrastructure import UnitOfWork
-from app.modules.identity.application.contracts.ports import (
-    ICacheService,
-    IDeviceFingerprintService,
-    ISessionRepository,
-    ITokenBlocklistService,
-    IUserRepository,
-)
+from app.modules.identity.domain.interfaces.services.infrastructure.cache_port import ICachePort as ICacheService
+from app.modules.identity.domain.interfaces.repositories.session_repository import ISessionRepository
+from app.modules.identity.domain.interfaces.repositories.user_repository import IUserRepository
 from app.modules.identity.application.decorators import (
     audit_action,
     rate_limit,
@@ -174,7 +170,7 @@ class RefreshTokenCommandHandler(CommandHandler[RefreshTokenCommand, RefreshToke
                 raise TokenBlacklistedError("Token has been revoked")
             
             # 3. Load session
-            session = await self._session_repository.get_by_id(session_id)
+            session = await self._session_repository.find_by_id(session_id)
             
             if not session:
                 raise InvalidTokenError("Session not found")
@@ -192,7 +188,7 @@ class RefreshTokenCommandHandler(CommandHandler[RefreshTokenCommand, RefreshToke
                 raise SessionExpiredError("Session has expired")
             
             # 5. Load user and check status
-            user = await self._user_repository.get_by_id(user_id)
+            user = await self._user_repository.find_by_id(user_id)
             
             if not user or not user.is_active:
                 raise InvalidTokenError("User account is not active")
@@ -278,7 +274,7 @@ class RefreshTokenCommandHandler(CommandHandler[RefreshTokenCommand, RefreshToke
         )
         
         # Revoke all sessions for this user as a precaution
-        sessions = await self._session_repository.get_active_sessions(user_id)
+        sessions = await self._session_repository.find_active_by_user(user_id)
         
         for session in sessions:
             await self._session_service.revoke_session(
@@ -287,7 +283,7 @@ class RefreshTokenCommandHandler(CommandHandler[RefreshTokenCommand, RefreshToke
             )
         
         # Notify user
-        user = await self._user_repository.get_by_id(user_id)
+        user = await self._user_repository.find_by_id(user_id)
         if user:
             await self._security_service.notify_security_alert(
                 user=user,

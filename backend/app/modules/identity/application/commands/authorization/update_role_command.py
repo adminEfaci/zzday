@@ -11,14 +11,10 @@ from uuid import UUID
 from app.core.cqrs import Command, CommandHandler
 from app.core.events import EventBus
 from app.core.infrastructure import UnitOfWork
-from app.modules.identity.application.contracts.ports import (
-    IAuditService,
-    INotificationService,
-    IPermissionRepository,
-    IRoleRepository,
-    ISessionRepository,
-    IUserRoleRepository,
-)
+from app.modules.identity.domain.interfaces.services.communication.notification_service import INotificationService
+from app.modules.identity.domain.interfaces.repositories.permission_repository import IPermissionRepository
+from app.modules.identity.domain.interfaces.repositories.role_repository import IRoleRepository
+from app.modules.identity.domain.interfaces.repositories.session_repository import ISessionRepository
 from app.modules.identity.application.decorators import (
     audit_action,
     rate_limit,
@@ -167,7 +163,7 @@ class UpdateRoleCommandHandler(CommandHandler[UpdateRoleCommand, RoleUpdateRespo
         """
         async with self._unit_of_work:
             # 1. Load role
-            role = await self._role_repository.get_by_id(command.role_id)
+            role = await self._role_repository.find_by_id(command.role_id)
             if not role:
                 raise RoleNotFoundError(f"Role {command.role_id} not found")
             
@@ -384,7 +380,7 @@ class UpdateRoleCommandHandler(CommandHandler[UpdateRoleCommand, RoleUpdateRespo
         # Check permission removals
         if command.permissions_to_remove:
             for perm_id in command.permissions_to_remove:
-                permission = await self._permission_repository.get_by_id(perm_id)
+                permission = await self._permission_repository.find_by_id(perm_id)
                 if permission and permission.is_critical:
                     impact["critical_permissions_removed"].append(permission.name)
                     impact["severity"] = "high"
@@ -416,7 +412,7 @@ class UpdateRoleCommandHandler(CommandHandler[UpdateRoleCommand, RoleUpdateRespo
             if perm_id in current_permission_ids:
                 continue
             
-            permission = await self._permission_repository.get_by_id(perm_id)
+            permission = await self._permission_repository.find_by_id(perm_id)
             if not permission:
                 raise InvalidOperationError(f"Permission {perm_id} not found")
             
@@ -449,7 +445,7 @@ class UpdateRoleCommandHandler(CommandHandler[UpdateRoleCommand, RoleUpdateRespo
             if perm_id not in current_permission_ids:
                 continue  # Skip if doesn't have permission
             
-            permission = await self._permission_repository.get_by_id(perm_id)
+            permission = await self._permission_repository.find_by_id(perm_id)
             if permission:
                 permissions.append(permission)
         
@@ -467,7 +463,7 @@ class UpdateRoleCommandHandler(CommandHandler[UpdateRoleCommand, RoleUpdateRespo
             raise SystemRoleError("Cannot change hierarchy level of system role")
         
         # Check if updater has sufficient privileges
-        updater_roles = await self._authorization_service.get_user_roles(updater_id)
+        updater_roles = await self._authorization_service.find_by_user(updater_id)
         updater_max_level = max(
             (r.hierarchy_level for r in updater_roles),
             default=0
@@ -485,7 +481,7 @@ class UpdateRoleCommandHandler(CommandHandler[UpdateRoleCommand, RoleUpdateRespo
             # Increasing level - check if any users would violate hierarchy
             assignments = await self._user_role_repository.find_by_role(role.id)
             for assignment in assignments:
-                await self._authorization_service.get_user_roles(
+                await self._authorization_service.find_by_user(
                     assignment.user_id
                 )
                 # This would need more complex validation
@@ -499,7 +495,7 @@ class UpdateRoleCommandHandler(CommandHandler[UpdateRoleCommand, RoleUpdateRespo
         # Get current permissions
         current_permissions = []
         for perm_id in role.permissions:
-            perm = await self._permission_repository.get_by_id(perm_id)
+            perm = await self._permission_repository.find_by_id(perm_id)
             if perm:
                 current_permissions.append(perm)
         
@@ -555,7 +551,7 @@ class UpdateRoleCommandHandler(CommandHandler[UpdateRoleCommand, RoleUpdateRespo
         reason = f"Role '{role.name}' updated - reauthentication required"
         
         for user_id in user_ids:
-            sessions = await self._session_repository.get_active_sessions(user_id)
+            sessions = await self._session_repository.find_active_by_user(user_id)
             for session in sessions:
                 await self._session_service.revoke_session(session.id, reason)
                 sessions_revoked += 1

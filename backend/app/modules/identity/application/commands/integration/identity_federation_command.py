@@ -13,15 +13,9 @@ from uuid import UUID
 from app.core.cqrs import Command, CommandHandler
 from app.core.events import EventBus
 from app.core.infrastructure import UnitOfWork
-from app.modules.identity.application.contracts.ports import (
-    IAuditService,
-    IEmailService,
-    IFederationRepository,
-    IIdentityRepository,
-    INotificationService,
-    IProviderRepository,
-    IUserRepository,
-)
+from app.modules.identity.domain.interfaces.services.communication.notification_service import IEmailService
+from app.modules.identity.domain.interfaces.services.communication.notification_service import INotificationService
+from app.modules.identity.domain.interfaces.repositories.user_repository import IUserRepository
 from app.modules.identity.application.decorators import (
     audit_action,
     rate_limit,
@@ -242,7 +236,7 @@ class IdentityFederationCommandHandler(CommandHandler[IdentityFederationCommand,
                 raise ProviderConfigurationError(f"Federation rule {command.federation_rule_id} not found")
         
         # 2. Load source identity
-        source_identity = await self._identity_repository.get_by_id(command.source_identity_id)
+        source_identity = await self._identity_repository.find_by_id(command.source_identity_id)
         if not source_identity:
             raise IdentityFederationError(f"Source identity {command.source_identity_id} not found")
         
@@ -540,7 +534,7 @@ class IdentityFederationCommandHandler(CommandHandler[IdentityFederationCommand,
             }
         
         # Load target identity
-        target_identity = await self._identity_repository.get_by_id(match.target_identity_id)
+        target_identity = await self._identity_repository.find_by_id(match.target_identity_id)
         
         # Check for existing federation
         existing_federation = await self._federation_repository.find_federation(

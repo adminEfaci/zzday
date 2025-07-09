@@ -11,15 +11,11 @@ from uuid import UUID
 from app.core.cqrs import Command, CommandHandler
 from app.core.events import EventBus
 from app.core.infrastructure import UnitOfWork
-from app.modules.identity.application.contracts.ports import (
-    IAuditService,
-    IEmailService,
-    IEmergencyContactRepository,
-    INotificationService,
-    ISMSService,
-    IUserRepository,
-    IVerificationRepository,
-)
+from app.modules.identity.domain.interfaces.services.communication.notification_service import IEmailService
+from app.modules.identity.domain.interfaces.repositories.emergency_contact_repository import IEmergencyContactRepository
+from app.modules.identity.domain.interfaces.services.communication.notification_service import INotificationService
+from app.modules.identity.domain.interfaces.services.communication.notification_service import ISMSService
+from app.modules.identity.domain.interfaces.repositories.user_repository import IUserRepository
 from app.modules.identity.application.decorators import (
     audit_action,
     rate_limit,
@@ -157,12 +153,12 @@ class VerifyEmergencyContactCommandHandler(CommandHandler[VerifyEmergencyContact
         """
         async with self._unit_of_work:
             # 1. Load contact
-            contact = await self._emergency_contact_repository.get_by_id(command.contact_id)
+            contact = await self._emergency_contact_repository.find_by_id(command.contact_id)
             if not contact:
                 raise EmergencyContactNotFoundError(f"Emergency contact {command.contact_id} not found")
             
             # 2. Load user
-            user = await self._user_repository.get_by_id(contact.user_id)
+            user = await self._user_repository.find_by_id(contact.user_id)
             if not user:
                 raise UserNotFoundError(f"User {contact.user_id} not found")
             

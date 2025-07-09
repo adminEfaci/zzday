@@ -14,16 +14,12 @@ from uuid import UUID
 from app.core.cqrs import Command, CommandHandler
 from app.core.events import EventBus
 from app.core.infrastructure import UnitOfWork
-from app.modules.identity.application.contracts.ports import (
-    IAuditService,
-    IDeviceRepository,
-    IEmailService,
-    INotificationService,
-    IRiskRepository,
-    ISecurityRepository,
-    ISessionRepository,
-    IUserRepository,
-)
+from app.modules.identity.domain.interfaces.repositories.device_registration_repository import IDeviceRepository
+from app.modules.identity.domain.interfaces.services.communication.notification_service import IEmailService
+from app.modules.identity.domain.interfaces.services.communication.notification_service import INotificationService
+from app.modules.identity.domain.interfaces.repositories.security_event_repository import ISecurityRepository
+from app.modules.identity.domain.interfaces.repositories.session_repository import ISessionRepository
+from app.modules.identity.domain.interfaces.repositories.user_repository import IUserRepository
 from app.modules.identity.application.decorators import (
     audit_action,
     rate_limit,
@@ -303,7 +299,7 @@ class RiskAssessmentCommandHandler(CommandHandler[RiskAssessmentCommand, RiskAss
     async def _handle_user_risk_profile(self, command: RiskAssessmentCommand) -> RiskAssessmentResponse:
         """Handle comprehensive user risk profiling."""
         # 1. Validate user exists
-        user = await self._user_repository.get_by_id(command.target_user_id)
+        user = await self._user_repository.find_by_id(command.target_user_id)
         if not user:
             raise RiskAssessmentError(f"User {command.target_user_id} not found")
         

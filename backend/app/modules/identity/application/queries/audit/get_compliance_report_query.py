@@ -13,12 +13,9 @@ from uuid import UUID
 
 from app.core.cqrs import Query, QueryHandler
 from app.core.infrastructure import UnitOfWork
-from app.modules.identity.application.contracts.ports import (
-    IAuditRepository,
-    IComplianceRepository,
-    ISecurityRepository,
-    IUserRepository,
-)
+from app.modules.identity.domain.interfaces.repositories.audit_repository import IAuditRepository
+from app.modules.identity.domain.interfaces.repositories.security_event_repository import ISecurityRepository
+from app.modules.identity.domain.interfaces.repositories.user_repository import IUserRepository
 from app.modules.identity.application.decorators import (
     rate_limit,
     require_permission,

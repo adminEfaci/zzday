@@ -11,18 +11,13 @@ from uuid import UUID
 
 from app.core.events import EventBus
 from app.core.infrastructure import UnitOfWork
-from app.modules.identity.application.contracts.ports import (
-    IAuditService,
-    ICacheService,
-    IEmailService,
-    INotificationService,
-    IPermissionRepository,
-    IRoleRepository,
-    ISecurityEventRepository,
-    ISessionRepository,
-    ITokenRepository,
-    IUserRepository,
-)
+from app.modules.identity.domain.interfaces.services.infrastructure.cache_port import ICachePort as ICacheService
+from app.modules.identity.domain.interfaces.services.communication.notification_service import IEmailService
+from app.modules.identity.domain.interfaces.services.communication.notification_service import INotificationService
+from app.modules.identity.domain.interfaces.repositories.permission_repository import IPermissionRepository
+from app.modules.identity.domain.interfaces.repositories.role_repository import IRoleRepository
+from app.modules.identity.domain.interfaces.repositories.session_repository import ISessionRepository
+from app.modules.identity.domain.interfaces.repositories.user_repository import IUserRepository
 from app.modules.identity.domain.enums import (
     PermissionScope,
     PermissionType,

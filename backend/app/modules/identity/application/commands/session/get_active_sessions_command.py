@@ -9,12 +9,9 @@ from uuid import UUID
 
 from app.core.cqrs import Command, CommandHandler
 from app.core.infrastructure import UnitOfWork
-from app.modules.identity.application.contracts.ports import (
-    ICacheService,
-    IDeviceFingerprintService,
-    IGeolocationService,
-    ISessionRepository,
-)
+from app.modules.identity.domain.interfaces.services.infrastructure.cache_port import ICachePort as ICacheService
+from app.modules.identity.domain.interfaces.services.security.geolocation_service import IGeolocationService
+from app.modules.identity.domain.interfaces.repositories.session_repository import ISessionRepository
 from app.modules.identity.application.decorators import (
     audit_action,
     rate_limit,
@@ -100,7 +97,7 @@ class GetActiveSessionsCommandHandler(CommandHandler[GetActiveSessionsCommand, A
                 return self._build_response_from_cache(cached, command)
             
             # 2. Load active sessions
-            active_sessions = await self._session_repository.get_active_sessions(
+            active_sessions = await self._session_repository.find_active_by_user(
                 command.user_id
             )
             

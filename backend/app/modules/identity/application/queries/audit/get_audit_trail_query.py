@@ -12,11 +12,9 @@ from uuid import UUID
 
 from app.core.cqrs import Query, QueryHandler
 from app.core.infrastructure import UnitOfWork
-from app.modules.identity.application.contracts.ports import (
-    IAuditRepository,
-    ISecurityRepository,
-    IUserRepository,
-)
+from app.modules.identity.domain.interfaces.repositories.audit_repository import IAuditRepository
+from app.modules.identity.domain.interfaces.repositories.security_event_repository import ISecurityRepository
+from app.modules.identity.domain.interfaces.repositories.user_repository import IUserRepository
 from app.modules.identity.application.decorators import (
     rate_limit,
     require_permission,
@@ -213,7 +211,7 @@ class GetAuditTrailQueryHandler(QueryHandler[GetAuditTrailQuery, AuditTrailRespo
             
             # Add user information
             if entry.get("user_id"):
-                user = await self.user_repository.get_by_id(UUID(entry["user_id"]))
+                user = await self.user_repository.find_by_id(UUID(entry["user_id"]))
                 if user:
                     enriched_entry["user_info"] = {
                         "username": user.username,

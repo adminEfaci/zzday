@@ -96,12 +96,14 @@ class SQLUserRepository(SQLRepository[User, UserModel], IUserRepository):
         
         await self.session.commit()
     
-    async def delete(self, user_id: UUID) -> None:
+    async def delete(self, user_id: UUID) -> bool:
         """Delete user by ID."""
         model = await self.session.get(UserModel, user_id)
         if model:
             await self.session.delete(model)
             await self.session.commit()
+            return True
+        return False
     
     async def find_many(
         self,

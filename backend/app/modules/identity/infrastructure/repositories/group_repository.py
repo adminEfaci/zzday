@@ -142,7 +142,7 @@ class SQLGroupRepository(SQLRepository[Group, GroupModel], IGroupRepository):
         
         await self.session.commit()
     
-    async def delete(self, group_id: UUID) -> None:
+    async def delete(self, group_id: UUID) -> bool:
         """Delete group by ID."""
         # Delete members first
         member_stmt = select(GroupMemberModel).where(GroupMemberModel.group_id == group_id)
@@ -156,8 +156,11 @@ class SQLGroupRepository(SQLRepository[Group, GroupModel], IGroupRepository):
         model = await self.session.get(GroupModel, group_id)
         if model:
             await self.session.delete(model)
+            await self.session.commit()
+            return True
         
         await self.session.commit()
+        return False
     
     async def find_many(
         self,

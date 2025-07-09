@@ -40,6 +40,25 @@ from app.core.errors import InfrastructureError
 from app.core.logging import get_logger
 
 
+# Custom exceptions for repository operations
+class RepositoryError(InfrastructureError):
+    """Base exception for repository-specific errors."""
+    
+    default_code = "REPOSITORY_ERROR"
+    
+
+class DatabaseConnectivityError(RepositoryError):
+    """Database connectivity test failed."""
+    
+    default_code = "DATABASE_CONNECTIVITY_ERROR"
+
+
+class CacheConnectivityError(RepositoryError):
+    """Cache connectivity test failed."""
+    
+    default_code = "CACHE_CONNECTIVITY_ERROR"
+
+
 # Metrics implementation with repository-specific attributes
 class _MockCounter:
     def labels(self, **kwargs):
@@ -437,8 +456,13 @@ class BaseRepository(SpecificationRepository[TEntity, TId]):
                     repository=self.__class__.__name__,
                     operation=operation_name
                 ).observe(execution_time)
-            except Exception:
-                pass  # Ignore metrics errors
+            except Exception as e:
+                logger.debug(
+                    "Metrics recording failed for success",
+                    repository=self.__class__.__name__,
+                    operation=operation_name,
+                    error=str(e)
+                )
 
             logger.debug(
                 "Repository operation completed successfully",
@@ -466,8 +490,13 @@ class BaseRepository(SpecificationRepository[TEntity, TId]):
                     operation=operation_name,
                     error_type=type(e).__name__
                 ).inc()
-            except Exception:
-                pass  # Ignore metrics errors
+            except Exception as metrics_error:
+                logger.debug(
+                    "Metrics recording failed for error",
+                    repository=self.__class__.__name__,
+                    operation=operation_name,
+                    error=str(metrics_error)
+                )
 
             logger.exception(
                 "Repository operation failed",
@@ -506,16 +535,6 @@ class BaseRepository(SpecificationRepository[TEntity, TId]):
                         ).inc()
                     return result
 
-            self._cache_misses += 1
-            # Record cache miss metric
-            with suppress(Exception):
-                metrics.cache_operations.labels(
-                    repository=self.__class__.__name__,
-                    operation="get",
-                    result="miss"
-                ).inc()
-            return None
-
         except Exception as e:
             logger.warning(
                 "Cache get operation failed",
@@ -530,6 +549,16 @@ class BaseRepository(SpecificationRepository[TEntity, TId]):
                     repository=self.__class__.__name__,
                     operation="get",
                     result="error"
+                ).inc()
+            return None
+        else:
+            self._cache_misses += 1
+            # Record cache miss metric
+            with suppress(Exception):
+                metrics.cache_operations.labels(
+                    repository=self.__class__.__name__,
+                    operation="get",
+                    result="miss"
                 ).inc()
             return None
 
@@ -850,14 +879,14 @@ class BaseRepository(SpecificationRepository[TEntity, TId]):
             session: Database session
 
         Raises:
-            Exception: If connectivity test fails
+            DatabaseConnectivityError: If connectivity test fails
         """
         # This is a generic implementation - override in specific repository classes
         # For example, with SQLAlchemy: await session.execute(text(HEALTH_CHECK_QUERY))
         
         # Generic test - try to access session attributes
         if not hasattr(session, '__dict__'):
-            raise Exception("Invalid session object")
+            raise DatabaseConnectivityError("Invalid session object")
         
         # If session has an execute method, try a simple operation
         if hasattr(session, 'execute'):
@@ -888,7 +917,7 @@ class BaseRepository(SpecificationRepository[TEntity, TId]):
         Test cache connectivity.
 
         Raises:
-            Exception: If connectivity test fails
+            CacheConnectivityError: If connectivity test fails
         """
         test_key = f"health_check_{self.__class__.__name__}"
         test_value = "test"
@@ -900,7 +929,7 @@ class BaseRepository(SpecificationRepository[TEntity, TId]):
         retrieved_value = await self._get_from_cache(test_key)
 
         if retrieved_value != test_value:
-            raise Exception("Cache connectivity test failed - value mismatch")
+            raise CacheConnectivityError("Cache connectivity test failed - value mismatch")
 
         # Clean up
         await self._delete_from_cache(test_key)
@@ -1388,10 +1417,15 @@ class RepositoryFactory:
             raise InfrastructureError("Session factory must be callable")
         
         # Test session factory by creating a test session
-        try:
+        def _validate_session_factory():
+            """Helper function to validate session factory."""
             test_session = session_factory()
             if test_session is None:
                 raise InfrastructureError("Session factory returned None")
+            return test_session
+        
+        try:
+            test_session = _validate_session_factory()
             
             # Clean up test session if possible
             if hasattr(test_session, 'close'):
@@ -1420,13 +1454,12 @@ class RepositoryFactory:
                 )
         
         # Validate event store if provided
-        if event_store is not None:
-            if not hasattr(event_store, 'store') and not hasattr(event_store, 'store_events'):
-                logger.warning(
-                    "Event store implementation missing required methods",
-                    event_store_type=type(event_store).__name__,
-                    required_methods=['store', 'store_events']
-                )
+        if event_store is not None and not hasattr(event_store, 'store') and not hasattr(event_store, 'store_events'):
+            logger.warning(
+                "Event store implementation missing required methods",
+                event_store_type=type(event_store).__name__,
+                required_methods=['store', 'store_events']
+            )
         
         self._session_factory = session_factory
         self._cache = cache
@@ -1541,7 +1574,7 @@ class SQLRepository(BaseRepository[TEntity, TId]):
         self.session = session
         self.model_type = model_type
     
-    def _entity_to_model(self, entity: TEntity) -> TModel:
+    def _entity_to_model(self, entity: TEntity) -> object:
         """
         Convert domain entity to SQL model.
         
@@ -1549,7 +1582,7 @@ class SQLRepository(BaseRepository[TEntity, TId]):
             entity: Domain entity
             
         Returns:
-            TModel: SQL model instance
+            object: SQL model instance
         """
         from_domain_method = getattr(self.model_type, 'from_domain', None)
         if from_domain_method is not None and callable(from_domain_method):
@@ -1561,7 +1594,7 @@ class SQLRepository(BaseRepository[TEntity, TId]):
         except Exception as e:
             raise InfrastructureError(f"Failed to convert entity to model: {e}") from e
     
-    def _model_to_entity(self, model: TModel) -> TEntity:
+    def _model_to_entity(self, model: object) -> TEntity:
         """
         Convert SQL model to domain entity.
         
@@ -1669,7 +1702,6 @@ class SQLRepository(BaseRepository[TEntity, TId]):
                 
                 await self.session.delete(model)
                 await self.session.commit()
-                return True
                 
             except Exception as e:
                 await self.session.rollback()
@@ -1680,13 +1712,14 @@ class SQLRepository(BaseRepository[TEntity, TId]):
                     error=str(e),
                 )
                 raise InfrastructureError(f"Failed to delete entity: {e}") from e
+            else:
+                return True
     
     async def exists(self, entity_id: TId) -> bool:
         """Check if entity exists."""
         async with self.operation_context("exists"):
             try:
                 model = await self.session.get(self.model_type, entity_id)
-                return model is not None
             except Exception as e:
                 logger.exception(
                     "Failed to check entity existence",
@@ -1695,6 +1728,8 @@ class SQLRepository(BaseRepository[TEntity, TId]):
                     error=str(e),
                 )
                 raise InfrastructureError(f"Failed to check entity existence: {e}") from e
+            else:
+                return model is not None
     
     async def count(self) -> int:
         """Count total entities."""

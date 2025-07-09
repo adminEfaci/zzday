@@ -40,6 +40,9 @@ from .security import (
     IThreatIntelligenceService,
 )
 
+# User domain service interfaces
+from .user_authentication_service import IUserAuthenticationService
+
 __all__ = [
     'IAnalyticsPort',
     # Monitoring
@@ -65,5 +68,7 @@ __all__ = [
     'ISecurityService',
     'ITaskQueuePort',
     'IThreatIntelligenceService',
-    'ITokenGenerator'
+    'ITokenGenerator',
+    # User domain services
+    'IUserAuthenticationService'
 ]

@@ -10,10 +10,13 @@ from __future__ import annotations
 import secrets
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
-from typing import Any
+from typing import Any, TYPE_CHECKING
 from uuid import UUID, uuid4
 
 from app.core.domain.base import AggregateRoot
+
+if TYPE_CHECKING:
+    from ..interfaces.services.user_authentication_service import IUserAuthenticationService
 
 # Import events from existing location
 from ..entities.user.user_events import (
@@ -98,6 +101,9 @@ class User(AggregateRoot):
     # Role and permission management (simplified - IDs only)
     _role_ids: set[UUID] = field(default_factory=set, init=False)
     _permission_ids: set[UUID] = field(default_factory=set, init=False)
+    
+    # Domain service dependencies (injected after construction)
+    _authentication_service: IUserAuthenticationService | None = field(default=None, init=False, repr=False)
 
     def __post_init__(self):
         """Initialize user aggregate and enforce domain invariants."""
@@ -107,6 +113,14 @@ class User(AggregateRoot):
         # Set password change timestamp if not provided
         if not self.password_changed_at:
             self.password_changed_at = self.created_at
+
+    def set_authentication_service(self, service: IUserAuthenticationService) -> None:
+        """Set the authentication service dependency.
+        
+        Args:
+            service: The authentication service to use for complex authentication logic
+        """
+        self._authentication_service = service
 
     def _validate_invariants(self) -> None:
         """Validate domain invariants - NO EVENT EMISSION."""
@@ -228,41 +242,89 @@ class User(AggregateRoot):
 
     def record_login_attempt(self, success: bool, login_context: dict | None = None) -> None:
         """Record login attempt and update tracking."""
-        if success:
-            self.failed_login_count = 0
-            self.last_failed_login = None
-            self.last_login = datetime.now(UTC)
-            self.login_count += 1
-        else:
-            self.failed_login_count += 1
-            self.last_failed_login = datetime.now(UTC)
+        from ..interfaces.services.user_authentication_service import AuthenticationContext
+        
+        # Create authentication context
+        context = AuthenticationContext(
+            user_id=self.id,
+            ip_address=login_context.get("ip_address") if login_context else None,
+            user_agent=login_context.get("user_agent") if login_context else None,
+            device_fingerprint=login_context.get("device_fingerprint") if login_context else None,
+            location=login_context.get("location") if login_context else None,
+            timestamp=datetime.now(UTC),
+            additional_context=login_context or {}
+        )
+        
+        # Use service for complex authentication logic if available
+        if self._authentication_service:
+            result = self._authentication_service.process_login_attempt(self, success, context)
             
-            # Apply domain rule: Lock after 5 failed attempts
-            if self.failed_login_count >= 5:
-                self.lock(timedelta(minutes=15))  # 15 minute lockout
+            # Apply service recommendations
+            if result.should_lock_account:
+                self.lock(result.lock_duration)
+            
+            # Update basic tracking
+            if success:
+                self.failed_login_count = 0
+                self.last_failed_login = None
+                self.last_login = datetime.now(UTC)
+                self.login_count += 1
+            else:
+                self.failed_login_count += 1
+                self.last_failed_login = datetime.now(UTC)
+        else:
+            # Fallback to simple domain rule when service not available
+            if success:
+                self.failed_login_count = 0
+                self.last_failed_login = None
+                self.last_login = datetime.now(UTC)
+                self.login_count += 1
+            else:
+                self.failed_login_count += 1
+                self.last_failed_login = datetime.now(UTC)
+                
+                # Apply domain rule: Lock after 5 failed attempts
+                if self.failed_login_count >= 5:
+                    self.lock(timedelta(minutes=15))  # 15 minute lockout
         
         self._touch()
 
     def update_password_hash(self, new_password_hash: str, changed_by: UUID | None = None) -> None:
         """Update password hash (password should be validated by service before calling)."""
+        # Use service to determine if security stamp should be regenerated
+        should_regenerate = True
+        if self._authentication_service:
+            should_regenerate = self._authentication_service.should_regenerate_security_stamp(self, "password_change")
+        
         self.password_hash = new_password_hash
         self.password_changed_at = datetime.now(UTC)
         self.require_password_change = False
-        self._regenerate_security_stamp()
+        
+        if should_regenerate:
+            self._regenerate_security_stamp()
+        
         self._touch()
 
         self.add_domain_event(UserPasswordChanged(
             user_id=self.id,
             changed_by=changed_by or self.id,
-            sessions_invalidated=True
+            sessions_invalidated=should_regenerate
         ))
 
     def change_email(self, new_email: str) -> None:
         """Change user email address."""
+        # Use service to determine if security stamp should be regenerated
+        should_regenerate = True
+        if self._authentication_service:
+            should_regenerate = self._authentication_service.should_regenerate_security_stamp(self, "email_change")
+        
         old_email = self.email.value
         self.email = Email(new_email)
         self.email_verified = False
-        self._regenerate_security_stamp()
+        
+        if should_regenerate:
+            self._regenerate_security_stamp()
+        
         self._touch()
 
         self.add_domain_event(UserEmailChanged(
@@ -457,13 +519,108 @@ class User(AggregateRoot):
         """Get account age in days."""
         return (datetime.now(UTC) - self.created_at).days
 
-    def requires_mfa(self) -> bool:
+    def requires_mfa(self, authentication_context: dict | None = None) -> bool:
         """Check if MFA is required for user - delegates to service."""
+        if self._authentication_service and authentication_context:
+            from ..interfaces.services.user_authentication_service import AuthenticationContext
+            
+            context = AuthenticationContext(
+                user_id=self.id,
+                ip_address=authentication_context.get("ip_address"),
+                user_agent=authentication_context.get("user_agent"),
+                device_fingerprint=authentication_context.get("device_fingerprint"),
+                location=authentication_context.get("location"),
+                timestamp=datetime.now(UTC),
+                additional_context=authentication_context
+            )
+            
+            return self._authentication_service.should_require_mfa(self, context)
+        
+        # Fallback to simple check
         return self.mfa_enabled
 
     # =============================================================================
     # SERVICE INTEGRATION METHODS
     # =============================================================================
+
+    def validate_password_policy(self, password: str) -> dict[str, Any]:
+        """Validate password against security policies using authentication service."""
+        if self._authentication_service:
+            result = self._authentication_service.validate_password_policy(password, self)
+            return {
+                "is_valid": result.is_valid,
+                "errors": result.errors,
+                "strength_score": result.strength_score,
+                "meets_policy": result.meets_policy,
+                "suggestions": result.suggestions
+            }
+        
+        # Fallback validation - just check if password exists
+        return {
+            "is_valid": bool(password and len(password) >= 8),
+            "errors": [] if password and len(password) >= 8 else ["Password must be at least 8 characters"],
+            "strength_score": 0.5,
+            "meets_policy": bool(password and len(password) >= 8),
+            "suggestions": []
+        }
+
+    def assess_authentication_risk(self, context: dict | None = None) -> dict[str, Any]:
+        """Assess authentication risk using authentication service."""
+        if self._authentication_service and context:
+            from ..interfaces.services.user_authentication_service import AuthenticationContext
+            
+            auth_context = AuthenticationContext(
+                user_id=self.id,
+                ip_address=context.get("ip_address"),
+                user_agent=context.get("user_agent"),
+                device_fingerprint=context.get("device_fingerprint"),
+                location=context.get("location"),
+                timestamp=datetime.now(UTC),
+                additional_context=context
+            )
+            
+            result = self._authentication_service.assess_authentication_risk(self, auth_context)
+            return {
+                "risk_level": result.risk_level,
+                "risk_score": result.risk_score,
+                "factors": result.factors,
+                "recommendations": result.recommendations,
+                "requires_additional_verification": result.requires_additional_verification
+            }
+        
+        # Fallback assessment
+        return {
+            "risk_level": "low",
+            "risk_score": 0.1,
+            "factors": [],
+            "recommendations": [],
+            "requires_additional_verification": False
+        }
+
+    def get_security_recommendations(self) -> list[str]:
+        """Get security recommendations from authentication service."""
+        if self._authentication_service:
+            return self._authentication_service.get_security_recommendations(self)
+        
+        # Fallback recommendations
+        recommendations = []
+        if not self.mfa_enabled:
+            recommendations.append("Enable multi-factor authentication")
+        if not self.email_verified:
+            recommendations.append("Verify your email address")
+        
+        return recommendations
+
+    def validate_account_status_for_authentication(self) -> tuple[bool, str]:
+        """Validate account status for authentication using service."""
+        if self._authentication_service:
+            return self._authentication_service.validate_account_status(self)
+        
+        # Fallback validation
+        if not self.is_active():
+            return False, "Account is not active"
+        
+        return True, "Account is valid for authentication"
 
     def get_failed_login_count(self) -> int:
         """Get count of recent failed login attempts."""

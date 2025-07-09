@@ -26,6 +26,7 @@ class GeolocationAdapter(IGeolocationService):
         google_maps_client=None,
         user_location_db=None,
     ):
+<<<<<<< HEAD
         """Initialize geolocation adapter.
 
         Args:
@@ -34,6 +35,9 @@ class GeolocationAdapter(IGeolocationService):
             google_maps_client: Google Maps API client
             user_location_db: User location database
         """
+=======
+        """Initialize geolocation adapter."""
+>>>>>>> analysis/coordination
         self._ip_info = ip_info_client
         self._maxmind = maxmind_client
         self._google_maps = google_maps_client
@@ -46,12 +50,16 @@ class GeolocationAdapter(IGeolocationService):
         try:
             ip_str = str(ip_address.value)
             
+<<<<<<< HEAD
             # Check cache first
+=======
+>>>>>>> analysis/coordination
             if ip_str in self._location_cache:
                 cached_info = self._location_cache[ip_str]
                 if self._is_cache_valid(cached_info):
                     return cached_info["data"]
 
+<<<<<<< HEAD
             # Get location data from multiple sources
             location_data = await self._get_location_from_sources(ip_str)
             
@@ -59,6 +67,11 @@ class GeolocationAdapter(IGeolocationService):
             enriched_data = await self._enrich_location_data(location_data)
             
             # Create LocationInfo-like dict
+=======
+            location_data = await self._get_location_from_sources(ip_str)
+            enriched_data = await self._enrich_location_data(location_data)
+            
+>>>>>>> analysis/coordination
             location_info = {
                 "ip_address": ip_str,
                 "country": enriched_data.get("country", "Unknown"),
@@ -82,7 +95,10 @@ class GeolocationAdapter(IGeolocationService):
                 "retrieved_at": datetime.now(UTC).isoformat(),
             }
 
+<<<<<<< HEAD
             # Cache the result
+=======
+>>>>>>> analysis/coordination
             self._location_cache[ip_str] = {
                 "data": location_info,
                 "timestamp": datetime.now(UTC),
@@ -93,7 +109,10 @@ class GeolocationAdapter(IGeolocationService):
 
         except Exception as e:
             logger.error(f"Error getting location info for IP {ip_address}: {e}")
+<<<<<<< HEAD
             # Return safe default
+=======
+>>>>>>> analysis/coordination
             return {
                 "ip_address": str(ip_address.value),
                 "country": "Unknown",
@@ -126,12 +145,16 @@ class GeolocationAdapter(IGeolocationService):
             ip_str = str(ip_address.value)
             cache_key = f"risk:{user_id}:{ip_str}"
             
+<<<<<<< HEAD
             # Check cache first
+=======
+>>>>>>> analysis/coordination
             if cache_key in self._risk_cache:
                 cached_risk = self._risk_cache[cache_key]
                 if self._is_cache_valid(cached_risk):
                     return cached_risk["data"]
 
+<<<<<<< HEAD
             # Get current location info
             location_info = await self.get_location_info(ip_address)
             
@@ -150,6 +173,14 @@ class GeolocationAdapter(IGeolocationService):
             risk_level = self._determine_risk_level(risk_score)
             
             # Create LocationRiskAssessment-like dict
+=======
+            location_info = await self.get_location_info(ip_address)
+            user_locations = await self._get_user_location_history(user_id)
+            risk_factors = await self._analyze_location_risk(user_id, location_info, user_locations)
+            risk_score = self._calculate_location_risk_score(risk_factors)
+            risk_level = self._determine_risk_level(risk_score)
+            
+>>>>>>> analysis/coordination
             risk_assessment = {
                 "user_id": str(user_id),
                 "ip_address": ip_str,
@@ -163,7 +194,10 @@ class GeolocationAdapter(IGeolocationService):
                 "valid_until": (datetime.now(UTC) + timedelta(minutes=30)).isoformat(),
             }
 
+<<<<<<< HEAD
             # Cache the result
+=======
+>>>>>>> analysis/coordination
             self._risk_cache[cache_key] = {
                 "data": risk_assessment,
                 "timestamp": datetime.now(UTC),
@@ -176,7 +210,10 @@ class GeolocationAdapter(IGeolocationService):
 
         except Exception as e:
             logger.error(f"Error assessing location risk for user {user_id}: {e}")
+<<<<<<< HEAD
             # Return safe default
+=======
+>>>>>>> analysis/coordination
             return {
                 "user_id": str(user_id),
                 "ip_address": str(ip_address.value),
@@ -212,9 +249,13 @@ class GeolocationAdapter(IGeolocationService):
                 
                 await self._user_db.update_user_location(user_id, location_record)
 
+<<<<<<< HEAD
             # Clear risk cache for this user
             self._clear_user_risk_cache(user_id)
 
+=======
+            self._clear_user_risk_cache(user_id)
+>>>>>>> analysis/coordination
             logger.info(f"Updated known locations for user {user_id}")
 
         except Exception as e:
@@ -223,8 +264,11 @@ class GeolocationAdapter(IGeolocationService):
     async def _get_location_from_sources(self, ip_address: str) -> dict[str, Any]:
         """Get location data from multiple sources."""
         location_data = {}
+<<<<<<< HEAD
         
         # Try multiple sources in parallel
+=======
+>>>>>>> analysis/coordination
         tasks = []
         
         if self._ip_info:
@@ -233,14 +277,20 @@ class GeolocationAdapter(IGeolocationService):
         if self._maxmind:
             tasks.append(self._get_maxmind_data(ip_address))
         
+<<<<<<< HEAD
         # If no external clients, use mock data
+=======
+>>>>>>> analysis/coordination
         if not tasks:
             tasks.append(self._get_mock_location_data(ip_address))
 
         try:
             results = await asyncio.gather(*tasks, return_exceptions=True)
             
+<<<<<<< HEAD
             # Merge results from all sources
+=======
+>>>>>>> analysis/coordination
             for result in results:
                 if isinstance(result, dict):
                     location_data.update(result)
@@ -253,7 +303,10 @@ class GeolocationAdapter(IGeolocationService):
     async def _get_ipinfo_data(self, ip_address: str) -> dict[str, Any]:
         """Get data from IPInfo.io."""
         try:
+<<<<<<< HEAD
             # Mock implementation - replace with actual IPInfo.io API call
+=======
+>>>>>>> analysis/coordination
             return {
                 "country": "United States",
                 "country_code": "US",
@@ -274,7 +327,10 @@ class GeolocationAdapter(IGeolocationService):
     async def _get_maxmind_data(self, ip_address: str) -> dict[str, Any]:
         """Get data from MaxMind GeoIP2."""
         try:
+<<<<<<< HEAD
             # Mock implementation - replace with actual MaxMind API call
+=======
+>>>>>>> analysis/coordination
             return {
                 "accuracy_radius": 50,
                 "connection_type": "corporate",
@@ -288,7 +344,10 @@ class GeolocationAdapter(IGeolocationService):
 
     async def _get_mock_location_data(self, ip_address: str) -> dict[str, Any]:
         """Get mock location data for testing."""
+<<<<<<< HEAD
         # Simple mock based on IP patterns
+=======
+>>>>>>> analysis/coordination
         if "192.168" in ip_address or "10." in ip_address:
             return {
                 "country": "Unknown",
@@ -328,17 +387,26 @@ class GeolocationAdapter(IGeolocationService):
         """Enrich location data with additional analysis."""
         enriched = location_data.copy()
         
+<<<<<<< HEAD
         # Add threat analysis
+=======
+>>>>>>> analysis/coordination
         if location_data.get("isp") and "vpn" in location_data["isp"].lower():
             enriched["is_vpn"] = True
             enriched["threat_types"] = enriched.get("threat_types", []) + ["vpn"]
         
+<<<<<<< HEAD
         # Add proxy detection
+=======
+>>>>>>> analysis/coordination
         if location_data.get("organization") and "proxy" in location_data["organization"].lower():
             enriched["is_proxy"] = True
             enriched["threat_types"] = enriched.get("threat_types", []) + ["proxy"]
         
+<<<<<<< HEAD
         # Add hosting detection
+=======
+>>>>>>> analysis/coordination
         if location_data.get("connection_type") == "hosting":
             enriched["is_hosting"] = True
             enriched["threat_types"] = enriched.get("threat_types", []) + ["hosting"]
@@ -351,7 +419,10 @@ class GeolocationAdapter(IGeolocationService):
             if self._user_db:
                 return await self._user_db.get_user_location_history(user_id)
             
+<<<<<<< HEAD
             # Mock implementation
+=======
+>>>>>>> analysis/coordination
             return [
                 {
                     "country": "United States",
@@ -372,7 +443,10 @@ class GeolocationAdapter(IGeolocationService):
         """Analyze location risk factors."""
         factors = {}
         
+<<<<<<< HEAD
         # Check if it's a new location
+=======
+>>>>>>> analysis/coordination
         is_new_location = not any(
             loc["country"] == location_info.get("country") and 
             loc["city"] == location_info.get("city")
@@ -380,19 +454,26 @@ class GeolocationAdapter(IGeolocationService):
         )
         factors["is_new_location"] = is_new_location
         
+<<<<<<< HEAD
         # Check if it's a new country
+=======
+>>>>>>> analysis/coordination
         is_new_country = not any(
             loc["country"] == location_info.get("country")
             for loc in user_locations
         )
         factors["is_new_country"] = is_new_country
         
+<<<<<<< HEAD
         # Check threat indicators
+=======
+>>>>>>> analysis/coordination
         factors["is_proxy"] = location_info.get("is_proxy", False)
         factors["is_vpn"] = location_info.get("is_vpn", False)
         factors["is_tor"] = location_info.get("is_tor", False)
         factors["is_hosting"] = location_info.get("is_hosting", False)
         
+<<<<<<< HEAD
         # Check time zone difference
         factors["timezone_risk"] = await self._assess_timezone_risk(user_id, location_info)
         
@@ -400,6 +481,10 @@ class GeolocationAdapter(IGeolocationService):
         factors["travel_feasibility"] = await self._assess_travel_feasibility(user_id, location_info)
         
         # Check location reputation
+=======
+        factors["timezone_risk"] = await self._assess_timezone_risk(user_id, location_info)
+        factors["travel_feasibility"] = await self._assess_travel_feasibility(user_id, location_info)
+>>>>>>> analysis/coordination
         factors["location_reputation"] = await self._assess_location_reputation(location_info)
         
         return factors
@@ -408,6 +493,7 @@ class GeolocationAdapter(IGeolocationService):
         """Calculate location risk score."""
         score = 0.0
         
+<<<<<<< HEAD
         # New location risk
         if factors.get("is_new_location"):
             score += 0.3
@@ -417,6 +503,14 @@ class GeolocationAdapter(IGeolocationService):
             score += 0.4
         
         # Proxy/VPN risk
+=======
+        if factors.get("is_new_location"):
+            score += 0.3
+        
+        if factors.get("is_new_country"):
+            score += 0.4
+        
+>>>>>>> analysis/coordination
         if factors.get("is_proxy"):
             score += 0.5
         if factors.get("is_vpn"):
@@ -426,6 +520,7 @@ class GeolocationAdapter(IGeolocationService):
         if factors.get("is_hosting"):
             score += 0.6
         
+<<<<<<< HEAD
         # Time zone risk
         timezone_risk = factors.get("timezone_risk", 0.0)
         score += timezone_risk * 0.2
@@ -435,6 +530,14 @@ class GeolocationAdapter(IGeolocationService):
         score += travel_risk * 0.3
         
         # Location reputation
+=======
+        timezone_risk = factors.get("timezone_risk", 0.0)
+        score += timezone_risk * 0.2
+        
+        travel_risk = factors.get("travel_feasibility", 0.0)
+        score += travel_risk * 0.3
+        
+>>>>>>> analysis/coordination
         reputation_risk = factors.get("location_reputation", 0.0)
         score += reputation_risk * 0.2
         
@@ -451,6 +554,7 @@ class GeolocationAdapter(IGeolocationService):
 
     def _get_risk_recommendations(self, risk_level: str) -> list[str]:
         """Get risk mitigation recommendations."""
+<<<<<<< HEAD
         recommendations = []
         
         if risk_level == "high":
@@ -478,12 +582,27 @@ class GeolocationAdapter(IGeolocationService):
         location_timezone = location_info.get("timezone", "UTC")
         
         # Simple heuristic - different timezone adds risk
+=======
+        if risk_level == "high":
+            return ["require_mfa", "manual_review", "additional_verification", "restrict_sensitive_actions"]
+        elif risk_level == "medium":
+            return ["require_mfa", "enhanced_monitoring", "verify_identity"]
+        else:
+            return ["normal_monitoring"]
+
+    async def _assess_timezone_risk(self, user_id: UUID, location_info: dict[str, Any]) -> float:
+        """Assess timezone-based risk."""
+        user_timezone = "America/Los_Angeles"
+        location_timezone = location_info.get("timezone", "UTC")
+        
+>>>>>>> analysis/coordination
         if user_timezone != location_timezone:
             return 0.3
         return 0.0
 
     async def _assess_travel_feasibility(self, user_id: UUID, location_info: dict[str, Any]) -> float:
         """Assess if travel to location is feasible."""
+<<<<<<< HEAD
         # Mock implementation - check if user could have traveled to this location
         # based on their last known location and time elapsed
         return 0.0  # Would implement proper travel time calculation
@@ -491,6 +610,12 @@ class GeolocationAdapter(IGeolocationService):
     async def _assess_location_reputation(self, location_info: dict[str, Any]) -> float:
         """Assess location reputation."""
         # Mock implementation - check if location is known for fraud
+=======
+        return 0.0
+
+    async def _assess_location_reputation(self, location_info: dict[str, Any]) -> float:
+        """Assess location reputation."""
+>>>>>>> analysis/coordination
         threat_types = location_info.get("threat_types", [])
         
         if "malware" in threat_types or "botnet" in threat_types:
@@ -504,7 +629,10 @@ class GeolocationAdapter(IGeolocationService):
 
     async def _is_trusted_location(self, user_id: UUID, location_info: dict[str, Any]) -> bool:
         """Check if location should be trusted."""
+<<<<<<< HEAD
         # Mock implementation - location becomes trusted after multiple visits
+=======
+>>>>>>> analysis/coordination
         return location_info.get("visit_count", 0) >= 5
 
     def _is_cache_valid(self, cached_item: dict[str, Any]) -> bool:
@@ -513,7 +641,10 @@ class GeolocationAdapter(IGeolocationService):
         if not cached_time:
             return False
         
+<<<<<<< HEAD
         # Cache valid for 1 hour
+=======
+>>>>>>> analysis/coordination
         return datetime.now(UTC) - cached_time < timedelta(hours=1)
 
     def _clear_user_risk_cache(self, user_id: UUID) -> None:

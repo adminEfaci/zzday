@@ -20,6 +20,25 @@ from sqlalchemy.pool import NullPool
 from app.core.database import Base, get_db
 from app.core.config import get_settings
 from app.main import app
+from app.modules.identity.domain.entities.user import User
+from app.modules.identity.domain.value_objects.email import Email
+from app.modules.identity.domain.value_objects.password_hash import (
+    HashAlgorithm,
+    PasswordHash,
+)
+from app.modules.identity.domain.value_objects.security_stamp import SecurityStamp
+from app.modules.identity.infrastructure.models.user_model import UserModel
+from app.shared.domain.events.event_dispatcher import EventDispatcher
+
+# Test data builders - ADDED: Eliminate hardcoded test data
+from app.tests.builders import UserBuilder, SessionBuilder, EmailBuilder
+from app.tests.builders.user_builder import UserMother
+from app.tests.builders.session_builder import SessionMother
+
+# Test Database Configuration
+TEST_DATABASE_URL = (
+    "postgresql+asyncpg://ezzday_test:test_password@localhost:5432/ezzday_test"
+)
 
 
 # Test database URL
@@ -82,6 +101,64 @@ async def client(db_session):
 
 # Mock service fixtures
 
+
+@pytest_asyncio.fixture
+async def async_client(test_app) -> AsyncGenerator[AsyncClient, None]:
+    """Create async test client for asynchronous requests."""
+    async with AsyncClient(app=test_app, base_url="http://testserver") as client:
+        yield client
+
+
+# Authentication Fixtures - FIXED: No hardcoded test data
+@pytest.fixture
+def test_user() -> User:
+    """Create a test user entity with unique data."""
+    return UserMother.active_verified_user()
+
+
+@pytest_asyncio.fixture
+async def test_user_model(db_session: AsyncSession, test_user: User) -> UserModel:
+    """Create and persist a test user model in database."""
+    user_model = UserModel(
+        id=test_user.id,
+        email=test_user.email.value,
+        password_hash=test_user.password_hash.to_string(),
+        security_stamp=test_user.security_stamp.value,
+        is_active=test_user.is_active,
+        is_verified=test_user.is_verified,
+        created_at=test_user.created_at,
+        updated_at=test_user.updated_at,
+    )
+
+    db_session.add(user_model)
+    await db_session.commit()
+    await db_session.refresh(user_model)
+
+    return user_model
+
+
+@pytest.fixture
+def admin_user() -> User:
+    """Create a test admin user with unique data."""
+    return UserMother.admin_user()
+
+
+@pytest.fixture
+def auth_headers(test_user: User) -> dict[str, str]:
+    """Create authentication headers for test requests."""
+    # Mock JWT token generation
+    token = f"Bearer test_token_for_{test_user.id}"
+    return {"Authorization": token, "Content-Type": "application/json"}
+
+
+@pytest.fixture
+def admin_auth_headers(admin_user: User) -> dict[str, str]:
+    """Create admin authentication headers for test requests."""
+    token = f"Bearer admin_token_for_{admin_user.id}"
+    return {"Authorization": token, "Content-Type": "application/json"}
+
+
+# Mock Service Fixtures
 @pytest.fixture
 def mock_email_service():
     """Create mock email service."""
@@ -172,50 +249,46 @@ def mock_password_service():
 
 # Test data factories
 
+
 @pytest.fixture
-def user_factory():
-    """Factory for creating test users."""
-    from app.modules.identity.domain.aggregates.user import User
-    from app.modules.identity.domain.value_objects.email import Email
-    from app.modules.identity.domain.value_objects.username import Username
-    from app.modules.identity.domain.value_objects.password_hash import PasswordHash
-    
-    def create_user(
-        email: str = "test@example.com",
-        username: str = "testuser",
-        password: str = "TestPass123!",
-        **kwargs
-    ) -> User:
-        user = User.create(
-            email=Email(email),
-            username=Username(username),
-            password_hash=PasswordHash.from_password(password),
-            **kwargs
-        )
-        return user
-    
-    return create_user
+def mock_event_dispatcher():
+    """Mock event dispatcher for testing."""
+    mock = AsyncMock(spec=EventDispatcher)
+    mock.dispatch.return_value = None
+    mock.subscribe.return_value = None
+    mock.unsubscribe.return_value = None
+    return mock
+
+
+# Test Data Builder Fixtures - FIXED: Use proper builders
+@pytest.fixture
+def user_builder():
+    """Provide UserBuilder for test customization."""
+    return UserBuilder
 
 
 @pytest.fixture
-def role_factory():
-    """Factory for creating test roles."""
-    from app.modules.identity.domain.entities.role import Role
-    
-    def create_role(
-        name: str = "test_role",
-        description: str = "Test role",
-        permissions: list = None,
-        **kwargs
-    ) -> Role:
-        return Role.create(
-            name=name,
-            description=description,
-            permissions=permissions or [],
-            **kwargs
-        )
-    
-    return create_role
+def session_builder():
+    """Provide SessionBuilder for test customization."""
+    return SessionBuilder
+
+
+@pytest.fixture
+def email_builder():
+    """Provide EmailBuilder for unique emails."""
+    return EmailBuilder
+
+
+@pytest.fixture
+def user_mother():
+    """Provide UserMother for common scenarios."""
+    return UserMother
+
+
+@pytest.fixture
+def session_mother():
+    """Provide SessionMother for common scenarios."""
+    return SessionMother
 
 
 @pytest.fixture

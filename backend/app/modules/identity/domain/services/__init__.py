@@ -28,6 +28,15 @@ from .role.role_service import RoleService
 
 # Session services
 from .session.session_service import SessionService
+from .session_validation_service import SessionValidationService
+
+# Additional domain services (previously prefixed with NEW_/New_)
+from .access_token_service import AccessTokenService
+from .emergency_contact_service import EmergencyContactService
+from .permission_service import PermissionService
+from .user_authentication_service import UserAuthenticationService
+from .user_preference_service import UserPreferenceService
+from .user_security_service import UserSecurityService
 
 __all__ = [
     # Admin services
@@ -56,4 +65,13 @@ __all__ = [
     
     # Session services
     'SessionService',
+    'SessionValidationService',
+    
+    # Additional domain services (previously prefixed with NEW_/New_)
+    'AccessTokenService',
+    'EmergencyContactService',
+    'PermissionService',
+    'UserAuthenticationService',
+    'UserPreferenceService',
+    'UserSecurityService',
 ]

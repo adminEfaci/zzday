@@ -18,6 +18,12 @@ from .user_domain_service import (
     UserDomainService,
 )
 
+# Additional user services (previously prefixed with NEW_)
+from .user_authentication_service import UserAuthenticationService as UserAuthService
+from .user_contact_service import UserContactService
+from .user_permission_service import UserPermissionService
+from .user_security_service import UserSecurityService as UserSecService
+
 __all__ = [
     'AuthenticationService',
     'UserFactory',
@@ -30,4 +36,10 @@ __all__ = [
     'PasswordPolicy',
     'RiskCalculationPolicy',
     'UserDomainService',
+    
+    # Additional user services (previously prefixed with NEW_)
+    'UserAuthService',
+    'UserContactService',
+    'UserPermissionService',
+    'UserSecService',
 ]

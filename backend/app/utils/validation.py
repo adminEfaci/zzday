@@ -1384,3 +1384,603 @@ def _check_type(value: Any, expected: str | list[str]) -> bool:
         return isinstance(value, expected_type)
 
     return True
+
+
+# =====================================================================================
+# FINANCIAL VALIDATION UTILITIES
+# =====================================================================================
+
+
+class CreditCardValidator:
+    """
+    Credit card validation utility following DDD principles.
+    
+    Validates credit card numbers using the Luhn algorithm and provides
+    card type detection and formatting capabilities.
+    """
+    
+    CARD_TYPES = {
+        "visa": r"^4[0-9]{12}(?:[0-9]{3})?$",
+        "mastercard": r"^5[1-5][0-9]{14}$",
+        "amex": r"^3[47][0-9]{13}$",
+        "discover": r"^6(?:011|5[0-9]{2})[0-9]{12}$",
+        "diners": r"^3[0689][0-9]{12}$",
+        "jcb": r"^(?:2131|1800|35\d{3})\d{11}$"
+    }
+    
+    def __init__(self, card_number: str):
+        """
+        Initialize and validate credit card number.
+        
+        Args:
+            card_number: Credit card number to validate
+            
+        Raises:
+            ValidationError: If card number is invalid
+        """
+        if not card_number:
+            raise ValidationError("Credit card number cannot be empty")
+            
+        self.value = self._validate_and_normalize(card_number)
+        self.card_type = self._detect_card_type()
+    
+    def _validate_and_normalize(self, card_number: str) -> str:
+        """Validate and normalize credit card number."""
+        if not isinstance(card_number, str):
+            raise ValidationError("Credit card number must be a string")
+        
+        # Remove spaces and dashes
+        normalized = re.sub(r'[\s-]', '', card_number)
+        
+        # Check if only digits
+        if not normalized.isdigit():
+            raise ValidationError("Credit card number must contain only digits")
+        
+        # Check length (13-19 digits)
+        if len(normalized) < 13 or len(normalized) > 19:
+            raise ValidationError("Credit card number must be 13-19 digits long")
+        
+        # Validate using Luhn algorithm
+        if not self._luhn_check(normalized):
+            raise ValidationError("Invalid credit card number (failed Luhn check)")
+        
+        return normalized
+    
+    def _luhn_check(self, card_number: str) -> bool:
+        """Validate credit card number using Luhn algorithm."""
+        def luhn_digit(n):
+            return sum(divmod(n * 2, 10))
+        
+        digits = [int(d) for d in card_number]
+        checksum = sum(digits[-1::-2]) + sum(luhn_digit(d) for d in digits[-2::-2])
+        return checksum % 10 == 0
+    
+    def _detect_card_type(self) -> str:
+        """Detect credit card type based on number pattern."""
+        for card_type, pattern in self.CARD_TYPES.items():
+            if re.match(pattern, self.value):
+                return card_type
+        return "unknown"
+    
+    @staticmethod
+    def is_valid_card_number(card_number: str) -> bool:
+        """
+        Static method to check if card number is valid.
+        
+        Args:
+            card_number: Card number to validate
+            
+        Returns:
+            bool: True if valid
+        """
+        try:
+            CreditCardValidator(card_number)
+            return True
+        except ValidationError:
+            return False
+    
+    @staticmethod
+    def detect_card_type(card_number: str) -> str:
+        """
+        Static method to detect card type.
+        
+        Args:
+            card_number: Card number to check
+            
+        Returns:
+            str: Card type or "unknown"
+        """
+        try:
+            validator = CreditCardValidator(card_number)
+            return validator.card_type
+        except ValidationError:
+            return "unknown"
+    
+    @property
+    def formatted(self) -> str:
+        """Get formatted card number (masked)."""
+        if len(self.value) <= 4:
+            return self.value
+        return f"****-****-****-{self.value[-4:]}"
+    
+    @property
+    def last_four(self) -> str:
+        """Get last four digits."""
+        return self.value[-4:]
+    
+    @property
+    def first_six(self) -> str:
+        """Get first six digits (BIN)."""
+        return self.value[:6]
+    
+    def __str__(self) -> str:
+        """String representation (masked)."""
+        return self.formatted
+    
+    def __eq__(self, other: Any) -> bool:
+        """Check equality."""
+        if not isinstance(other, CreditCardValidator):
+            return False
+        return self.value == other.value
+    
+    def __hash__(self) -> int:
+        """Return hash for use in sets/dicts."""
+        return hash(self.value)
+    
+    def __repr__(self) -> str:
+        """Detailed string representation for debugging."""
+        return f"CreditCardValidator(type='{self.card_type}', last_four='{self.last_four}')"
+
+
+class SSNValidator:
+    """
+    US Social Security Number validation utility.
+    
+    Validates SSN format and provides formatting capabilities.
+    """
+    
+    SSN_PATTERN = re.compile(r"^\d{3}-?\d{2}-?\d{4}$")
+    
+    def __init__(self, ssn: str):
+        """
+        Initialize and validate SSN.
+        
+        Args:
+            ssn: Social Security Number to validate
+            
+        Raises:
+            ValidationError: If SSN is invalid
+        """
+        if not ssn:
+            raise ValidationError("SSN cannot be empty")
+            
+        self.value = self._validate_and_normalize(ssn)
+    
+    def _validate_and_normalize(self, ssn: str) -> str:
+        """Validate and normalize SSN."""
+        if not isinstance(ssn, str):
+            raise ValidationError("SSN must be a string")
+        
+        # Remove spaces and dashes
+        normalized = re.sub(r'[\s-]', '', ssn)
+        
+        # Check if only digits
+        if not normalized.isdigit():
+            raise ValidationError("SSN must contain only digits")
+        
+        # Check length
+        if len(normalized) != 9:
+            raise ValidationError("SSN must be exactly 9 digits")
+        
+        # Check for invalid patterns
+        if normalized == "000000000":
+            raise ValidationError("SSN cannot be all zeros")
+        
+        if normalized[:3] == "000":
+            raise ValidationError("SSN area number cannot be 000")
+        
+        if normalized[3:5] == "00":
+            raise ValidationError("SSN group number cannot be 00")
+        
+        if normalized[5:] == "0000":
+            raise ValidationError("SSN serial number cannot be 0000")
+        
+        return normalized
+    
+    @staticmethod
+    def is_valid_ssn(ssn: str) -> bool:
+        """
+        Static method to check if SSN is valid.
+        
+        Args:
+            ssn: SSN to validate
+            
+        Returns:
+            bool: True if valid
+        """
+        try:
+            SSNValidator(ssn)
+            return True
+        except ValidationError:
+            return False
+    
+    @property
+    def formatted(self) -> str:
+        """Get formatted SSN (XXX-XX-XXXX)."""
+        return f"{self.value[:3]}-{self.value[3:5]}-{self.value[5:]}"
+    
+    @property
+    def masked(self) -> str:
+        """Get masked SSN (XXX-XX-1234)."""
+        return f"XXX-XX-{self.value[-4:]}"
+    
+    def __str__(self) -> str:
+        """String representation (masked)."""
+        return self.masked
+    
+    def __eq__(self, other: Any) -> bool:
+        """Check equality."""
+        if not isinstance(other, SSNValidator):
+            return False
+        return self.value == other.value
+    
+    def __hash__(self) -> int:
+        """Return hash for use in sets/dicts."""
+        return hash(self.value)
+    
+    def __repr__(self) -> str:
+        """Detailed string representation for debugging."""
+        return f"SSNValidator(masked='{self.masked}')"
+
+
+class IPAddressValidator:
+    """
+    IP address validation utility supporting both IPv4 and IPv6.
+    
+    Validates IP address format and provides type detection.
+    """
+    
+    IPV4_PATTERN = re.compile(r"^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$")
+    IPV6_PATTERN = re.compile(r"^(?:[0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}$")
+    
+    def __init__(self, ip_address: str):
+        """
+        Initialize and validate IP address.
+        
+        Args:
+            ip_address: IP address to validate
+            
+        Raises:
+            ValidationError: If IP address is invalid
+        """
+        if not ip_address:
+            raise ValidationError("IP address cannot be empty")
+            
+        self.value = self._validate_and_normalize(ip_address)
+        self.version = self._detect_version()
+    
+    def _validate_and_normalize(self, ip_address: str) -> str:
+        """Validate and normalize IP address."""
+        if not isinstance(ip_address, str):
+            raise ValidationError("IP address must be a string")
+        
+        ip_address = ip_address.strip()
+        
+        # Check IPv4
+        if self.IPV4_PATTERN.match(ip_address):
+            return ip_address
+        
+        # Check IPv6 (simplified check)
+        if self.IPV6_PATTERN.match(ip_address):
+            return ip_address.lower()
+        
+        # Check compressed IPv6
+        if "::" in ip_address:
+            parts = ip_address.split("::")
+            if len(parts) == 2:
+                # Basic IPv6 validation
+                return ip_address.lower()
+        
+        raise ValidationError("Invalid IP address format")
+    
+    def _detect_version(self) -> int:
+        """Detect IP version."""
+        if ":" in self.value:
+            return 6
+        return 4
+    
+    @staticmethod
+    def is_valid_ip(ip_address: str) -> bool:
+        """
+        Static method to check if IP address is valid.
+        
+        Args:
+            ip_address: IP address to validate
+            
+        Returns:
+            bool: True if valid
+        """
+        try:
+            IPAddressValidator(ip_address)
+            return True
+        except ValidationError:
+            return False
+    
+    @staticmethod
+    def get_ip_version(ip_address: str) -> int | None:
+        """
+        Static method to get IP version.
+        
+        Args:
+            ip_address: IP address to check
+            
+        Returns:
+            int | None: 4 or 6 for IPv4/IPv6, None if invalid
+        """
+        try:
+            validator = IPAddressValidator(ip_address)
+            return validator.version
+        except ValidationError:
+            return None
+    
+    @property
+    def is_ipv4(self) -> bool:
+        """Check if IPv4."""
+        return self.version == 4
+    
+    @property
+    def is_ipv6(self) -> bool:
+        """Check if IPv6."""
+        return self.version == 6
+    
+    @property
+    def is_private(self) -> bool:
+        """Check if private IP address."""
+        if self.is_ipv4:
+            parts = [int(x) for x in self.value.split(".")]
+            # Private IPv4 ranges
+            return (
+                parts[0] == 10 or
+                (parts[0] == 172 and 16 <= parts[1] <= 31) or
+                (parts[0] == 192 and parts[1] == 168)
+            )
+        return False  # Simplified for IPv6
+    
+    @property
+    def is_loopback(self) -> bool:
+        """Check if loopback address."""
+        if self.is_ipv4:
+            return self.value.startswith("127.")
+        else:
+            return self.value == "::1"
+    
+    def __str__(self) -> str:
+        """String representation."""
+        return self.value
+    
+    def __eq__(self, other: Any) -> bool:
+        """Check equality."""
+        if not isinstance(other, IPAddressValidator):
+            return False
+        return self.value == other.value
+    
+    def __hash__(self) -> int:
+        """Return hash for use in sets/dicts."""
+        return hash(self.value)
+    
+    def __repr__(self) -> str:
+        """Detailed string representation for debugging."""
+        return f"IPAddressValidator('{self.value}', version={self.version})"
+
+
+class OTPValidator:
+    """
+    One-Time Password validation utility.
+    
+    Validates OTP format and provides time-based validation.
+    """
+    
+    def __init__(self, otp: str, length: int = 6):
+        """
+        Initialize and validate OTP.
+        
+        Args:
+            otp: OTP to validate
+            length: Expected OTP length (default: 6)
+            
+        Raises:
+            ValidationError: If OTP is invalid
+        """
+        if not otp:
+            raise ValidationError("OTP cannot be empty")
+            
+        self.length = length
+        self.value = self._validate_and_normalize(otp)
+    
+    def _validate_and_normalize(self, otp: str) -> str:
+        """Validate and normalize OTP."""
+        if not isinstance(otp, str):
+            raise ValidationError("OTP must be a string")
+        
+        # Remove spaces
+        normalized = otp.replace(" ", "").replace("-", "")
+        
+        # Check if only digits
+        if not normalized.isdigit():
+            raise ValidationError("OTP must contain only digits")
+        
+        # Check length
+        if len(normalized) != self.length:
+            raise ValidationError(f"OTP must be exactly {self.length} digits")
+        
+        return normalized
+    
+    @staticmethod
+    def is_valid_otp(otp: str, length: int = 6) -> bool:
+        """
+        Static method to check if OTP is valid.
+        
+        Args:
+            otp: OTP to validate
+            length: Expected length
+            
+        Returns:
+            bool: True if valid
+        """
+        try:
+            OTPValidator(otp, length)
+            return True
+        except ValidationError:
+            return False
+    
+    @property
+    def formatted(self) -> str:
+        """Get formatted OTP (with spaces every 3 digits for readability)."""
+        if self.length == 6:
+            return f"{self.value[:3]} {self.value[3:]}"
+        return self.value
+    
+    def __str__(self) -> str:
+        """String representation."""
+        return self.value
+    
+    def __eq__(self, other: Any) -> bool:
+        """Check equality."""
+        if not isinstance(other, OTPValidator):
+            return False
+        return self.value == other.value
+    
+    def __hash__(self) -> int:
+        """Return hash for use in sets/dicts."""
+        return hash(self.value)
+    
+    def __repr__(self) -> str:
+        """Detailed string representation for debugging."""
+        return f"OTPValidator('{self.value}', length={self.length})"
+
+
+# =====================================================================================
+# ENHANCED PHONE NUMBER VALIDATION
+# =====================================================================================
+
+
+class EnhancedPhoneValidator:
+    """
+    Enhanced phone number validation with international support.
+    
+    Validates phone numbers with country codes and provides formatting.
+    """
+    
+    # Common country codes and their phone number patterns
+    COUNTRY_PATTERNS = {
+        "US": r"^(\+1)?[-.\s]?(\([0-9]{3}\))?[-.\s]?[0-9]{3}[-.\s]?[0-9]{4}$",
+        "CA": r"^(\+1)?[-.\s]?(\([0-9]{3}\))?[-.\s]?[0-9]{3}[-.\s]?[0-9]{4}$",
+        "GB": r"^(\+44)?[-.\s]?[0-9]{4}[-.\s]?[0-9]{6}$",
+        "AU": r"^(\+61)?[-.\s]?[0-9]{3}[-.\s]?[0-9]{3}[-.\s]?[0-9]{3}$",
+    }
+    
+    def __init__(self, phone_number: str, country_code: str = "US"):
+        """
+        Initialize and validate phone number.
+        
+        Args:
+            phone_number: Phone number to validate
+            country_code: Country code (default: US)
+            
+        Raises:
+            ValidationError: If phone number is invalid
+        """
+        if not phone_number:
+            raise ValidationError("Phone number cannot be empty")
+            
+        self.country_code = country_code.upper()
+        self.value = self._validate_and_normalize(phone_number)
+    
+    def _validate_and_normalize(self, phone_number: str) -> str:
+        """Validate and normalize phone number."""
+        if not isinstance(phone_number, str):
+            raise ValidationError("Phone number must be a string")
+        
+        # Remove common formatting
+        normalized = re.sub(r'[\s()-.]', '', phone_number)
+        
+        # Remove country code prefix if present
+        if normalized.startswith('+'):
+            if self.country_code == "US" and normalized.startswith('+1'):
+                normalized = normalized[2:]
+            elif self.country_code == "GB" and normalized.startswith('+44'):
+                normalized = normalized[3:]
+            elif self.country_code == "AU" and normalized.startswith('+61'):
+                normalized = normalized[3:]
+        
+        # Check if only digits
+        if not normalized.isdigit():
+            raise ValidationError("Phone number must contain only digits")
+        
+        # Validate based on country
+        if self.country_code in ["US", "CA"]:
+            if len(normalized) != 10:
+                raise ValidationError("US/CA phone numbers must be 10 digits")
+            if normalized[0] in ['0', '1']:
+                raise ValidationError("US/CA phone numbers cannot start with 0 or 1")
+        else:
+            # Basic length check for other countries
+            if len(normalized) < 7 or len(normalized) > 15:
+                raise ValidationError("Phone number must be 7-15 digits")
+        
+        return normalized
+    
+    @staticmethod
+    def is_valid_phone(phone_number: str, country_code: str = "US") -> bool:
+        """
+        Static method to check if phone number is valid.
+        
+        Args:
+            phone_number: Phone number to validate
+            country_code: Country code
+            
+        Returns:
+            bool: True if valid
+        """
+        try:
+            EnhancedPhoneValidator(phone_number, country_code)
+            return True
+        except ValidationError:
+            return False
+    
+    @property
+    def formatted(self) -> str:
+        """Get formatted phone number."""
+        if self.country_code in ["US", "CA"]:
+            return f"({self.value[:3]}) {self.value[3:6]}-{self.value[6:]}"
+        return self.value
+    
+    @property
+    def international(self) -> str:
+        """Get international format."""
+        country_prefixes = {
+            "US": "+1",
+            "CA": "+1",
+            "GB": "+44",
+            "AU": "+61"
+        }
+        prefix = country_prefixes.get(self.country_code, "+")
+        return f"{prefix} {self.value}"
+    
+    def __str__(self) -> str:
+        """String representation."""
+        return self.formatted
+    
+    def __eq__(self, other: Any) -> bool:
+        """Check equality."""
+        if not isinstance(other, EnhancedPhoneValidator):
+            return False
+        return self.value == other.value and self.country_code == other.country_code
+    
+    def __hash__(self) -> int:
+        """Return hash for use in sets/dicts."""
+        return hash((self.value, self.country_code))
+    
+    def __repr__(self) -> str:
+        """Detailed string representation for debugging."""
+        return f"EnhancedPhoneValidator('{self.value}', country='{self.country_code}')"

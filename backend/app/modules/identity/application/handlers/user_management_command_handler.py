@@ -13,12 +13,15 @@ from uuid import UUID, uuid4
 from app.core.cqrs import Command, CommandHandler
 from app.core.events import EventBus
 from app.core.infrastructure import UnitOfWork
-from app.modules.identity.domain.interfaces.services.infrastructure.cache_port import ICachePort as ICacheService
-from app.modules.identity.domain.interfaces.services.communication.notification_service import IEmailService
-from app.modules.identity.domain.interfaces.services.infrastructure.file_storage_port import IFileStoragePort as IStorageService
-from app.modules.identity.domain.interfaces.repositories.user_repository import IUserRepository
-from app.modules.identity.domain.interfaces.repositories.user_preference_repository import IUserPreferenceRepository
-from app.modules.identity.domain.interfaces.repositories.user_profile_repository import IUserProfileRepository
+from app.modules.identity.application.contracts.ports import (
+    IAvatarService,
+    ICacheService,
+    IEmailService,
+    IStorageService,
+    IUserRepository,
+    IUserPreferenceRepository,
+    IUserProfileRepository,
+)
 from app.modules.identity.application.decorators import (
     audit_action,
     authorize,
@@ -317,7 +320,7 @@ class UserManagementCommandHandler:
     async def handle_update_profile(self, command: UpdateProfileCommand) -> UpdateProfileResponse:
         """Update user profile information."""
         async with self._unit_of_work:
-            user = await self._user_repository.find_by_id(UserId(command.user_id))
+            user = await self._user_repository.get_by_id(UserId(command.user_id))
             if not user:
                 raise UserNotFoundError(f"User {command.user_id} not found")
             
@@ -445,7 +448,7 @@ class UserManagementCommandHandler:
     async def handle_deactivate_user(self, command: DeactivateUserCommand) -> None:
         """Deactivate a user account."""
         async with self._unit_of_work:
-            user = await self._user_repository.find_by_id(UserId(command.user_id))
+            user = await self._user_repository.get_by_id(UserId(command.user_id))
             if not user:
                 raise UserNotFoundError(f"User {command.user_id} not found")
             
@@ -473,7 +476,7 @@ class UserManagementCommandHandler:
     async def handle_reactivate_user(self, command: ReactivateUserCommand) -> None:
         """Reactivate a deactivated user account."""
         async with self._unit_of_work:
-            user = await self._user_repository.find_by_id(UserId(command.user_id))
+            user = await self._user_repository.get_by_id(UserId(command.user_id))
             if not user:
                 raise UserNotFoundError(f"User {command.user_id} not found")
             
@@ -500,7 +503,7 @@ class UserManagementCommandHandler:
     async def handle_delete_user(self, command: DeleteUserCommand) -> DeleteUserResponse:
         """Delete a user account (soft or hard delete)."""
         async with self._unit_of_work:
-            user = await self._user_repository.find_by_id(UserId(command.user_id))
+            user = await self._user_repository.get_by_id(UserId(command.user_id))
             if not user:
                 raise UserNotFoundError(f"User {command.user_id} not found")
             
@@ -541,8 +544,8 @@ class UserManagementCommandHandler:
     async def handle_merge_users(self, command: MergeUsersCommand) -> UserMergeResponse:
         """Merge two user accounts."""
         async with self._unit_of_work:
-            source_user = await self._user_repository.find_by_id(UserId(command.params.source_user_id))
-            target_user = await self._user_repository.find_by_id(UserId(command.params.target_user_id))
+            source_user = await self._user_repository.get_by_id(UserId(command.params.source_user_id))
+            target_user = await self._user_repository.get_by_id(UserId(command.params.target_user_id))
             
             if not source_user or not target_user:
                 raise UserNotFoundError("One or both users not found")
@@ -583,7 +586,7 @@ class UserManagementCommandHandler:
     async def handle_update_contact_info(self, command: UpdateContactInfoCommand) -> UpdateProfileResponse:
         """Update user contact information."""
         async with self._unit_of_work:
-            user = await self._user_repository.find_by_id(UserId(command.user_id))
+            user = await self._user_repository.get_by_id(UserId(command.user_id))
             if not user:
                 raise UserNotFoundError(f"User {command.user_id} not found")
             
@@ -701,7 +704,7 @@ class UserManagementCommandHandler:
     async def handle_generate_avatar(self, command: GenerateAvatarCommand) -> UpdateProfileResponse:
         """Generate avatar from user initials."""
         async with self._unit_of_work:
-            user = await self._user_repository.find_by_id(UserId(command.user_id))
+            user = await self._user_repository.get_by_id(UserId(command.user_id))
             if not user:
                 raise UserNotFoundError(f"User {command.user_id} not found")
             
@@ -748,8 +751,8 @@ class UserManagementCommandHandler:
     async def handle_transfer_user_data(self, command: TransferUserDataCommand) -> None:
         """Transfer data between users."""
         async with self._unit_of_work:
-            source_user = await self._user_repository.find_by_id(UserId(command.source_user_id))
-            target_user = await self._user_repository.find_by_id(UserId(command.target_user_id))
+            source_user = await self._user_repository.get_by_id(UserId(command.source_user_id))
+            target_user = await self._user_repository.get_by_id(UserId(command.target_user_id))
             
             if not source_user or not target_user:
                 raise UserNotFoundError("One or both users not found")

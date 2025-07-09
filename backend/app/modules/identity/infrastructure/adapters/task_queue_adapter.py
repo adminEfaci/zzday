@@ -26,9 +26,6 @@ class TaskQueueAdapter(ITaskQueuePort):
         task_timeout=300,
         max_retries=3,
     ):
-<<<<<<< HEAD
-        """Initialize task queue adapter."""
-=======
         """Initialize task queue adapter.
 
         Args:
@@ -38,17 +35,12 @@ class TaskQueueAdapter(ITaskQueuePort):
             task_timeout: Task execution timeout in seconds
             max_retries: Maximum number of task retries
         """
->>>>>>> analysis/coordination
         self._celery = celery_app
         self._redis = redis_client
         self._rabbitmq = rabbitmq_client
         self._task_timeout = task_timeout
         self._max_retries = max_retries
-<<<<<<< HEAD
-        self._task_registry = {}
-=======
         self._task_registry = {}  # In-memory task tracking for testing
->>>>>>> analysis/coordination
 
     async def queue_email_verification(
         self, user_id: UUID, email: str, token: str
@@ -68,10 +60,7 @@ class TaskQueueAdapter(ITaskQueuePort):
                 "timeout": self._task_timeout,
             }
 
-<<<<<<< HEAD
-=======
             # Queue the task
->>>>>>> analysis/coordination
             await self._enqueue_task("email_verification", task_data)
 
             logger.info(f"Queued email verification task {task_id} for user {user_id}")
@@ -95,10 +84,7 @@ class TaskQueueAdapter(ITaskQueuePort):
                 "timeout": self._task_timeout,
             }
 
-<<<<<<< HEAD
-=======
             # Queue the task
->>>>>>> analysis/coordination
             await self._enqueue_task("welcome_email", task_data)
 
             logger.info(f"Queued welcome email task {task_id} for user {user_id}")
@@ -125,10 +111,7 @@ class TaskQueueAdapter(ITaskQueuePort):
                 "timeout": self._task_timeout,
             }
 
-<<<<<<< HEAD
-=======
             # Queue the task
->>>>>>> analysis/coordination
             await self._enqueue_task("password_reset_email", task_data)
 
             logger.info(f"Queued password reset email task {task_id} for user {user_id}")
@@ -154,16 +137,10 @@ class TaskQueueAdapter(ITaskQueuePort):
                 "retry_count": 0,
                 "max_retries": self._max_retries,
                 "timeout": self._task_timeout,
-<<<<<<< HEAD
-                "priority": "high",
-            }
-
-=======
                 "priority": "high",  # Security alerts are high priority
             }
 
             # Queue the task with high priority
->>>>>>> analysis/coordination
             await self._enqueue_task("security_alert", task_data, priority="high")
 
             logger.info(f"Queued security alert task {task_id} for user {user_id}: {alert_type}")
@@ -185,16 +162,10 @@ class TaskQueueAdapter(ITaskQueuePort):
                 "retry_count": 0,
                 "max_retries": self._max_retries,
                 "timeout": self._task_timeout,
-<<<<<<< HEAD
-                "priority": "low",
-            }
-
-=======
                 "priority": "low",  # Profile checks are low priority
             }
 
             # Queue the task
->>>>>>> analysis/coordination
             await self._enqueue_task("profile_completion_check", task_data, priority="low")
 
             logger.info(f"Queued profile completion check task {task_id} for user {user_id}")
@@ -216,18 +187,11 @@ class TaskQueueAdapter(ITaskQueuePort):
                 "created_at": datetime.now(UTC).isoformat(),
                 "retry_count": 0,
                 "max_retries": self._max_retries,
-<<<<<<< HEAD
-                "timeout": self._task_timeout * 2,
-                "priority": "medium",
-            }
-
-=======
                 "timeout": self._task_timeout * 2,  # Longer timeout for image processing
                 "priority": "medium",
             }
 
             # Queue the task
->>>>>>> analysis/coordination
             await self._enqueue_task("avatar_processing", task_data, priority="medium")
 
             logger.info(f"Queued avatar processing task {task_id} for user {user_id}")
@@ -240,35 +204,23 @@ class TaskQueueAdapter(ITaskQueuePort):
     async def get_task_status(self, task_id: str) -> dict[str, Any]:
         """Get task execution status."""
         try:
-<<<<<<< HEAD
-=======
             # Check Celery first
->>>>>>> analysis/coordination
             if self._celery:
                 result = await self._get_celery_task_status(task_id)
                 if result:
                     return result
 
-<<<<<<< HEAD
-=======
             # Check Redis
->>>>>>> analysis/coordination
             if self._redis:
                 result = await self._get_redis_task_status(task_id)
                 if result:
                     return result
 
-<<<<<<< HEAD
-            if task_id in self._task_registry:
-                return self._task_registry[task_id]
-
-=======
             # Check local registry
             if task_id in self._task_registry:
                 return self._task_registry[task_id]
 
             # Task not found
->>>>>>> analysis/coordination
             return {
                 "task_id": task_id,
                 "status": "not_found",
@@ -295,10 +247,7 @@ class TaskQueueAdapter(ITaskQueuePort):
             elif self._redis:
                 await self._enqueue_redis_task(task_type, task_data, priority)
             else:
-<<<<<<< HEAD
-=======
                 # Fallback to in-memory registry for testing
->>>>>>> analysis/coordination
                 await self._enqueue_local_task(task_type, task_data)
 
         except Exception as e:
@@ -308,10 +257,7 @@ class TaskQueueAdapter(ITaskQueuePort):
     async def _enqueue_celery_task(self, task_type: str, task_data: dict[str, Any], priority: str) -> None:
         """Enqueue task using Celery."""
         try:
-<<<<<<< HEAD
-=======
             # Map task types to Celery task names
->>>>>>> analysis/coordination
             celery_task_names = {
                 "email_verification": "identity.tasks.send_verification_email",
                 "welcome_email": "identity.tasks.send_welcome_email",
@@ -325,17 +271,11 @@ class TaskQueueAdapter(ITaskQueuePort):
             if not task_name:
                 raise ValueError(f"Unknown task type: {task_type}")
 
-<<<<<<< HEAD
-            priority_map = {"high": 9, "medium": 5, "low": 1}
-            celery_priority = priority_map.get(priority, 5)
-
-=======
             # Set priority
             priority_map = {"high": 9, "medium": 5, "low": 1}
             celery_priority = priority_map.get(priority, 5)
 
             # Apply the task
->>>>>>> analysis/coordination
             result = self._celery.send_task(
                 task_name,
                 args=[task_data],
@@ -354,15 +294,10 @@ class TaskQueueAdapter(ITaskQueuePort):
     async def _enqueue_rabbitmq_task(self, task_type: str, task_data: dict[str, Any], priority: str) -> None:
         """Enqueue task using RabbitMQ."""
         try:
-<<<<<<< HEAD
-            queue_name = f"identity.tasks.{priority}"
-            
-=======
             # Determine queue name based on priority
             queue_name = f"identity.tasks.{priority}"
             
             # Create message
->>>>>>> analysis/coordination
             message = {
                 "task_type": task_type,
                 "task_data": task_data,
@@ -370,21 +305,14 @@ class TaskQueueAdapter(ITaskQueuePort):
                 "priority": priority,
             }
 
-<<<<<<< HEAD
-=======
             # Publish message
->>>>>>> analysis/coordination
             await self._rabbitmq.publish(
                 message=json.dumps(message),
                 routing_key=queue_name,
                 properties={
                     "message_id": task_data["task_id"],
                     "priority": {"high": 9, "medium": 5, "low": 1}.get(priority, 5),
-<<<<<<< HEAD
-                    "expiration": str(task_data["timeout"] * 1000),
-=======
                     "expiration": str(task_data["timeout"] * 1000),  # milliseconds
->>>>>>> analysis/coordination
                 },
             )
 
@@ -397,12 +325,6 @@ class TaskQueueAdapter(ITaskQueuePort):
     async def _enqueue_redis_task(self, task_type: str, task_data: dict[str, Any], priority: str) -> None:
         """Enqueue task using Redis."""
         try:
-<<<<<<< HEAD
-            queue_key = f"identity:tasks:{priority}"
-            
-            await self._redis.lpush(queue_key, json.dumps(task_data))
-            
-=======
             # Create queue key based on priority
             queue_key = f"identity:tasks:{priority}"
             
@@ -410,7 +332,6 @@ class TaskQueueAdapter(ITaskQueuePort):
             await self._redis.lpush(queue_key, json.dumps(task_data))
             
             # Store task status
->>>>>>> analysis/coordination
             status_key = f"identity:task_status:{task_data['task_id']}"
             await self._redis.setex(
                 status_key,
@@ -435,10 +356,7 @@ class TaskQueueAdapter(ITaskQueuePort):
         try:
             task_id = task_data["task_id"]
             
-<<<<<<< HEAD
-=======
             # Store in local registry
->>>>>>> analysis/coordination
             self._task_registry[task_id] = {
                 "task_id": task_id,
                 "status": "queued",
@@ -480,10 +398,7 @@ class TaskQueueAdapter(ITaskQueuePort):
                 "checked_at": datetime.now(UTC).isoformat(),
             }
 
-<<<<<<< HEAD
-=======
             # Add additional info if available
->>>>>>> analysis/coordination
             if hasattr(result, "info") and result.info:
                 task_info["info"] = result.info
 
@@ -509,9 +424,6 @@ class TaskQueueAdapter(ITaskQueuePort):
 
         except Exception as e:
             logger.error(f"Error getting Redis task status for {task_id}: {e}")
-<<<<<<< HEAD
-            return None
-=======
             return None
 
     async def queue_custom_task(
@@ -627,4 +539,3 @@ class TaskQueueAdapter(ITaskQueuePort):
         if self._redis:
             return "redis"
         return "local"
->>>>>>> analysis/coordination

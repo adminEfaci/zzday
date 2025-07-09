@@ -1,18 +1,18 @@
 """Basic implementation of SessionValidationService."""
 
 import math
-from datetime import datetime, timedelta, UTC
-from typing import Any, TYPE_CHECKING
+from datetime import UTC, datetime, timedelta
+from typing import TYPE_CHECKING, Any
 
 from ..interfaces.services.session_validation_service import (
     ISessionValidationService,
-    SessionValidationResult,
-    SessionSecurityAssessment,
     LocationValidationResult,
     PrivilegeElevationResult,
     SessionExtensionResult,
+    SessionSecurityAssessment,
+    SessionValidationResult,
 )
-from ..value_objects import IpAddress, Geolocation
+from ..value_objects import Geolocation, IpAddress
 
 if TYPE_CHECKING:
     from ..aggregates.session import Session

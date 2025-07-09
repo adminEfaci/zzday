@@ -5,7 +5,6 @@ Handles preference updates and validation logic.
 """
 
 from typing import Any
-from uuid import UUID
 
 from app.modules.identity.domain.entities.user.preference import UserPreference
 from app.modules.identity.domain.entities.user.user_enums import Language
@@ -95,7 +94,7 @@ class UserPreferenceService:
     def _update_notification_setting(self, preference: UserPreference, key: str, value: Any) -> None:
         """Update notification setting with validation."""
         if not isinstance(value, dict):
-            raise ValueError("Notification settings must be dictionaries")
+            raise TypeError("Notification settings must be dictionaries")
         
         # Validate notification setting structure
         if "enabled" in value and not isinstance(value["enabled"], bool):

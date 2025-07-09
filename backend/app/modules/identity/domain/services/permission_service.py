@@ -8,12 +8,11 @@ or require external dependencies.
 import asyncio
 import re
 from abc import ABC, abstractmethod
-from typing import Any, List, Set
+from typing import Any
 from uuid import UUID
 
 from ..permission import Permission
 from ..role_enums import PermissionType, ResourceType
-from ...value_objects.permission_scope import PermissionScope
 
 
 class IPermissionRepository(ABC):
@@ -28,15 +27,15 @@ class IPermissionRepository(ABC):
         pass
     
     @abstractmethod
-    async def get_children(self, parent_id: UUID) -> List[Permission]:
+    async def get_children(self, parent_id: UUID) -> list[Permission]:
         pass
     
     @abstractmethod
-    async def get_descendants(self, parent_id: UUID) -> List[Permission]:
+    async def get_descendants(self, parent_id: UUID) -> list[Permission]:
         pass
     
     @abstractmethod
-    async def find_by_path_prefix(self, path_prefix: str) -> List[Permission]:
+    async def find_by_path_prefix(self, path_prefix: str) -> list[Permission]:
         pass
 
 
@@ -46,7 +45,7 @@ class PermissionHierarchyService:
     def __init__(self, permission_repo: IPermissionRepository):
         self._permission_repo = permission_repo
         self._lock = asyncio.Lock()
-        self._hierarchy_cache: dict[UUID, Set[UUID]] = {}
+        self._hierarchy_cache: dict[UUID, set[UUID]] = {}
         self._cache_lock = asyncio.Lock()
     
     async def validate_hierarchy_move(
@@ -70,7 +69,7 @@ class PermissionHierarchyService:
         if new_depth > 10:
             raise ValueError("Permission hierarchy too deep (max 10 levels)")
     
-    async def get_all_descendants(self, permission_id: UUID) -> Set[UUID]:
+    async def get_all_descendants(self, permission_id: UUID) -> set[UUID]:
         """Get all descendant permission IDs with caching."""
         async with self._cache_lock:
             if permission_id in self._hierarchy_cache:
@@ -86,8 +85,8 @@ class PermissionHierarchyService:
     
     async def get_effective_permissions(
         self, 
-        permission_ids: Set[UUID]
-    ) -> Set[Permission]:
+        permission_ids: set[UUID]
+    ) -> set[Permission]:
         """Get effective permissions including inherited ones."""
         effective = set()
         
@@ -143,7 +142,7 @@ class PermissionEvaluationService:
     
     async def evaluate_permission_request(
         self, 
-        user_permissions: Set[Permission],
+        user_permissions: set[Permission],
         requested_permission_code: str,
         context: dict[str, Any] | None = None
     ) -> bool:
@@ -174,7 +173,7 @@ class PermissionEvaluationService:
     
     async def _evaluate_permissions_uncached(
         self, 
-        user_permissions: Set[Permission],
+        user_permissions: set[Permission],
         requested_permission_code: str,
         context: dict[str, Any]
     ) -> bool:
@@ -195,7 +194,7 @@ class PermissionEvaluationService:
     
     def _create_cache_key(
         self, 
-        user_permissions: Set[Permission],
+        user_permissions: set[Permission],
         requested_permission_code: str,
         context: dict[str, Any]
     ) -> str:
@@ -206,8 +205,8 @@ class PermissionEvaluationService:
     
     async def find_conflicting_permissions(
         self, 
-        permissions: Set[Permission]
-    ) -> List[tuple[Permission, Permission]]:
+        permissions: set[Permission]
+    ) -> list[tuple[Permission, Permission]]:
         """Find permissions that conflict with each other using concurrent checks."""
         conflicts = []
         permission_list = list(permissions)
@@ -238,8 +237,8 @@ class PermissionEvaluationService:
     
     async def resolve_permission_implications(
         self, 
-        permissions: Set[Permission]
-    ) -> Set[Permission]:
+        permissions: set[Permission]
+    ) -> set[Permission]:
         """Resolve all implied permissions from a set of permissions."""
         resolved = set(permissions)
         
@@ -270,14 +269,11 @@ class PermissionEvaluationService:
             return True
         
         # Overlapping scopes with different constraints
-        if (perm1.scope and perm2.scope and 
-            perm1.scope.overlaps(perm2.scope) and
-            perm1.constraints != perm2.constraints):
-            return True
-        
-        return False
+        return (perm1.scope and perm2.scope and 
+                perm1.scope.overlaps(perm2.scope) and
+                perm1.constraints != perm2.constraints)
     
-    async def _find_wildcard_matches(self, wildcard_permission: Permission) -> Set[Permission]:
+    async def _find_wildcard_matches(self, wildcard_permission: Permission) -> set[Permission]:
         """Find all permissions that match a wildcard permission."""
         if not wildcard_permission.is_wildcard:
             return set()
@@ -386,7 +382,7 @@ class PermissionPolicyService:
     
     async def generate_policy_document(
         self, 
-        permissions: Set[Permission],
+        permissions: set[Permission],
         policy_format: str = "json"
     ) -> dict[str, Any]:
         """Generate policy document from permissions."""
@@ -405,8 +401,8 @@ class PermissionPolicyService:
     
     async def optimize_permission_set(
         self, 
-        permissions: Set[Permission]
-    ) -> Set[Permission]:
+        permissions: set[Permission]
+    ) -> set[Permission]:
         """Optimize permission set by removing redundant permissions using concurrent checks."""
         optimized = set()
         permission_list = list(permissions)
@@ -431,7 +427,7 @@ class PermissionPolicyService:
         # Find non-redundant permissions
         for i, permission in enumerate(permission_list):
             is_redundant = False
-            for j, other in enumerate(permission_list):
+            for j, _other in enumerate(permission_list):
                 if i != j and j in implications.get(i, set()):
                     is_redundant = True
                     break
@@ -448,7 +444,7 @@ class PermissionPolicyService:
     
     async def calculate_permission_risk_score(
         self, 
-        permissions: Set[Permission]
+        permissions: set[Permission]
     ) -> float:
         """Calculate risk score for a set of permissions."""
         total_risk = 0.0
@@ -510,9 +506,9 @@ class PermissionServiceFactory:
 # Export all services
 __all__ = [
     'IPermissionRepository',
+    'PermissionEvaluationService',
     'PermissionHierarchyService',
-    'PermissionEvaluationService', 
-    'PermissionValidationService',
     'PermissionPolicyService',
-    'PermissionServiceFactory'
+    'PermissionServiceFactory',
+    'PermissionValidationService'
 ]

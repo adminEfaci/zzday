@@ -8,7 +8,11 @@ from datetime import UTC, datetime, timedelta
 from typing import Any
 from uuid import UUID
 
-from ..aggregates.access_token import AccessToken, RefreshStrategy, TokenFamily, TokenStatus
+from ..aggregates.access_token import (
+    AccessToken,
+    RefreshStrategy,
+    TokenStatus,
+)
 
 
 class AccessTokenService:
@@ -94,19 +98,17 @@ class AccessTokenService:
             analysis["recommendations"].append("Consider token re-issuance")
         
         # Check family status
-        if token.refresh_strategy == RefreshStrategy.FAMILY and token.token_family:
-            if not token.token_family.is_active():
-                analysis["security_score"] = 0.0
-                analysis["warnings"].append("Token family compromised")
+        if token.refresh_strategy == RefreshStrategy.FAMILY and token.token_family and not token.token_family.is_active():
+            analysis["security_score"] = 0.0
+            analysis["warnings"].append("Token family compromised")
         
         # Check client context changes
         client_ip = security_context.get("ip_address")
-        client_fingerprint = security_context.get("client_fingerprint")
+        security_context.get("client_fingerprint")
         
-        if client_ip and hasattr(token, 'last_client_ip'):
-            if token.last_client_ip != client_ip:
-                analysis["security_score"] -= 0.1
-                analysis["warnings"].append("IP address changed")
+        if client_ip and hasattr(token, 'last_client_ip') and token.last_client_ip != client_ip:
+            analysis["security_score"] -= 0.1
+            analysis["warnings"].append("IP address changed")
         
         # Check suspicious activity score
         if token.suspicious_activity_score > 0.5:
@@ -150,7 +152,6 @@ class AccessTokenService:
         token.suspicious_activity_score += 0.1
         
         # Log security event (would be handled by application layer)
-        pass
     
     def _update_token_security_context(
         self,
@@ -274,7 +275,7 @@ class AccessTokenService:
         
         # Distribute rotations across 24-hour period
         time_slots = 24  # hourly slots
-        tokens_per_slot = len(tokens) // time_slots
+        len(tokens) // time_slots
         
         for i, token in enumerate(tokens):
             if token.refresh_strategy == RefreshStrategy.ROTATE:

@@ -285,13 +285,10 @@ async def configure_identity_dependencies(container: Container) -> None:
             name="security_event_repository",
             description="Security event repository implementation"
         ))
-    except ImportError:
-        await container.register(RegistrationRequest(
-            interface=type('ISecurityEventRepository', (), {}),
-            implementation=lambda: None,
-            lifetime=ServiceLifetime.SCOPED,
-            name="security_event_repository_placeholder"
-        ))
+
+    # NOTE: Application services should be registered in the application layer
+    # This infrastructure module should only register infrastructure concerns
+    # Application services are registered through the application dependency module
 
     # NOTE: Application services should be registered in the application layer
     # This infrastructure module should only register infrastructure concerns

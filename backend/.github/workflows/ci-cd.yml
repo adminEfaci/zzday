@@ -6,6 +6,9 @@ on:
   pull_request:
     branches: [ main, master, develop ]
   workflow_dispatch:
+  schedule:
+    - cron: '0 2 * * *'  # Run at 2 AM daily for health monitoring
+    - cron: '0 3 * * 0'  # Run at 3 AM on Sundays for dependency updates
 
 env:
   PYTHON_VERSION: '3.11'
@@ -215,6 +218,40 @@ jobs:
       run: |
         cd backend
         alembic upgrade head
+        
+    - name: Run Database Optimization Analysis
+      env:
+        DATABASE_URL: postgresql://test_user:test_password@localhost:5432/test_db
+        TESTING: true
+      run: |
+        cd backend
+        echo "Running database optimization analysis..."
+        python -c "
+        import asyncio
+        import sys
+        sys.path.insert(0, '.')
+        from app.core.infrastructure.database_optimizer import DatabaseOptimizer
+        from app.core.database import get_async_session
+        
+        async def run_optimization():
+            async with get_async_session() as session:
+                optimizer = DatabaseOptimizer(session)
+                missing_indexes = await optimizer.find_missing_indexes()
+                slow_queries = await optimizer.find_slow_queries()
+                
+                print(f'Database Optimization Results:')
+                print(f'Missing Indexes: {len(missing_indexes)}')
+                print(f'Slow Queries: {len(slow_queries)}')
+                
+                if len(missing_indexes) > 5:
+                    print('WARNING: Many missing indexes detected')
+                    exit(1)
+                if len(slow_queries) > 10:
+                    print('WARNING: Many slow queries detected')
+                    exit(1)
+        
+        asyncio.run(run_optimization())
+        "
 
     - name: Run Integration Tests
       env:
@@ -399,9 +436,61 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Run Performance Tests
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: Install UV package manager
       run: |
-        echo "Running performance tests..."
+        curl -LsSf https://astral.sh/uv/install.sh | sh
+        echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+
+    - name: Install dependencies
+      run: |
+        cd backend
+        uv pip install --system -r app/config/requirements/dev.txt
+
+    - name: Run Performance Tests with Locust
+      env:
+        DATABASE_URL: postgresql://test_user:test_password@localhost:5432/test_db
+        REDIS_URL: redis://localhost:6379/0
+      run: |
+        cd backend
+        echo "Running performance tests with Locust..."
+        python -m app.core.infrastructure.performance_tests --host $STAGING_URL --users 10 --spawn-rate 2 --run-time 60s --output-format json > performance-results/locust-results.json
+        
+    - name: Run Database Optimization Analysis
+      env:
+        DATABASE_URL: postgresql://test_user:test_password@localhost:5432/test_db
+      run: |
+        cd backend
+        echo "Running database optimization analysis..."
+        python scripts/run_database_optimization.py --output-dir performance-results/
+        
+    - name: Generate Performance Report
+      run: |
+        cd backend
+        echo "Generating performance analysis report..."
+        python -c "
+        import json
+        import os
+        if os.path.exists('performance-results/locust-results.json'):
+            with open('performance-results/locust-results.json', 'r') as f:
+                data = json.load(f)
+                print(f'Performance Test Results:')
+                print(f'Total Requests: {data.get(\"total_requests\", 0)}')
+                print(f'Failures: {data.get(\"failures\", 0)}')
+                print(f'Average Response Time: {data.get(\"avg_response_time\", 0)}ms')
+                print(f'95th Percentile: {data.get(\"p95_response_time\", 0)}ms')
+                if data.get('failures', 0) > data.get('total_requests', 1) * 0.05:
+                    print('ERROR: Failure rate exceeds 5%')
+                    exit(1)
+        "
+
+    - name: Run Traditional Performance Tests
+      run: |
+        echo "Running traditional performance tests..."
         # Add performance testing commands
         # docker run --rm -i grafana/k6:latest run - <tests/performance/load-test.js
         # artillery run tests/performance/load-test.yml
@@ -428,6 +517,35 @@ jobs:
       run: |
         echo "Running OWASP ZAP security tests..."
         # docker run -v $(pwd):/zap/wrk/:rw -t owasp/zap2docker-stable zap-baseline.py -t $STAGING_URL
+    
+    - name: Run Agent 3 Security Test Suite
+      env:
+        DATABASE_URL: postgresql://test_user:test_password@localhost:5432/test_db
+        REDIS_URL: redis://localhost:6379/0
+      run: |
+        cd backend
+        echo "Running comprehensive security test suite..."
+        python scripts/run_security_tests.py --base-url $STAGING_URL --format json,html --output-dir security-test-results/
+        
+    - name: Generate Security Report
+      run: |
+        cd backend
+        echo "Generating security analysis report..."
+        python -c "
+        import json
+        import os
+        if os.path.exists('security-test-results/'):
+            files = [f for f in os.listdir('security-test-results/') if f.endswith('.json')]
+            if files:
+                with open(f'security-test-results/{files[0]}', 'r') as f:
+                    data = json.load(f)
+                    print(f'Security Test Results:')
+                    print(f'Total Tests: {data.get(\"summary\", {}).get(\"total_tests\", 0)}')
+                    print(f'Critical Failures: {data.get(\"summary\", {}).get(\"critical_failures\", 0)}')
+                    print(f'High Failures: {data.get(\"summary\", {}).get(\"high_failures\", 0)}')
+                    if data.get('summary', {}).get('critical_failures', 0) > 0:
+                        exit(1)
+        "
 
     - name: Upload Security Test Results
       uses: actions/upload-artifact@v3
@@ -480,7 +598,120 @@ jobs:
         branch: automated-dependency-updates
         base: develop
 
-# Schedule for nightly builds and dependency updates
-# on:
-#   schedule:
-#     - cron: '0 2 * * *'  # Run at 2 AM daily
+  # Daily Health Monitoring
+  health-monitoring:
+    name: Daily Health Monitoring
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: monitor_password
+          POSTGRES_USER: monitor_user
+          POSTGRES_DB: monitor_db
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: Install UV package manager
+      run: |
+        curl -LsSf https://astral.sh/uv/install.sh | sh
+        echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+
+    - name: Install dependencies
+      run: |
+        cd backend
+        uv pip install --system -r app/config/requirements/dev.txt
+
+    - name: Run Database Migrations
+      env:
+        DATABASE_URL: postgresql://monitor_user:monitor_password@localhost:5432/monitor_db
+      run: |
+        cd backend
+        alembic upgrade head
+
+    - name: Generate Daily Health Report
+      env:
+        DATABASE_URL: postgresql://monitor_user:monitor_password@localhost:5432/monitor_db
+        REDIS_URL: redis://localhost:6379/0
+      run: |
+        cd backend
+        echo "Generating daily health report..."
+        python scripts/daily_health_report.py --output-dir health-reports/ --format both
+
+    - name: Run Security Health Check
+      env:
+        DATABASE_URL: postgresql://monitor_user:monitor_password@localhost:5432/monitor_db
+        REDIS_URL: redis://localhost:6379/0
+      run: |
+        cd backend
+        echo "Running security health check..."
+        python scripts/run_security_tests.py --base-url http://localhost:8000 --format json --output-dir health-reports/ --severity critical,high
+
+    - name: Run Database Optimization Check
+      env:
+        DATABASE_URL: postgresql://monitor_user:monitor_password@localhost:5432/monitor_db
+      run: |
+        cd backend
+        echo "Running database optimization check..."
+        python scripts/run_database_optimization.py --output-dir health-reports/ --fail-on-critical
+
+    - name: Upload Health Reports
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: daily-health-reports
+        path: backend/health-reports/
+
+    - name: Create Health Report Issue
+      if: failure()
+      uses: actions/github-script@v6
+      with:
+        script: |
+          github.rest.issues.create({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            title: `Daily Health Report - Issues Detected (${new Date().toISOString().split('T')[0]})`,
+            body: `
+            ## Daily Health Report Alert
+            
+            The daily health monitoring has detected issues that require attention.
+            
+            **Date:** ${new Date().toISOString().split('T')[0]}
+            **Workflow:** ${context.workflow}
+            **Run ID:** ${context.runId}
+            
+            Please check the workflow artifacts for detailed reports:
+            - Security test results
+            - Database optimization analysis  
+            - System health metrics
+            
+            **Action Required:** Review and address the identified issues.
+            `,
+            labels: ['health-monitoring', 'infrastructure', 'urgent']
+          })

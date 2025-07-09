@@ -1,0 +1,48 @@
+{
+  "total_checks": 8,
+  "passed": 5,
+  "failed": 3,
+  "success_rate": 62.5,
+  "results": [
+    {
+      "check": "security_test_script",
+      "status": "failed",
+      "message": "Script execution failed: Traceback (most recent call last):\n  File \"/Users/neuro/workspace2/app-codebase/cowork/agent3/backend/scripts/run_security_tests.py\", line 28, in <module>\n    from app.core.security.test_suite import SecurityTestSuite, run_security_tests\n  File \"/Users/neuro/workspace2/app-codebase/cowork/agent3/backend/app/core/__init__.py\", line 25, in <module>\n    from app.core.application.base import (\n  File \"/Users/neuro/workspace2/app-codebase/cowork/agent3/backend/app/core/application/__init__.py\", line 3, in <module>\n    from app.core.application.base import (\n  File \"/Users/neuro/workspace2/app-codebase/cowork/agent3/backend/app/core/application/base.py\", line 46, in <module>\n    from app.utils.validation import EmailValidator, UUIDValidator\n  File \"/Users/neuro/workspace2/app-codebase/cowork/agent3/backend/app/utils/__init__.py\", line 25, in <module>\n    from app.utils.crypto import (  # Enhanced cryptographic classes; Backward compatibility functions\n  File \"/Users/neuro/workspace2/app-codebase/cowork/agent3/backend/app/utils/crypto.py\", line 23, in <module>\n    from app.core.config import settings\n  File \"/Users/neuro/workspace2/app-codebase/cowork/agent3/backend/app/core/config.py\", line 160, in <module>\n    from app.modules.identity.domain.enums import MFAMethod, RiskLevel, UserRole\n  File \"/Users/neuro/workspace2/app-codebase/cowork/agent3/backend/app/modules/identity/domain/__init__.py\", line 55, in <module>\n    from .events import IdentityDomainEvent\n  File \"/Users/neuro/workspace2/app-codebase/cowork/agent3/backend/app/modules/identity/domain/events.py\", line 13, in <module>\n    from app.core.events.types import DomainEvent\n  File \"/Users/neuro/workspace2/app-codebase/cowork/agent3/backend/app/core/events/__init__.py\", line 38, in <module>\n    from app.core.events.bus import HybridEventBus, InMemoryEventBus\n  File \"/Users/neuro/workspace2/app-codebase/cowork/agent3/backend/app/core/events/bus.py\", line 298, in <module>\n    class InMemoryEventBus(EventBus):\n  File \"/Users/neuro/workspace2/app-codebase/cowork/agent3/backend/app/core/events/bus.py\", line 511, in InMemoryEventBus\n    self, event: DomainEvent, registration: \"EventRegistration\" | None\n                                            ~~~~~~~~~~~~~~~~~~~~^~~~~~\nTypeError: unsupported operand type(s) for |: 'str' and 'NoneType'\n"
+    },
+    {
+      "check": "database_optimizer_script",
+      "status": "failed",
+      "message": "Script execution failed: Traceback (most recent call last):\n  File \"/Users/neuro/workspace2/app-codebase/cowork/agent3/backend/scripts/run_database_optimization.py\", line 19, in <module>\n    from app.core.infrastructure.database_optimizer import DatabaseOptimizer\n  File \"/Users/neuro/workspace2/app-codebase/cowork/agent3/backend/app/core/__init__.py\", line 25, in <module>\n    from app.core.application.base import (\n  File \"/Users/neuro/workspace2/app-codebase/cowork/agent3/backend/app/core/application/__init__.py\", line 3, in <module>\n    from app.core.application.base import (\n  File \"/Users/neuro/workspace2/app-codebase/cowork/agent3/backend/app/core/application/base.py\", line 46, in <module>\n    from app.utils.validation import EmailValidator, UUIDValidator\n  File \"/Users/neuro/workspace2/app-codebase/cowork/agent3/backend/app/utils/__init__.py\", line 25, in <module>\n    from app.utils.crypto import (  # Enhanced cryptographic classes; Backward compatibility functions\n  File \"/Users/neuro/workspace2/app-codebase/cowork/agent3/backend/app/utils/crypto.py\", line 23, in <module>\n    from app.core.config import settings\n  File \"/Users/neuro/workspace2/app-codebase/cowork/agent3/backend/app/core/config.py\", line 160, in <module>\n    from app.modules.identity.domain.enums import MFAMethod, RiskLevel, UserRole\n  File \"/Users/neuro/workspace2/app-codebase/cowork/agent3/backend/app/modules/identity/domain/__init__.py\", line 55, in <module>\n    from .events import IdentityDomainEvent\n  File \"/Users/neuro/workspace2/app-codebase/cowork/agent3/backend/app/modules/identity/domain/events.py\", line 13, in <module>\n    from app.core.events.types import DomainEvent\n  File \"/Users/neuro/workspace2/app-codebase/cowork/agent3/backend/app/core/events/__init__.py\", line 38, in <module>\n    from app.core.events.bus import HybridEventBus, InMemoryEventBus\n  File \"/Users/neuro/workspace2/app-codebase/cowork/agent3/backend/app/core/events/bus.py\", line 298, in <module>\n    class InMemoryEventBus(EventBus):\n  File \"/Users/neuro/workspace2/app-codebase/cowork/agent3/backend/app/core/events/bus.py\", line 511, in InMemoryEventBus\n    self, event: DomainEvent, registration: \"EventRegistration\" | None\n                                            ~~~~~~~~~~~~~~~~~~~~^~~~~~\nTypeError: unsupported operand type(s) for |: 'str' and 'NoneType'\n"
+    },
+    {
+      "check": "performance_monitoring_imports",
+      "status": "passed",
+      "message": "Performance monitoring modules found"
+    },
+    {
+      "check": "monitoring_config",
+      "status": "passed",
+      "message": "Monitoring configuration found"
+    },
+    {
+      "check": "performance_monitoring",
+      "status": "passed",
+      "message": "Performance monitoring integration validated"
+    },
+    {
+      "check": "health_reporting_script",
+      "status": "failed",
+      "message": "Script execution failed: Traceback (most recent call last):\n  File \"/Users/neuro/workspace2/app-codebase/cowork/agent3/backend/scripts/daily_health_report.py\", line 20, in <module>\n    from app.core.monitoring.metrics import get_metrics_collector, get_metrics_exporter\n  File \"/Users/neuro/workspace2/app-codebase/cowork/agent3/backend/app/core/__init__.py\", line 25, in <module>\n    from app.core.application.base import (\n  File \"/Users/neuro/workspace2/app-codebase/cowork/agent3/backend/app/core/application/__init__.py\", line 3, in <module>\n    from app.core.application.base import (\n  File \"/Users/neuro/workspace2/app-codebase/cowork/agent3/backend/app/core/application/base.py\", line 46, in <module>\n    from app.utils.validation import EmailValidator, UUIDValidator\n  File \"/Users/neuro/workspace2/app-codebase/cowork/agent3/backend/app/utils/__init__.py\", line 25, in <module>\n    from app.utils.crypto import (  # Enhanced cryptographic classes; Backward compatibility functions\n  File \"/Users/neuro/workspace2/app-codebase/cowork/agent3/backend/app/utils/crypto.py\", line 23, in <module>\n    from app.core.config import settings\n  File \"/Users/neuro/workspace2/app-codebase/cowork/agent3/backend/app/core/config.py\", line 160, in <module>\n    from app.modules.identity.domain.enums import MFAMethod, RiskLevel, UserRole\n  File \"/Users/neuro/workspace2/app-codebase/cowork/agent3/backend/app/modules/identity/domain/__init__.py\", line 55, in <module>\n    from .events import IdentityDomainEvent\n  File \"/Users/neuro/workspace2/app-codebase/cowork/agent3/backend/app/modules/identity/domain/events.py\", line 13, in <module>\n    from app.core.events.types import DomainEvent\n  File \"/Users/neuro/workspace2/app-codebase/cowork/agent3/backend/app/core/events/__init__.py\", line 38, in <module>\n    from app.core.events.bus import HybridEventBus, InMemoryEventBus\n  File \"/Users/neuro/workspace2/app-codebase/cowork/agent3/backend/app/core/events/bus.py\", line 298, in <module>\n    class InMemoryEventBus(EventBus):\n  File \"/Users/neuro/workspace2/app-codebase/cowork/agent3/backend/app/core/events/bus.py\", line 511, in InMemoryEventBus\n    self, event: DomainEvent, registration: \"EventRegistration\" | None\n                                            ~~~~~~~~~~~~~~~~~~~~^~~~~~\nTypeError: unsupported operand type(s) for |: 'str' and 'NoneType'\n"
+    },
+    {
+      "check": "cicd_schedule",
+      "status": "passed",
+      "message": "Scheduled jobs configured"
+    },
+    {
+      "check": "cicd_workflow",
+      "status": "passed",
+      "message": "CI/CD workflow integration validated"
+    }
+  ]
+}

@@ -146,8 +146,8 @@ class WebhookEndpoint(AggregateRoot):
                     prefix = int(parts[1])
                     if prefix < 0 or prefix > 32:
                         raise ValidationError(f"Invalid CIDR prefix: {prefix}")
-                except ValueError:
-                    raise ValidationError(f"Invalid CIDR prefix in: {ip}")
+                except ValueError as e:
+                    raise ValidationError(f"Invalid CIDR prefix in: {ip}") from e
 
             validated.append(ip)
 
@@ -659,6 +659,274 @@ class WebhookEndpoint(AggregateRoot):
 
         return data
 
+    def calculate_retry_delay(self, retry_count: int) -> int:
+        """Calculate delay for retry based on exponential backoff.
+        
+        Args:
+            retry_count: Current retry attempt (0-based)
+            
+        Returns:
+            Delay in seconds
+        """
+        initial_delay = self.retry_policy.get("initial_delay_seconds", 60)
+        backoff_factor = self.retry_policy.get("backoff_factor", 2)
+        max_delay = self.retry_policy.get("max_delay_seconds", 3600)
+        
+        delay = initial_delay * (backoff_factor ** retry_count)
+        return min(delay, max_delay)
+    
+    def should_retry_webhook(self, retry_count: int, error_type: str) -> bool:
+        """Determine if webhook should be retried.
+        
+        Args:
+            retry_count: Current retry count
+            error_type: Type of error encountered
+            
+        Returns:
+            True if should retry
+        """
+        max_retries = self.retry_policy.get("max_retries", 3)
+        
+        # Don't retry if max retries exceeded
+        if retry_count >= max_retries:
+            return False
+        
+        # Don't retry for certain error types
+        non_retryable_errors = {
+            "validation_error",
+            "authentication_error", 
+            "permission_denied",
+            "bad_request",
+            "not_found"
+        }
+        
+        return error_type not in non_retryable_errors
+    
+    def validate_signature_advanced(
+        self, 
+        payload: bytes, 
+        signature: str,
+        timestamp: str | None = None,
+        tolerance_seconds: int = 300
+    ) -> tuple[bool, str]:
+        """Advanced signature validation with timestamp tolerance.
+        
+        Args:
+            payload: Raw payload bytes
+            signature: Received signature
+            timestamp: Optional timestamp header
+            tolerance_seconds: Timestamp tolerance in seconds
+            
+        Returns:
+            Tuple of (is_valid, error_reason)
+        """
+        if not self.signature_config:
+            return True, "No signature validation configured"
+        
+        # Check timestamp if provided
+        if timestamp:
+            try:
+                webhook_time = datetime.fromisoformat(timestamp.replace('Z', '+00:00'))
+                current_time = datetime.now(UTC)
+                time_diff = abs((current_time - webhook_time).total_seconds())
+                
+                if time_diff > tolerance_seconds:
+                    return False, f"Timestamp too old: {time_diff}s > {tolerance_seconds}s"
+            except ValueError:
+                return False, "Invalid timestamp format"
+        
+        # Validate signature
+        is_valid = self.signature_config.validate_signature(
+            payload=payload,
+            received_signature=signature,
+            headers={}
+        )
+        
+        return is_valid, "Valid signature" if is_valid else "Invalid signature"
+    
+    def get_health_metrics(self) -> dict[str, Any]:
+        """Get webhook endpoint health metrics.
+        
+        Returns:
+            Health metrics dictionary
+        """
+        total_requests = self.total_received
+        
+        return {
+            "is_healthy": self.is_active and self.success_rate >= 0.8,
+            "success_rate": round(self.success_rate, 3),
+            "total_requests": total_requests,
+            "total_processed": self.total_processed,
+            "total_failed": self.total_failed,
+            "avg_requests_per_day": self._calculate_avg_requests_per_day(),
+            "last_activity": self.last_received_at.isoformat() if self.last_received_at else None,
+            "days_since_last_activity": self._days_since_last_activity(),
+            "is_rate_limited": self._detect_rate_limiting(),
+            "estimated_recovery_time": self._estimate_recovery_time()
+        }
+    
+    def _calculate_avg_requests_per_day(self) -> float:
+        """Calculate average requests per day since creation."""
+        if not self.created_at:
+            return 0.0
+        
+        days_active = (datetime.now(UTC) - self.created_at).days
+        if days_active == 0:
+            days_active = 1  # At least one day
+        
+        return self.total_received / days_active
+    
+    def _days_since_last_activity(self) -> int:
+        """Calculate days since last webhook received."""
+        if not self.last_received_at:
+            return -1
+        
+        return (datetime.now(UTC) - self.last_received_at).days
+    
+    def _detect_rate_limiting(self) -> bool:
+        """Simple rate limiting detection based on failure patterns."""
+        # If more than 50% failures recently, might be rate limited
+        if self.total_received > 10:
+            recent_failure_rate = self.total_failed / self.total_received
+            return recent_failure_rate > 0.5
+        return False
+    
+    def _estimate_recovery_time(self) -> int:
+        """Estimate recovery time in seconds based on current state."""
+        if self.is_active and self.success_rate > 0.8:
+            return 0  # No recovery needed
+        
+        if self._detect_rate_limiting():
+            return 3600  # 1 hour typical rate limit reset
+        
+        if self.total_failed > 0:
+            return 300  # 5 minutes for other issues
+        
+        return 0
+    
+    def update_retry_policy(self, retry_policy: dict[str, Any]) -> None:
+        """Update retry policy with validation.
+        
+        Args:
+            retry_policy: New retry policy
+        """
+        # Validate retry policy
+        required_keys = ["max_retries", "initial_delay_seconds", "backoff_factor"]
+        for key in required_keys:
+            if key not in retry_policy:
+                raise ValidationError(f"Missing required retry policy key: {key}")
+        
+        # Validate values
+        if retry_policy["max_retries"] < 0 or retry_policy["max_retries"] > 10:
+            raise ValidationError("max_retries must be between 0 and 10")
+        
+        if retry_policy["initial_delay_seconds"] < 1:
+            raise ValidationError("initial_delay_seconds must be at least 1")
+        
+        if retry_policy["backoff_factor"] < 1:
+            raise ValidationError("backoff_factor must be at least 1")
+        
+        self.retry_policy = retry_policy
+        self.mark_modified()
+    
+    def get_webhook_analytics(self, days: int = 30) -> dict[str, Any]:
+        """Get webhook analytics for the past N days.
+        
+        Args:
+            days: Number of days to analyze
+            
+        Returns:
+            Analytics data
+        """
+        # In production, this would query actual webhook events
+        # For now, return basic calculated metrics
+        
+        return {
+            "period_days": days,
+            "total_webhooks": self.total_received,
+            "success_rate": self.success_rate,
+            "average_per_day": self._calculate_avg_requests_per_day(),
+            "most_common_errors": self._get_common_errors(),
+            "peak_hours": self._estimate_peak_hours(),
+            "recommendation": self._get_health_recommendation()
+        }
+    
+    def _get_common_errors(self) -> list[dict[str, Any]]:
+        """Get common error patterns (placeholder implementation)."""
+        # In production, would analyze actual error logs
+        if self.total_failed > 0:
+            return [
+                {"error": "connection_timeout", "count": max(1, self.total_failed // 2)},
+                {"error": "server_error", "count": max(1, self.total_failed // 3)}
+            ]
+        return []
+    
+    def _estimate_peak_hours(self) -> list[int]:
+        """Estimate peak hours based on patterns (placeholder)."""
+        # In production, would analyze actual timestamp patterns
+        return [9, 10, 14, 15, 16]  # Common business hours
+    
+    def _get_health_recommendation(self) -> str:
+        """Get health recommendation based on metrics."""
+        if not self.is_active:
+            return "Activate endpoint to start receiving webhooks"
+        
+        if self.success_rate < 0.5:
+            return "High failure rate - check endpoint configuration and retry policy"
+        
+        if self.success_rate < 0.8:
+            return "Consider increasing retry attempts or investigating frequent errors"
+        
+        if self._days_since_last_activity() > 7:
+            return "No recent activity - verify webhook is still needed"
+        
+        return "Endpoint operating normally"
+    
+    def simulate_webhook_load(self, requests_per_second: int, duration_seconds: int) -> dict[str, Any]:
+        """Simulate webhook load for capacity planning.
+        
+        Args:
+            requests_per_second: Expected requests per second
+            duration_seconds: Test duration
+            
+        Returns:
+            Load simulation results
+        """
+        total_requests = requests_per_second * duration_seconds
+        
+        # Estimate success rate under load
+        estimated_success_rate = min(0.95, self.success_rate)
+        if requests_per_second > 100:
+            estimated_success_rate *= 0.9  # Degradation under high load
+        
+        estimated_failures = int(total_requests * (1 - estimated_success_rate))
+        
+        return {
+            "load_scenario": {
+                "requests_per_second": requests_per_second,
+                "duration_seconds": duration_seconds,
+                "total_requests": total_requests
+            },
+            "estimated_results": {
+                "success_rate": estimated_success_rate,
+                "successful_requests": total_requests - estimated_failures,
+                "failed_requests": estimated_failures,
+                "average_retry_delay": self.calculate_retry_delay(1),
+                "peak_memory_usage_mb": max(100, total_requests * 0.1),
+                "recommendation": self._get_load_recommendation(requests_per_second)
+            }
+        }
+    
+    def _get_load_recommendation(self, requests_per_second: int) -> str:
+        """Get recommendation for load handling."""
+        if requests_per_second < 10:
+            return "Current configuration should handle this load well"
+        if requests_per_second < 50:
+            return "Consider monitoring closely and having retry policies ready"
+        if requests_per_second < 100:
+            return "High load - ensure adequate infrastructure and consider rate limiting"
+        return "Very high load - implement batching, queuing, and circuit breakers"
+    
     def __str__(self) -> str:
         """String representation."""
         status = "active" if self.is_active else "inactive"

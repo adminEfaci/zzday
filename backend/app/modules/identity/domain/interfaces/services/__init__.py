@@ -42,6 +42,7 @@ from .security import (
 
 # User domain service interfaces
 from .user_authentication_service import IUserAuthenticationService
+from .session_validation_service import ISessionValidationService
 
 __all__ = [
     'IAnalyticsPort',
@@ -70,5 +71,6 @@ __all__ = [
     'IThreatIntelligenceService',
     'ITokenGenerator',
     # User domain services
-    'IUserAuthenticationService'
+    'IUserAuthenticationService',
+    'ISessionValidationService'
 ]

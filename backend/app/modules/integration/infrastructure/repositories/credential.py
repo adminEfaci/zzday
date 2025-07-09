@@ -18,6 +18,7 @@ from app.modules.integration.domain.enums import AuthType
 from app.modules.integration.domain.value_objects import AuthMethod
 from app.modules.integration.infrastructure.models import CredentialModel
 from app.modules.integration.infrastructure.security import CredentialEncryptionService
+from app.core.infrastructure.repository import BaseRepository
 
 
 class CredentialRepository(BaseRepository[ApiCredential, CredentialModel]):

@@ -9,6 +9,7 @@ from typing import List
 from uuid import UUID
 
 from app.models.outbox_event import OutboxEvent
+from typing import List, Optional, Dict, Any
 
 
 class OutboxRepository(ABC):

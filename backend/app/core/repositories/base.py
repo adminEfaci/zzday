@@ -574,6 +574,7 @@ class RepositoryFactory(IRepositoryFactory):
     def create_unit_of_work(self) -> IUnitOfWork:
         """Create unit of work instance."""
         from app.core.repositories.transaction import UnitOfWork
+from app.core.infrastructure.repository import BaseRepository
 
         return UnitOfWork(self)
 

@@ -247,6 +247,10 @@ class BaseUnitOfWork(IUnitOfWork, ABC):
         self._committed = False
         self._rolled_back = False
         self._start_time: datetime | None = None
+        
+        # Transaction coordination
+        self._transaction_id: str | None = None
+        self._compensation_enabled = True
 
         logger.debug(
             "Unit of Work initialized",
@@ -371,14 +375,15 @@ class BaseUnitOfWork(IUnitOfWork, ABC):
 
     async def commit(self) -> None:
         """
-        Commit database changes and store collected events in outbox.
+        Commit database changes and publish collected events with enhanced coordination.
 
-        Implements simple two-phase commit:
+        Implements improved two-phase commit with transaction coordination:
         1. Prepare phase: Validate events and database state
-        2. Commit phase: Atomically commit database and store events in outbox
+        2. Commit phase: Atomically commit database and coordinate events
+        3. Cleanup phase: Handle any post-commit coordination
 
-        Events are stored in outbox for eventual processing by background worker.
-        This eliminates split-brain scenarios where database commits but events fail.
+        Events are published with transaction metadata to enable compensation
+        if needed. Includes retry logic and better error recovery.
 
         Raises:
             TransactionError: If database commit fails
@@ -397,11 +402,14 @@ class BaseUnitOfWork(IUnitOfWork, ABC):
             # Phase 1: Prepare - validate state and events
             await self._prepare_commit()
 
-            # Phase 2: Store events in outbox within same transaction
-            await self._store_events_in_outbox()
+            # Phase 2: Commit database changes with coordination
+            await self._commit_database_with_coordination()
 
-            # Phase 3: Commit database changes (includes outbox events)
-            await self._commit_database_changes()
+            # Phase 3: Publish events with transaction coordination
+            await self._publish_collected_events()
+
+            # Phase 4: Finalize commit
+            await self._finalize_commit()
 
             self._committed = True
 
@@ -414,7 +422,7 @@ class BaseUnitOfWork(IUnitOfWork, ABC):
 
             logger.info(
                 "Unit of Work committed successfully",
-                events_stored=events_count,
+                events_published=events_count,
                 duration_seconds=commit_duration,
             )
 
@@ -428,6 +436,23 @@ class BaseUnitOfWork(IUnitOfWork, ABC):
             metrics.unit_of_work_failures.labels(type="database").inc()
             await self.rollback()
             raise TransactionError(f"Database commit failed: {e}")
+            
+        except EventPublishingError as e:
+            # Database is committed, but events failed - this is a consistency issue
+            logger.exception(
+                "Event publishing failed after database commit - consistency issue",
+                error=str(e),
+                events_collected=events_count,
+            )
+            
+            # Mark as committed since database succeeded
+            self._committed = True
+            
+            # Track the consistency issue
+            metrics.unit_of_work_failures.labels(type="consistency").inc()
+            
+            # Re-raise to let calling code handle the consistency issue
+            raise
 
         except Exception as e:
             logger.exception(

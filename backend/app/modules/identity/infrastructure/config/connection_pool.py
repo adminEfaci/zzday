@@ -190,9 +190,8 @@ class ConnectionPoolManager:
         """Test database connection."""
         try:
             async with self.get_session() as session:
-                from app.core.constants import HEALTH_CHECK_QUERY
                 from sqlalchemy import text
-                result = await session.execute(text(HEALTH_CHECK_QUERY))
+                result = await session.execute(text("SELECT 1"))
                 result.scalar()
                 
         except Exception as e:
@@ -305,9 +304,8 @@ class ConnectionPoolManager:
         # Check connection
         try:
             async with self.get_session() as session:
-                from app.core.constants import HEALTH_CHECK_QUERY
                 from sqlalchemy import text
-                result = await session.execute(text(HEALTH_CHECK_QUERY))
+                result = await session.execute(text("SELECT 1"))
                 result.scalar()
                 
             health_status["checks"]["connection"] = {

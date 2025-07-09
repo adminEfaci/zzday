@@ -11,6 +11,7 @@ from typing import Any
 from uuid import UUID, uuid4
 
 from ...entities.user.user_events import BackupCodeGenerated, BackupCodeUsed, MFAEnabled
+from ...shared.base_entity import IdentityAggregate, SecurityValidationMixin
 from ..enums import MFAMethod
 from ..events import (
     MFACodeVerificationFailed,
@@ -18,7 +19,6 @@ from ..events import (
     MFADeviceDisabled,
     MFADeviceVerified,
 )
-from ...shared.base_entity import IdentityAggregate, SecurityValidationMixin
 
 
 # Create missing value object classes locally
@@ -230,16 +230,15 @@ class MFADevice(IdentityAggregate, SecurityValidationMixin):
             # For TOTP, check if code is 6 digits
             # In production, would use pyotp library to verify against secret
             return len(code) == 6 and code.isdigit()
-        elif self.method == MFAMethod.SMS:
+        if self.method == MFAMethod.SMS:
             # For SMS, would check against stored code sent to phone
             # This is a simplified check
             return len(code) == 6 and code.isdigit()
-        elif self.method == MFAMethod.EMAIL:
+        if self.method == MFAMethod.EMAIL:
             # For email, would check against stored code sent to email
             return len(code) == 6 and code.isdigit()
-        else:
-            # For other methods, basic validation
-            return len(code) >= 6
+        # For other methods, basic validation
+        return len(code) >= 6
     
     def generate_backup_codes(self, count: int = 8) -> list[str]:
         """Generate backup codes."""
@@ -359,6 +358,173 @@ class MFADevice(IdentityAggregate, SecurityValidationMixin):
             "is_locked": self.is_locked()
         }
     
+    def unlock(self, unlocked_by: UUID | None = None) -> None:
+        """Manually unlock a locked device."""
+        if not self.is_locked():
+            return
+        
+        self.locked_until = None
+        self.failed_attempts = 0
+        
+        # Add unlock event if needed
+        self.add_domain_event({
+            "type": "MFADeviceUnlocked",
+            "device_id": self.id,
+            "user_id": self.user_id,
+            "unlocked_by": unlocked_by or self.user_id,
+            "unlocked_at": datetime.now(UTC)
+        })
+    
+    def rotate_secret(self) -> str:
+        """Rotate the device secret for enhanced security."""
+        if self.method not in [MFAMethod.TOTP]:
+            raise ValueError(f"Secret rotation not supported for {self.method.value}")
+        
+        self.secret = MFASecret.generate_totp()
+        
+        # Emit secret rotated event
+        self.add_domain_event({
+            "type": "MFASecretRotated",
+            "device_id": self.id,
+            "user_id": self.user_id,
+            "method": self.method.value,
+            "rotated_at": datetime.now(UTC)
+        })
+        
+        return self.secret.value
+    
+    def calculate_trust_score(self) -> float:
+        """Calculate device trust score based on usage patterns."""
+        score = 1.0
+        
+        # Factor 1: Verification status
+        if not self.verified:
+            score *= 0.5
+        
+        # Factor 2: Usage frequency
+        if self.last_used:
+            days_since_use = (datetime.now(UTC) - self.last_used).days
+            if days_since_use > 30:
+                score *= 0.8
+            elif days_since_use > 90:
+                score *= 0.6
+        else:
+            score *= 0.7
+        
+        # Factor 3: Failed attempts
+        if self.failed_attempts > 0:
+            score *= max(0.5, 1.0 - (self.failed_attempts * 0.1))
+        
+        # Factor 4: Device age
+        device_age_days = (datetime.now(UTC) - self.created_at).days
+        if device_age_days > 180:
+            score *= 1.1  # Bonus for long-standing devices
+        elif device_age_days < 7:
+            score *= 0.9  # Slight penalty for very new devices
+        
+        # Factor 5: Primary device bonus
+        if self.is_primary:
+            score *= 1.2
+        
+        return min(1.0, max(0.0, score))
+    
+    def should_require_reverification(self) -> bool:
+        """Check if device should be reverified based on security policy."""
+        # Require reverification if not used for 90 days
+        if self.last_used:
+            days_inactive = (datetime.now(UTC) - self.last_used).days
+            if days_inactive > 90:
+                return True
+        
+        # Require reverification if trust score is low
+        if self.calculate_trust_score() < 0.5:
+            return True
+        
+        # Require reverification after multiple failed attempts
+        return self.failed_attempts >= 3
+    
+    def update_phone_number(self, new_phone: str, verified_by: UUID) -> None:
+        """Update phone number for SMS device."""
+        if self.method != MFAMethod.SMS:
+            raise ValueError("Phone number can only be updated for SMS devices")
+        
+        old_phone = self.phone_number
+        self.phone_number = new_phone
+        self.verified = False  # Require reverification with new number
+        
+        self.add_domain_event({
+            "type": "MFAPhoneNumberUpdated",
+            "device_id": self.id,
+            "user_id": self.user_id,
+            "old_phone": old_phone,
+            "new_phone": new_phone,
+            "updated_by": verified_by,
+            "updated_at": datetime.now(UTC)
+        })
+    
+    def update_email(self, new_email: str, verified_by: UUID) -> None:
+        """Update email for email-based MFA device."""
+        if self.method != MFAMethod.EMAIL:
+            raise ValueError("Email can only be updated for email devices")
+        
+        old_email = self.email
+        self.email = new_email
+        self.verified = False  # Require reverification with new email
+        
+        self.add_domain_event({
+            "type": "MFAEmailUpdated",
+            "device_id": self.id,
+            "user_id": self.user_id,
+            "old_email": old_email,
+            "new_email": new_email,
+            "updated_by": verified_by,
+            "updated_at": datetime.now(UTC)
+        })
+    
+    def can_be_primary(self) -> bool:
+        """Check if device can be set as primary based on business rules."""
+        if not self.verified:
+            return False
+        
+        if self.is_locked():
+            return False
+        
+        # SMS and Email methods might not be allowed as primary
+        # depending on security policy
+        if self.method in [MFAMethod.SMS, MFAMethod.EMAIL]:
+            # Could check organization policy here
+            pass
+        
+        return True
+    
+    def estimate_time_until_unlock(self) -> timedelta | None:
+        """Get estimated time until device is unlocked."""
+        if not self.is_locked() or not self.locked_until:
+            return None
+        
+        remaining = self.locked_until - datetime.now(UTC)
+        return remaining if remaining > timedelta(0) else timedelta(0)
+    
+    def regenerate_single_backup_code(self, old_code: str) -> str | None:
+        """Regenerate a single used backup code."""
+        # Find and remove the used code
+        for i, code in enumerate(self.backup_codes):
+            if code.value == old_code and code.is_used:
+                self.backup_codes.pop(i)
+                new_code = BackupCode.generate()
+                self.backup_codes.append(new_code)
+                
+                self.add_domain_event({
+                    "type": "BackupCodeRegenerated",
+                    "device_id": self.id,
+                    "user_id": self.user_id,
+                    "regenerated_at": datetime.now(UTC)
+                })
+                
+                return new_code.value
+        
+        return None
+    
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for serialization."""
         return {
@@ -373,5 +539,6 @@ class MFADevice(IdentityAggregate, SecurityValidationMixin):
             "created_at": self.created_at.isoformat(),
             "last_used": self.last_used.isoformat() if self.last_used else None,
             "failed_attempts": self.failed_attempts,
-            "locked_until": self.locked_until.isoformat() if self.locked_until else None
+            "locked_until": self.locked_until.isoformat() if self.locked_until else None,
+            "trust_score": self.calculate_trust_score()
         }

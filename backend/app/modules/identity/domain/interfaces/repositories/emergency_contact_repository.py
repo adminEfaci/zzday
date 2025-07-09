@@ -4,8 +4,11 @@ Domain contract for emergency contact data access that must be implemented by th
 """
 
 from abc import abstractmethod
-from typing import Protocol
+from typing import TYPE_CHECKING, Protocol
 from uuid import UUID
+
+if TYPE_CHECKING:
+    from app.modules.identity.domain.entities.admin.emergency_contact import EmergencyContact
 
 
 class IEmergencyContactRepository(Protocol):
@@ -120,6 +123,15 @@ class IEmergencyContactRepository(Protocol):
             
         Returns:
             True if set as primary, False if not found
+        """
+        ...
+    
+    @abstractmethod
+    async def save(self, contact: 'EmergencyContact') -> None:
+        """Save emergency contact entity (create or update).
+        
+        Args:
+            contact: Emergency contact entity to save
         """
         ...
     

@@ -104,12 +104,14 @@ class SQLSessionRepository(SQLRepository[DomainSession, SessionModel], ISessionR
         
         await self.session.commit()
     
-    async def delete(self, session_id: UUID) -> None:
+    async def delete(self, session_id: UUID) -> bool:
         """Delete session by ID."""
         model = await self.session.get(SessionModel, session_id)
         if model:
             await self.session.delete(model)
             await self.session.commit()
+            return True
+        return False
     
     async def delete_by_user(self, user_id: UUID) -> int:
         """Delete all sessions for user."""

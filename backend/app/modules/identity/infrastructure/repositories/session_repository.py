@@ -9,7 +9,7 @@ from typing import Any
 from uuid import UUID
 
 from sqlmodel import Session, select, and_, or_, col, func
-from app.core.infrastructure.repository import SQLRepository
+from app.core.infrastructure.repository import BaseRepository
 from app.modules.identity.domain.entities.session.session import Session as DomainSession
 from app.modules.identity.domain.entities.session.session_enums import SessionStatus, SessionType
 from app.modules.identity.domain.interfaces.repositories.session.session_repository import ISessionRepository
@@ -20,7 +20,7 @@ from app.modules.identity.domain.value_objects.user_agent import UserAgent
 from app.modules.identity.domain.value_objects.device_fingerprint import DeviceFingerprint
 
 
-class SQLSessionRepository(SQLRepository[DomainSession, SessionModel], ISessionRepository):
+class SQLSessionRepository(BaseRepository[DomainSession, SessionModel], ISessionRepository):
     """SQLModel implementation of session repository."""
     
     def __init__(self, session: Session):

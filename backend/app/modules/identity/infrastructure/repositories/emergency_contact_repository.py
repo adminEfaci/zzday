@@ -9,7 +9,7 @@ from typing import Any
 from uuid import UUID, uuid4
 
 from sqlmodel import Session, select, and_, or_, col, func
-from app.core.infrastructure.repository import SQLRepository
+from app.core.infrastructure.repository import BaseRepository
 from app.modules.identity.domain.entities.admin.emergency_contact import EmergencyContact
 from app.modules.identity.domain.enums import ContactRelationship
 from app.modules.identity.domain.interfaces.repositories.emergency_contact_repository import IEmergencyContactRepository
@@ -19,7 +19,7 @@ from app.shared.value_objects.phone import PhoneNumber
 from app.shared.value_objects.address import Address
 
 
-class SQLEmergencyContactRepository(SQLRepository[EmergencyContact, EmergencyContactModel], IEmergencyContactRepository):
+class SQLEmergencyContactRepository(BaseRepository[EmergencyContact, EmergencyContactModel], IEmergencyContactRepository):
     """SQLModel implementation of emergency contact repository."""
     
     def __init__(self, session: Session):

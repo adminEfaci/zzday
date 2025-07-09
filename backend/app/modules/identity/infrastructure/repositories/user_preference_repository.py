@@ -9,13 +9,13 @@ from typing import Any
 from uuid import UUID, uuid4
 
 from sqlmodel import Session, select, and_, or_, col, func
-from app.core.infrastructure.repository import SQLRepository
+from app.core.infrastructure.repository import BaseRepository
 from app.modules.identity.domain.entities.user.preference import UserPreference
 from app.modules.identity.domain.interfaces.repositories.user_preference_repository import IUserPreferenceRepository
 from app.modules.identity.infrastructure.models.user_preference_model import UserPreferenceModel
 
 
-class SQLUserPreferenceRepository(SQLRepository[UserPreference, UserPreferenceModel], IUserPreferenceRepository):
+class SQLUserPreferenceRepository(BaseRepository[UserPreference, UserPreferenceModel], IUserPreferenceRepository):
     """SQLModel implementation of user preference repository."""
     
     def __init__(self, session: Session):

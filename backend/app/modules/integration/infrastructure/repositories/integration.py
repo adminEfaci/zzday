@@ -18,6 +18,7 @@ from app.modules.integration.domain.aggregates import Integration
 from app.modules.integration.domain.enums import ConnectionStatus, IntegrationType
 from app.modules.integration.domain.value_objects import ApiEndpoint, RateLimitConfig
 from app.modules.integration.infrastructure.models import IntegrationModel
+from app.core.infrastructure.repository import BaseRepository
 
 
 class IntegrationRepository(BaseRepository[Integration, IntegrationModel]):

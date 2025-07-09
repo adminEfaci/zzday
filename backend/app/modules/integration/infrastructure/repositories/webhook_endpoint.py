@@ -20,6 +20,7 @@ from app.modules.integration.domain.value_objects import (
     WebhookSignature,
 )
 from app.modules.integration.infrastructure.models import (
+from app.core.infrastructure.repository import BaseRepository
     WebhookEndpointModel,
     WebhookEventModel,
 )

@@ -9,7 +9,7 @@ from typing import Any
 from uuid import UUID
 
 from sqlmodel import Session, select, and_, or_, col, func
-from app.core.infrastructure.repository import SQLRepository
+from app.core.infrastructure.repository import BaseRepository
 from app.modules.identity.domain.aggregates.group import Group, GroupMember, GroupName
 from app.modules.identity.domain.interfaces.repositories.group_repository import IGroupRepository
 from app.modules.identity.infrastructure.models.group_model import GroupModel, GroupMemberModel
@@ -20,7 +20,7 @@ from app.modules.identity.domain.aggregates.group import (
 )
 
 
-class SQLGroupRepository(SQLRepository[Group, GroupModel], IGroupRepository):
+class SQLGroupRepository(BaseRepository[Group, GroupModel], IGroupRepository):
     """SQLModel implementation of group repository."""
     
     def __init__(self, session: Session):

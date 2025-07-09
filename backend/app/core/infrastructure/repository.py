@@ -1736,6 +1736,7 @@ class SQLRepository(BaseRepository[TEntity, TId]):
             try:
                 # Import here to avoid circular imports
                 from sqlmodel import select, func
+from app.core.infrastructure.repository import BaseRepository
                 
                 stmt = select(func.count(self.model_type.id))
                 result = await self.session.exec(stmt)

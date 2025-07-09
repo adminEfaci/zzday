@@ -10,7 +10,7 @@ from uuid import UUID
 
 from sqlmodel import Session, and_, col, func, or_, select
 
-from app.core.infrastructure.repository import SQLRepository
+from app.core.infrastructure.repository import BaseRepository
 from app.modules.identity.domain.entities.role.role import Role
 from app.modules.identity.domain.interfaces.repositories.role_repository import IRoleRepository
 from app.modules.identity.infrastructure.models.role_model import (
@@ -20,7 +20,7 @@ from app.modules.identity.infrastructure.models.role_model import (
 )
 
 
-class SQLRoleRepository(SQLRepository[Role, RoleModel], IRoleRepository):
+class SQLRoleRepository(BaseRepository[Role, RoleModel], IRoleRepository):
     """SQLModel implementation of role repository."""
     
     def __init__(self, session: Session):

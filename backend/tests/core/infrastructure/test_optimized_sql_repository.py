@@ -612,6 +612,7 @@ class TestOptimizedSQLRepositoryIntegration:
         
         # Batch save
         import time
+from typing import List, Optional, Dict, Any
         start = time.time()
         saved_users = await repository.save_batch(users)
         batch_time = time.time() - start

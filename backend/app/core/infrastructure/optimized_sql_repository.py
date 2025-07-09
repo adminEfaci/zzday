@@ -36,6 +36,8 @@ from app.core.errors import ConflictError, InfrastructureError
 from app.core.infrastructure.cache_coordinator import CacheCoordinator
 from app.core.infrastructure.repository import BaseRepository, TEntity, TId, TModel
 from app.core.logging import get_logger
+from typing import List, Optional, Dict, Any
+from uuid import UUID
 
 logger = get_logger(__name__)
 

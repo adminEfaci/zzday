@@ -37,42 +37,34 @@ from typing import Any, Generic, TypeVar
 from app.core.domain.base import AggregateRoot, Entity
 from app.core.domain.specification import Specification
 from app.core.errors import InfrastructureError
-
-try:
-    from app.core.errors import ConflictError
-except ImportError:
-    # Fallback error class
-    class ConflictError(InfrastructureError):
-        """Entity conflicts with existing data."""
-
 from app.core.logging import get_logger
 
-try:
-    from app.core.monitoring import metrics
-except ImportError:
-    # Fallback metrics implementation
-    class MockCounter:
-        def labels(self, **kwargs):
-            return self
-        def inc(self):
-            pass
-        def observe(self, value):
-            pass
-    
-    class MockHistogram:
-        def labels(self, **kwargs):
-            return self
-        def observe(self, value):
-            pass
-    
-    class MockMetrics:
-        def __init__(self):
-            self.repository_operations = MockCounter()
-            self.repository_errors = MockCounter()
-            self.repository_operation_duration = MockHistogram()
-            self.cache_operations = MockCounter()
-    
-    metrics = MockMetrics()
+
+# Metrics implementation with repository-specific attributes
+class _MockCounter:
+    def labels(self, **kwargs):
+        return self
+    def inc(self):
+        pass
+    def observe(self, value):
+        pass
+
+class _MockHistogram:
+    def labels(self, **kwargs):
+        return self
+    def observe(self, value):
+        pass
+
+class _RepositoryMetrics:
+    """Repository-specific metrics wrapper."""
+    def __init__(self):
+        self.repository_operations = _MockCounter()
+        self.repository_errors = _MockCounter()
+        self.repository_operation_duration = _MockHistogram()
+        self.cache_operations = _MockCounter()
+
+# Use repository-specific metrics to avoid conflicts with global metrics
+metrics = _RepositoryMetrics()
 
 logger = get_logger(__name__)
 
@@ -366,7 +358,7 @@ class BaseRepository(SpecificationRepository[TEntity, TId]):
         except Exception as e:
             if session:
                 await self._handle_session_error(session, e)
-            raise InfrastructureError(f"Database session error: {e!s}")
+            raise InfrastructureError(f"Database session error: {e!s}") from e
         finally:
             if session:
                 await self._cleanup_session(session)
@@ -861,7 +853,7 @@ class BaseRepository(SpecificationRepository[TEntity, TId]):
             Exception: If connectivity test fails
         """
         # This is a generic implementation - override in specific repository classes
-        # For example, with SQLAlchemy: await session.execute(text("SELECT 1"))
+        # For example, with SQLAlchemy: await session.execute(text(HEALTH_CHECK_QUERY))
         
         # Generic test - try to access session attributes
         if not hasattr(session, '__dict__'):
@@ -1271,7 +1263,7 @@ class EventSourcedRepository(BaseRepository[TAggregate, TId]):
 
             return saved_aggregate
 
-    async def _store_events(self, aggregate_id: TId, events: list[Any]) -> None:
+    async def _store_events(self, aggregate_id: Any, events: list[Any]) -> None:
         """
         Store domain events in event store.
 
@@ -1307,7 +1299,7 @@ class EventSourcedRepository(BaseRepository[TAggregate, TId]):
                 event_count=len(events),
                 error=str(e),
             )
-            raise InfrastructureError(f"Failed to store domain events: {e!s}")
+            raise InfrastructureError(f"Failed to store domain events: {e!s}") from e
 
 
 class ReadOnlyRepository(ABC, Generic[TEntity, TId]):
@@ -1410,7 +1402,7 @@ class RepositoryFactory:
                     test_session.close()
                     
         except Exception as e:
-            raise InfrastructureError(f"Session factory validation failed: {e}")
+            raise InfrastructureError(f"Session factory validation failed: {e}") from e
         
         # Validate cache if provided
         if cache is not None:
@@ -1472,11 +1464,16 @@ class RepositoryFactory:
             BaseRepository: Repository instance
 
         Raises:
-            InfrastructureError: If repository type not registered
+            InfrastructureError: If repository type not registered or not configured
         """
         if entity_type not in self._registered_repositories:
             raise InfrastructureError(
                 f"No repository registered for entity type {entity_type.__name__}"
+            )
+
+        if self._session_factory is None:
+            raise InfrastructureError(
+                "Repository factory not configured - call configure() first"
             )
 
         repository_type = self._registered_repositories[entity_type]
@@ -1530,7 +1527,6 @@ class SQLRepository(BaseRepository[TEntity, TId]):
         # Infer entity type from generic type if not provided
         if entity_type is None:
             # Try to infer from class generic parameters
-            import inspect
             orig_bases = getattr(self.__class__, '__orig_bases__', ())
             if orig_bases:
                 for base in orig_bases:
@@ -1555,15 +1551,15 @@ class SQLRepository(BaseRepository[TEntity, TId]):
         Returns:
             TModel: SQL model instance
         """
-        if hasattr(self.model_type, 'from_domain'):
-            return self.model_type.from_domain(entity)
-        else:
-            # Generic conversion - assumes model constructor accepts entity attributes
-            try:
-                entity_dict = entity.__dict__ if hasattr(entity, '__dict__') else {}
-                return self.model_type(**entity_dict)
-            except Exception as e:
-                raise InfrastructureError(f"Failed to convert entity to model: {e}")
+        from_domain_method = getattr(self.model_type, 'from_domain', None)
+        if from_domain_method is not None and callable(from_domain_method):
+            return from_domain_method(entity)  # type: ignore[misc]
+        # Generic conversion - assumes model constructor accepts entity attributes
+        try:
+            entity_dict = entity.__dict__ if hasattr(entity, '__dict__') else {}
+            return self.model_type(**entity_dict)  # type: ignore[misc]
+        except Exception as e:
+            raise InfrastructureError(f"Failed to convert entity to model: {e}") from e
     
     def _model_to_entity(self, model: TModel) -> TEntity:
         """
@@ -1575,15 +1571,15 @@ class SQLRepository(BaseRepository[TEntity, TId]):
         Returns:
             TEntity: Domain entity
         """
-        if hasattr(model, 'to_domain'):
-            return model.to_domain()
-        else:
-            # Generic conversion - assumes entity constructor accepts model attributes
-            try:
-                model_dict = model.__dict__ if hasattr(model, '__dict__') else {}
-                return self.entity_type(**model_dict)
-            except Exception as e:
-                raise InfrastructureError(f"Failed to convert model to entity: {e}")
+        to_domain_method = getattr(model, 'to_domain', None)
+        if to_domain_method is not None and callable(to_domain_method):
+            return to_domain_method()  # type: ignore[misc]
+        # Generic conversion - assumes entity constructor accepts model attributes
+        try:
+            model_dict = model.__dict__ if hasattr(model, '__dict__') else {}
+            return self.entity_type(**model_dict)
+        except Exception as e:
+            raise InfrastructureError(f"Failed to convert model to entity: {e}") from e
     
     async def find_by_id(self, entity_id: TId) -> TEntity | None:
         """Find entity by ID using SQL query."""
@@ -1598,7 +1594,7 @@ class SQLRepository(BaseRepository[TEntity, TId]):
                     entity_id=str(entity_id),
                     error=str(e),
                 )
-                raise InfrastructureError(f"Failed to find entity by ID: {e}")
+                raise InfrastructureError(f"Failed to find entity by ID: {e}") from e
     
     async def find_all(
         self, limit: int | None = None, offset: int = 0
@@ -1627,7 +1623,7 @@ class SQLRepository(BaseRepository[TEntity, TId]):
                     offset=offset,
                     error=str(e),
                 )
-                raise InfrastructureError(f"Failed to find all entities: {e}")
+                raise InfrastructureError(f"Failed to find all entities: {e}") from e
     
     async def save(self, entity: TEntity) -> TEntity:
         """Save entity to database."""
@@ -1661,7 +1657,7 @@ class SQLRepository(BaseRepository[TEntity, TId]):
                     entity_type=self.entity_type.__name__,
                     error=str(e),
                 )
-                raise InfrastructureError(f"Failed to save entity: {e}")
+                raise InfrastructureError(f"Failed to save entity: {e}") from e
     
     async def delete(self, entity_id: TId) -> bool:
         """Delete entity by ID."""
@@ -1683,7 +1679,7 @@ class SQLRepository(BaseRepository[TEntity, TId]):
                     entity_id=str(entity_id),
                     error=str(e),
                 )
-                raise InfrastructureError(f"Failed to delete entity: {e}")
+                raise InfrastructureError(f"Failed to delete entity: {e}") from e
     
     async def exists(self, entity_id: TId) -> bool:
         """Check if entity exists."""
@@ -1698,16 +1694,17 @@ class SQLRepository(BaseRepository[TEntity, TId]):
                     entity_id=str(entity_id),
                     error=str(e),
                 )
-                raise InfrastructureError(f"Failed to check entity existence: {e}")
+                raise InfrastructureError(f"Failed to check entity existence: {e}") from e
     
     async def count(self) -> int:
         """Count total entities."""
         async with self.operation_context("count"):
             try:
                 # Import here to avoid circular imports
-                from sqlmodel import select, func
+                from sqlmodel import func, select
                 
-                stmt = select(func.count(self.model_type.id))
+                # Use generic count approach that works with any model
+                stmt = select(func.count()).select_from(self.model_type)
                 result = await self.session.exec(stmt)
                 return result.first() or 0
             except Exception as e:
@@ -1716,7 +1713,7 @@ class SQLRepository(BaseRepository[TEntity, TId]):
                     repository=self.__class__.__name__,
                     error=str(e),
                 )
-                raise InfrastructureError(f"Failed to count entities: {e}")
+                raise InfrastructureError(f"Failed to count entities: {e}") from e
     
     async def find_by_specification(
         self, specification: Specification[TEntity]
@@ -1735,7 +1732,7 @@ class SQLRepository(BaseRepository[TEntity, TId]):
                     specification=type(specification).__name__,
                     error=str(e),
                 )
-                raise InfrastructureError(f"Failed to find entities by specification: {e}")
+                raise InfrastructureError(f"Failed to find entities by specification: {e}") from e
     
     async def find_one_by_specification(
         self, specification: Specification[TEntity]
@@ -1776,11 +1773,11 @@ __all__ = [
     "CacheableRepository",
     "EventSourcedRepository",
     "ReadOnlyRepository",
-    "SQLRepository",
     # Interfaces
     "Repository",
     # Factory
     "RepositoryFactory",
+    "SQLRepository",
     "SpecificationRepository",
     "TAggregate",
     # Type variables

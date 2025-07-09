@@ -9,9 +9,6 @@ from uuid import UUID
 
 from app.core.cqrs import Command, CommandHandler
 from app.core.infrastructure import UnitOfWork
-from app.modules.identity.domain.interfaces.services.infrastructure.cache_port import ICachePort as ICacheService
-from app.modules.identity.domain.interfaces.services.security.geolocation_service import IGeolocationService
-from app.modules.identity.domain.interfaces.repositories.session_repository import ISessionRepository
 from app.modules.identity.application.decorators import (
     audit_action,
     rate_limit,
@@ -23,7 +20,20 @@ from app.modules.identity.application.dtos.response import (
 )
 from app.modules.identity.domain.entities import Session
 from app.modules.identity.domain.enums import AuditAction
+from app.modules.identity.domain.interfaces.repositories.session_repository import (
+    ISessionRepository,
+)
+from app.modules.identity.domain.interfaces.services.infrastructure.cache_port import (
+    ICachePort as ICacheService,
+)
+from app.modules.identity.domain.interfaces.services.security.geolocation_service import (
+    IGeolocationService,
+)
 from app.modules.identity.domain.services import SecurityService
+from app.modules.identity.domain.interfaces.services import (
+    ICachePort,
+    IDeviceFingerprintService,
+)
 
 
 class GetActiveSessionsCommand(Command[ActiveSessionsResponse]):

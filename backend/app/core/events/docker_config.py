@@ -13,6 +13,7 @@ Design Features:
 """
 
 import os
+from datetime import datetime
 from typing import Any
 
 import asyncpg
@@ -213,7 +214,9 @@ class DockerEventSystemInitializer:
         
         try:
             # Import PostgreSQL event store
-            from app.modules.identity.infrastructure.events.store.postgresql_event_store import PostgreSQLEventStore
+            from app.modules.identity.infrastructure.events.store.postgresql_event_store import (
+                PostgreSQLEventStore,
+            )
             
             # Create event store instance
             event_store = PostgreSQLEventStore(
@@ -330,7 +333,7 @@ async def event_system_health_check() -> dict[str, Any]:
 # Export main functions
 __all__ = [
     "DockerEventSystemConfig",
-    "DockerEventSystemInitializer", 
-    "initialize_docker_event_system",
-    "event_system_health_check"
+    "DockerEventSystemInitializer",
+    "event_system_health_check",
+    "initialize_docker_event_system"
 ]

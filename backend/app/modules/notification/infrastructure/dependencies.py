@@ -14,8 +14,12 @@ async def configure_notification_dependencies(container: Container) -> None:
     # Try to import and register notification services with fallbacks
     try:
         # Core notification services
-        from app.modules.notification.domain.interfaces.repositories import INotificationRepository
-        from app.modules.notification.infrastructure.repositories.notification_repository import NotificationRepository
+        from app.modules.notification.domain.interfaces.repositories import (
+            INotificationRepository,
+        )
+        from app.modules.notification.infrastructure.repositories.notification_repository import (
+            NotificationRepository,
+        )
         
         await container.register(RegistrationRequest(
             interface=INotificationRepository,
@@ -36,8 +40,12 @@ async def configure_notification_dependencies(container: Container) -> None:
 
     try:
         # Notification services
-        from app.modules.notification.domain.interfaces.services import INotificationService
-        from app.modules.notification.application.services.notification_service import NotificationService
+        from app.modules.notification.application.services.notification_service import (
+            NotificationService,
+        )
+        from app.modules.notification.domain.interfaces.services import (
+            INotificationService,
+        )
         
         await container.register(RegistrationRequest(
             interface=INotificationService,
@@ -57,7 +65,9 @@ async def configure_notification_dependencies(container: Container) -> None:
 
     try:
         # Email notification services
-        from app.modules.notification.application.services.email_service import EmailService
+        from app.modules.notification.application.services.email_service import (
+            EmailService,
+        )
         from app.modules.notification.domain.interfaces.services import IEmailService
         
         await container.register(RegistrationRequest(
@@ -78,7 +88,9 @@ async def configure_notification_dependencies(container: Container) -> None:
 
     try:
         # Push notification services
-        from app.modules.notification.application.services.push_service import PushService
+        from app.modules.notification.application.services.push_service import (
+            PushService,
+        )
         from app.modules.notification.domain.interfaces.services import IPushService
         
         await container.register(RegistrationRequest(

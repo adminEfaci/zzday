@@ -27,6 +27,7 @@ from ...schemas.inputs.mapping_inputs import (
     RouteInput,
 )
 from ...schemas.types.mapping_type import (
+from datetime import datetime, timezone
     DistanceMatrix,
     ElevationData,
     GeocodingResult,

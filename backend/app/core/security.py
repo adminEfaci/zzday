@@ -1352,6 +1352,96 @@ def create_security_service(config: SecurityConfig) -> SecurityService:
 # EXPORTS
 # =====================================================================================
 
+# =====================================================================================
+# MODULE-LEVEL CONVENIENCE FUNCTIONS
+# =====================================================================================
+
+# Global security service instance (created lazily)
+_security_service: SecurityService | None = None
+
+
+def _get_default_security_service() -> SecurityService:
+    """Get or create default security service instance."""
+    global _security_service
+    if _security_service is None:
+        from app.core.config import get_settings
+        settings = get_settings()
+        _security_service = SecurityService(settings.security)
+    return _security_service
+
+
+# Module-level convenience functions
+def hash_password(password: str) -> str:
+    """Hash password using default security configuration."""
+    return _get_default_security_service().hash_password(password)
+
+
+def verify_password(password: str, hashed: str) -> bool:
+    """Verify password against hash using default security configuration."""
+    return _get_default_security_service().verify_password(password, hashed)
+
+
+def create_access_token(
+    subject: str,
+    expires_delta: timedelta | None = None,
+    additional_claims: dict[str, Any] | None = None,
+) -> str:
+    """Create JWT access token using default security configuration."""
+    return _get_default_security_service().create_access_token(
+        subject, expires_delta, additional_claims
+    )
+
+
+def create_refresh_token(
+    subject: str,
+    expires_delta: timedelta | None = None,
+    additional_claims: dict[str, Any] | None = None,
+) -> str:
+    """Create JWT refresh token using default security configuration."""
+    return _get_default_security_service().create_refresh_token(
+        subject, expires_delta, additional_claims
+    )
+
+
+def decode_token(token: str) -> dict[str, Any]:
+    """Decode JWT token (access or refresh) using default security configuration."""
+    # Try access token first, then refresh token
+    try:
+        return _get_default_security_service().decode_access_token(token)
+    except (UnauthorizedError, SecurityError):
+        return _get_default_security_service().decode_refresh_token(token)
+
+
+def generate_secret_key() -> str:
+    """Generate a secure secret key."""
+    return _get_default_security_service().generate_secure_token(32)
+
+
+def generate_token(nbytes: int | None = None) -> str:
+    """Generate secure random token."""
+    return _get_default_security_service().generate_secure_token(nbytes)
+
+
+def generate_verification_code(length: int | None = None) -> str:
+    """Generate verification code."""
+    return _get_default_security_service().generate_verification_code(length)
+
+
+def is_token_expired(payload: dict[str, Any]) -> bool:
+    """Check if token payload is expired."""
+    return _get_default_security_service().token_service.is_token_expired(payload)
+
+
+def mask_email(email: str) -> str:
+    """Mask email address."""
+    return _get_default_security_service().mask_email(email)
+
+
+def mask_phone(phone: str) -> str:
+    """Mask phone number."""
+    return _get_default_security_service().mask_phone(phone)
+
+
 __all__ = [
     "CryptographyService",
     "MaskingService",
@@ -1363,4 +1453,16 @@ __all__ = [
     "TokenService",
     # Factory function
     "create_security_service",
+    # Module-level convenience functions
+    "hash_password",
+    "verify_password", 
+    "create_access_token",
+    "create_refresh_token",
+    "decode_token",
+    "generate_secret_key",
+    "generate_token",
+    "generate_verification_code",
+    "is_token_expired",
+    "mask_email",
+    "mask_phone",
 ]

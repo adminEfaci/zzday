@@ -10,12 +10,6 @@ from uuid import UUID
 from app.core.cqrs import Command, CommandHandler
 from app.core.events import EventBus
 from app.core.infrastructure import UnitOfWork
-from app.modules.identity.domain.interfaces.services.infrastructure.cache_port import ICachePort as ICacheService
-from app.modules.identity.domain.interfaces.repositories.mfa_challenge_repository import IMFAChallengeRepository
-from app.modules.identity.domain.interfaces.repositories.mfa_device_repository import IMFADeviceRepository
-from app.modules.identity.domain.interfaces.services.communication.notification_service import INotificationService
-from app.modules.identity.domain.interfaces.repositories.session_repository import ISessionRepository
-from app.modules.identity.domain.interfaces.repositories.user_repository import IUserRepository
 from app.modules.identity.application.decorators import (
     audit_action,
     rate_limit,
@@ -35,6 +29,66 @@ from app.modules.identity.domain.enums import (
     SessionStatus,
 )
 from app.modules.identity.domain.errors import InvalidOperationError
+
+# Service interface imports
+from app.modules.identity.domain.interfaces.services import (
+    IAccessRepository,
+    IAuditLogRepository,
+    IAuditService,
+    IAuthorizationRepository,
+    IAvatarGenerationService,
+    IBackupCodeRepository,
+    IBackupService,
+    IBreachDetectionService,
+    IBreachRepository,
+    ICachePort,
+    ICallService,
+    ICertificateRepository,
+    IComplianceRepository,
+    IConfigurationPort,
+    IContactTestRepository,
+    IDataOwnershipRepository,
+    IDeviceFingerprintService,
+    IDeviceManagementService,
+    IDevicePolicyRepository,
+    IEmailVerificationTokenRepository,
+    IEncryptionRepository,
+    IEscalationRepository,
+    IEvidenceRepository,
+    IFeatureFlagService,
+    IFileStorageService,
+    IForensicsRepository,
+    IImageProcessingService,
+    IIncidentRepository,
+    IKeyRepository,
+    ILocationHistoryRepository,
+    IMfaRepository,
+    IMonitoringRepository,
+    INotificationHistoryRepository,
+    IPasswordPolicyRepository,
+    IPasswordRepository,
+    IPasswordResetAttemptRepository,
+    IPasswordResetTokenRepository,
+    IPhoneService,
+    IPolicyRepository,
+    IPolicyTemplateRepository,
+    IPreferencesRepository,
+    IRateLimitService,
+    IRemoteWipeService,
+    IRiskAssessmentRepository,
+    IRiskRepository,
+    IRuleRepository,
+    ISecurityEventRepository,
+    ITemplateRepository,
+    IThreatRepository,
+    ITokenBlocklistService,
+    ITokenRepository,
+    ITrustAssessmentRepository,
+    IUserPermissionRepository,
+    IUserPreferencesRepository,
+    IUserRoleRepository,
+    IVerificationRepository,
+)
 from app.modules.identity.domain.events import MFAChallengeCompleted, MFAChallengeFailed
 from app.modules.identity.domain.exceptions import (
     InvalidVerificationCodeError,
@@ -42,6 +96,24 @@ from app.modules.identity.domain.exceptions import (
     MFADeviceNotFoundError,
     SessionNotFoundError,
     TooManyAttemptsError,
+)
+from app.modules.identity.domain.interfaces.repositories.mfa_challenge_repository import (
+    IMFAChallengeRepository,
+)
+from app.modules.identity.domain.interfaces.repositories.mfa_device_repository import (
+    IMFADeviceRepository,
+)
+from app.modules.identity.domain.interfaces.repositories.session_repository import (
+    ISessionRepository,
+)
+from app.modules.identity.domain.interfaces.repositories.user_repository import (
+    IUserRepository,
+)
+from app.modules.identity.domain.interfaces.services.communication.notification_service import (
+    INotificationService,
+)
+from app.modules.identity.domain.interfaces.services.infrastructure.cache_port import (
+    ICachePort as ICacheService,
 )
 from app.modules.identity.domain.services import (
     MFAService,

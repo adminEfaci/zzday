@@ -10,15 +10,26 @@ from uuid import UUID
 
 from app.core.cqrs import Command, CommandHandler
 from app.core.infrastructure import UnitOfWork
-from app.modules.identity.domain.interfaces.services.infrastructure.cache_port import ICachePort as ICacheService
-from app.modules.identity.domain.interfaces.repositories.password_history_repository import IPasswordHistoryRepository
-from app.modules.identity.domain.interfaces.repositories.user_repository import IUserRepository
 from app.modules.identity.application.decorators import rate_limit, validate_request
 from app.modules.identity.application.dtos.request import ValidatePasswordRequest
 from app.modules.identity.application.dtos.response import PasswordValidationResponse
 from app.modules.identity.domain.entities import PasswordPolicy, User
 from app.modules.identity.domain.exceptions import UserNotFoundError
+from app.modules.identity.domain.interfaces.repositories.password_history_repository import (
+    IPasswordHistoryRepository,
+)
+from app.modules.identity.domain.interfaces.repositories.user_repository import (
+    IUserRepository,
+)
+from app.modules.identity.domain.interfaces.services.infrastructure.cache_port import (
+    ICachePort as ICacheService,
+)
 from app.modules.identity.domain.services import PasswordService, SecurityService
+from app.modules.identity.domain.interfaces.services import (
+    IBreachDetectionService,
+    ICachePort,
+    IPasswordPolicyRepository,
+)
 
 
 class ValidatePasswordCommand(Command[PasswordValidationResponse]):

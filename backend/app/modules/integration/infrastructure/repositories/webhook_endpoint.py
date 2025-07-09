@@ -4,7 +4,7 @@ This module provides the repository for webhook endpoints with
 comprehensive query support and event management.
 """
 
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from typing import Any
 from uuid import UUID
 
@@ -20,6 +20,8 @@ from app.modules.integration.domain.value_objects import (
     WebhookSignature,
 )
 from app.modules.integration.infrastructure.models import (
+from sqlalchemy.exc import IntegrityError
+import json
     WebhookEndpointModel,
     WebhookEventModel,
 )

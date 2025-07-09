@@ -4,7 +4,7 @@ This entity manages recipient information, preferences, and delivery status
 across different notification channels.
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 from uuid import UUID
 
 from app.core.domain.base import Entity
@@ -16,6 +16,7 @@ from app.modules.notification.domain.enums import (
 )
 from app.modules.notification.domain.errors import RecipientBlockedError
 from app.modules.notification.domain.value_objects import RecipientAddress
+from typing import Any
 
 
 class NotificationRecipient(Entity):

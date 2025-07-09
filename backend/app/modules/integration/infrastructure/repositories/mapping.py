@@ -15,6 +15,8 @@ from app.core.infrastructure.repositories import BaseRepository
 from app.modules.integration.domain.entities import IntegrationMapping
 from app.modules.integration.domain.enums import MappingTransformation
 from app.modules.integration.infrastructure.models import MappingModel
+from datetime import datetime, timezone
+from sqlalchemy.exc import IntegrityError
 
 
 class MappingRepository(BaseRepository[IntegrationMapping, MappingModel]):

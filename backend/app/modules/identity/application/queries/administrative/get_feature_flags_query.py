@@ -7,13 +7,15 @@ from uuid import UUID
 
 from app.core.cqrs import Query, QueryHandler
 from app.core.infrastructure import UnitOfWork
-
 from app.modules.identity.application.decorators import (
     rate_limit,
     require_permission,
     validate_request,
 )
 from app.modules.identity.application.dtos.response import FeatureFlagsResponse
+from app.modules.identity.domain.interfaces.services import (
+    IConfigurationPort,
+)
 
 
 @dataclass

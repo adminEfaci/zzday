@@ -7,14 +7,21 @@ from uuid import UUID
 
 from app.core.cqrs import Query, QueryHandler
 from app.core.infrastructure import UnitOfWork
-from app.modules.identity.domain.interfaces.repositories.audit_repository import IAuditRepository
-from app.modules.identity.domain.interfaces.repositories.user_repository import IUserRepository
 from app.modules.identity.application.decorators import (
     rate_limit,
     require_permission,
     validate_request,
 )
 from app.modules.identity.application.dtos.response import TenantInfoResponse
+from app.modules.identity.domain.interfaces.repositories.audit_repository import (
+    IAuditRepository,
+)
+from app.modules.identity.domain.interfaces.repositories.user_repository import (
+from app.modules.identity.domain.interfaces.services import (
+    IConfigurationPort,
+)
+    IUserRepository,
+)
 
 
 @dataclass

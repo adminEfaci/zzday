@@ -11,6 +11,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.modules.notification.domain.entities.notification import Notification
 from app.modules.notification.domain.enums import DeliveryStatus
 from app.modules.notification.infrastructure.adapters.base import (
+import json
+import asyncio
     BaseChannelAdapter,
     ChannelAdapterError,
     DeliveryResult,

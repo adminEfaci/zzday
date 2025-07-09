@@ -12,10 +12,16 @@ from uuid import UUID
 
 from app.core.cqrs import Query, QueryHandler
 from app.core.infrastructure import UnitOfWork
-from app.modules.identity.domain.interfaces.repositories.user_repository import IUserRepository
 from app.modules.identity.application.decorators import rate_limit, validate_request
 from app.modules.identity.application.dtos.response import PermissionCheckResponse
 from app.modules.identity.domain.enums import AccessDecision
+from app.modules.identity.domain.interfaces.repositories.user_repository import (
+from app.modules.identity.domain.interfaces.services import (
+    IAuthorizationRepository,
+    IPolicyRepository,
+)
+    IUserRepository,
+)
 
 
 class PermissionContext(Enum):

@@ -149,8 +149,12 @@ class TransactionManager(ITransactionManager):
             # Attempt rollback on commit failure
             try:
                 await self.rollback_transaction(transaction_id)
-            except:
-                pass  # Rollback failure is logged separately
+            except Exception as rollback_error:
+                logger.error(
+                    "Rollback failed during commit cleanup",
+                    transaction_id=str(transaction_id),
+                    rollback_error=str(rollback_error),
+                )
 
             self._transaction_stats["failed_transactions"] += 1
             logger.exception(

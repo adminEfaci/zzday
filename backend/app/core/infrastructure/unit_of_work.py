@@ -95,7 +95,6 @@ from app.core.errors import InfrastructureError, ValidationError
 
 # Handle missing event system components
 try:
-    from app.core.events.bus import EventBus
     from app.core.events.types import DomainEvent
 except ImportError:
     from typing import Protocol
@@ -103,11 +102,17 @@ except ImportError:
     class DomainEvent(Protocol):
         """Fallback domain event protocol."""
         metadata: Any
+
+# Handle missing outbox repository
+try:
+    from app.repositories.outbox_repository import OutboxRepository
+except ImportError:
+    from typing import Protocol
     
-    class EventBus(Protocol):
-        """Fallback event bus protocol."""
-        async def publish(self, event: DomainEvent) -> None:
-            """Publish an event."""
+    class OutboxRepository(Protocol):
+        """Fallback outbox repository protocol."""
+        async def store_events(self, events: list[DomainEvent]) -> None:
+            """Store events in outbox."""
 
 from app.core.logging import get_logger
 
@@ -150,11 +155,6 @@ class TransactionError(UnitOfWorkError):
     retryable = True
 
 
-class EventPublishingError(UnitOfWorkError):
-    """Raised when event publishing fails during commit."""
-    
-    default_code = "EVENT_PUBLISHING_ERROR"
-    retryable = True
 
 
 class BaseUnitOfWork(IUnitOfWork, ABC):
@@ -215,17 +215,17 @@ class BaseUnitOfWork(IUnitOfWork, ABC):
     def __init__(
         self,
         session: AsyncSession,
-        event_bus: EventBus | None = None,
+        outbox_repo: OutboxRepository | None = None,
         enable_event_deduplication: bool = True,
         max_events_per_transaction: int = 1000,
     ):
         """
-        Initialize Unit of Work with database session and event bus.
+        Initialize Unit of Work with database session and outbox repository.
 
         Args:
             session: SQLAlchemy async session for database operations
-            event_bus: Optional event bus for publishing domain events
-            enable_event_deduplication: Prevent duplicate event publishing
+            outbox_repo: Optional outbox repository for event storage
+            enable_event_deduplication: Prevent duplicate event storage
             max_events_per_transaction: Safety limit for event collection
 
         Raises:
@@ -234,7 +234,7 @@ class BaseUnitOfWork(IUnitOfWork, ABC):
         self._validate_initialization(session, max_events_per_transaction)
 
         self.session = session
-        self.event_bus = event_bus
+        self.outbox_repo = outbox_repo
         self._enable_event_deduplication = enable_event_deduplication
         self._max_events_per_transaction = max_events_per_transaction
 
@@ -247,14 +247,10 @@ class BaseUnitOfWork(IUnitOfWork, ABC):
         self._committed = False
         self._rolled_back = False
         self._start_time: datetime | None = None
-        
-        # Transaction coordination
-        self._transaction_id: str | None = None
-        self._compensation_enabled = True
 
         logger.debug(
             "Unit of Work initialized",
-            has_event_bus=event_bus is not None,
+            has_outbox_repo=outbox_repo is not None,
             deduplication_enabled=enable_event_deduplication,
             max_events=max_events_per_transaction,
         )
@@ -375,19 +371,17 @@ class BaseUnitOfWork(IUnitOfWork, ABC):
 
     async def commit(self) -> None:
         """
-        Commit database changes and publish collected events with enhanced coordination.
+        Commit database changes and store collected events in outbox.
 
-        Implements improved two-phase commit with transaction coordination:
+        Implements simple two-phase commit:
         1. Prepare phase: Validate events and database state
-        2. Commit phase: Atomically commit database and coordinate events
-        3. Cleanup phase: Handle any post-commit coordination
+        2. Commit phase: Atomically commit database and store events in outbox
 
-        Events are published with transaction metadata to enable compensation
-        if needed. Includes retry logic and better error recovery.
+        Events are stored in outbox for eventual processing by background worker.
+        This eliminates split-brain scenarios where database commits but events fail.
 
         Raises:
             TransactionError: If database commit fails
-            EventPublishingError: If event publishing fails (database remains committed)
             UnitOfWorkError: If already committed or in invalid state
         """
         if self._committed:
@@ -403,14 +397,11 @@ class BaseUnitOfWork(IUnitOfWork, ABC):
             # Phase 1: Prepare - validate state and events
             await self._prepare_commit()
 
-            # Phase 2: Commit database changes with coordination
-            await self._commit_database_with_coordination()
+            # Phase 2: Store events in outbox within same transaction
+            await self._store_events_in_outbox()
 
-            # Phase 3: Publish events with transaction coordination
-            await self._publish_collected_events()
-
-            # Phase 4: Finalize commit
-            await self._finalize_commit()
+            # Phase 3: Commit database changes (includes outbox events)
+            await self._commit_database_changes()
 
             self._committed = True
 
@@ -423,7 +414,7 @@ class BaseUnitOfWork(IUnitOfWork, ABC):
 
             logger.info(
                 "Unit of Work committed successfully",
-                events_published=events_count,
+                events_stored=events_count,
                 duration_seconds=commit_duration,
             )
 
@@ -437,23 +428,6 @@ class BaseUnitOfWork(IUnitOfWork, ABC):
             metrics.unit_of_work_failures.labels(type="database").inc()
             await self.rollback()
             raise TransactionError(f"Database commit failed: {e}")
-            
-        except EventPublishingError as e:
-            # Database is committed, but events failed - this is a consistency issue
-            logger.exception(
-                "Event publishing failed after database commit - consistency issue",
-                error=str(e),
-                events_collected=events_count,
-            )
-            
-            # Mark as committed since database succeeded
-            self._committed = True
-            
-            # Track the consistency issue
-            metrics.unit_of_work_failures.labels(type="consistency").inc()
-            
-            # Re-raise to let calling code handle the consistency issue
-            raise
 
         except Exception as e:
             logger.exception(

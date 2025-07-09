@@ -103,7 +103,7 @@ class GetTenantInfoQueryHandler(QueryHandler[GetTenantInfoQuery, TenantInfoRespo
         """Get tenant configuration."""
         try:
             return await self.config_service.get_tenant_config(tenant_id)
-        except:
+        except (AttributeError, ConnectionError, FileNotFoundError, Exception):
             # Return default configuration
             return {
                 "default_tenant_id": "00000000-0000-0000-0000-000000000001",

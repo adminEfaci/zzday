@@ -109,7 +109,7 @@ class GetMaintenanceStatusQueryHandler(QueryHandler[GetMaintenanceStatusQuery, M
         """Get maintenance configuration."""
         try:
             return await self.config_service.get_maintenance_config()
-        except:
+        except (AttributeError, ConnectionError, FileNotFoundError, Exception):
             # Return default configuration
             return {
                 "enabled": True,

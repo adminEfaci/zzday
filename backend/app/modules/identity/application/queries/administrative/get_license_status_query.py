@@ -116,7 +116,7 @@ class GetLicenseStatusQueryHandler(QueryHandler[GetLicenseStatusQuery, LicenseSt
         """Get license configuration."""
         try:
             return await self.config_service.get_license_config()
-        except:
+        except (AttributeError, ConnectionError, FileNotFoundError, Exception):
             # Return default trial license
             return {
                 "key": "TRIAL-XXXX-XXXX-XXXX",
@@ -173,7 +173,7 @@ class GetLicenseStatusQueryHandler(QueryHandler[GetLicenseStatusQuery, LicenseSt
                     return LicenseStatus.GRACE_PERIOD
                 return LicenseStatus.EXPIRED
             return LicenseStatus.ACTIVE
-        except:
+        except (ValueError, TypeError, AttributeError):
             return LicenseStatus.INVALID
     
     def _mask_license_key(self, key: str) -> str:
@@ -198,7 +198,7 @@ class GetLicenseStatusQueryHandler(QueryHandler[GetLicenseStatusQuery, LicenseSt
             expiry_date = datetime.fromisoformat(expiry_date_str.replace('Z', '+00:00'))
             remaining = (expiry_date - datetime.now(UTC)).days
             return max(0, remaining)
-        except:
+        except (ValueError, TypeError, AttributeError):
             return None
     
     def _calculate_grace_period_end(self, config: dict[str, Any]) -> str | None:
@@ -215,7 +215,7 @@ class GetLicenseStatusQueryHandler(QueryHandler[GetLicenseStatusQuery, LicenseSt
             # Only return if currently expired
             if datetime.now(UTC) > expiry_date:
                 return grace_end.isoformat()
-        except:
+        except (ValueError, TypeError, AttributeError):
             pass
         
         return None

@@ -471,7 +471,7 @@ class GetThreatAnalysisQueryHandler(QueryHandler[GetThreatAnalysisQuery, ThreatA
                     threat_indicators = await self.threat_intel_service.get_threat_indicators(ip_obj)
                     if threat_indicators:
                         intel["reputation_data"][source_ip] = threat_indicators
-                except:
+                except (ValueError, AttributeError, ConnectionError, Exception):
                     pass
         
         # Add known threat information

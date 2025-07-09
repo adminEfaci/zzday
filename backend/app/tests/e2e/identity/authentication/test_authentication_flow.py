@@ -418,7 +418,7 @@ class TestAuthenticationE2E:
                         refreshToken
                     }
                 }
-            """
+            """,
             "variables": {
                 "refreshToken": refresh_token
             }

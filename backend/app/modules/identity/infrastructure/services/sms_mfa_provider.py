@@ -217,7 +217,7 @@ class SMSMFAProvider(IMFAProvider):
         # Check if SMS service is configured and operational
         try:
             return await self.sms_service.is_available()
-        except:
+        except (AttributeError, ConnectionError, Exception):
             return False
     
     def _format_message(self, code: str, user_identifier: str | None) -> str:

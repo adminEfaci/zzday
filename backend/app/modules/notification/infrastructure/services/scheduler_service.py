@@ -425,7 +425,7 @@ class SchedulerService:
         try:
             croniter(expression)
             return True
-        except:
+        except (ValueError, TypeError, ImportError):
             return False
 
     def _parse_cron_expression(self, expression: str) -> dict[str, Any]:

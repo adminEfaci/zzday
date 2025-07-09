@@ -47,6 +47,7 @@ from app.core.config import DatabaseConfig
 from app.core.enums import HealthStatus
 from app.core.errors import InfrastructureError
 from app.core.logging import get_logger
+from app.core.constants import HEALTH_CHECK_QUERY
 
 logger = get_logger(__name__)
 
@@ -163,7 +164,7 @@ class ConnectionManager:
 
         # Use engine for raw connections
         async with manager.get_connection() as conn:
-            result = await conn.execute(text("SELECT 1"))
+            result = await conn.execute(text(HEALTH_CHECK_QUERY))
 
         await manager.shutdown()
     """
@@ -405,7 +406,7 @@ class ConnectionManager:
             start_time = time.time()
 
             async with self.get_connection() as conn:
-                await conn.execute(text("SELECT 1"))
+                await conn.execute(text(HEALTH_CHECK_QUERY))
 
             check_time = time.time() - start_time
             self.metrics.health_check_count += 1
@@ -467,7 +468,7 @@ class ConnectionManager:
         """Test initial database connection."""
         try:
             async with self.get_connection() as conn:
-                await conn.execute(text("SELECT 1"))
+                await conn.execute(text(HEALTH_CHECK_QUERY))
 
             logger.info("Initial database connection test successful")
 
@@ -744,7 +745,7 @@ class HealthChecker:
             start_time = time.time()
 
             async with self.connection_manager.get_connection() as conn:
-                await conn.execute(text("SELECT 1"))
+                await conn.execute(text(HEALTH_CHECK_QUERY))
 
             response_time = time.time() - start_time
 

@@ -125,7 +125,7 @@ class GetBackupStatusQueryHandler(QueryHandler[GetBackupStatusQuery, BackupStatu
         """Get backup configuration."""
         try:
             return await self.config_service.get_backup_config()
-        except:
+        except (AttributeError, ConnectionError, FileNotFoundError, Exception):
             # Return default configuration if not available
             return {
                 "enabled": True,

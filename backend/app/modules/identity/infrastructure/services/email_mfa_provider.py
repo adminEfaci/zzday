@@ -240,7 +240,7 @@ class EmailMFAProvider(IMFAProvider):
         # Check if email service is configured and operational
         try:
             return await self.email_service.is_available()
-        except:
+        except (AttributeError, ConnectionError, Exception):
             return False
     
     def _create_email_html(self, code: str, user_identifier: str | None) -> str:
@@ -348,7 +348,7 @@ For support, contact: {self.support_email}
                 masked_local = local[:2] + '*' * (len(local) - 4) + local[-2:]
             
             return f"{masked_local}@{domain}"
-        except:
+        except (ValueError, IndexError, AttributeError):
             return "***@***"
     
     async def cleanup_expired_codes(self) -> int:

@@ -727,7 +727,9 @@ class AuditSessionRepository(BaseRepository[AuditSession, UUID]):
         """Test database connectivity."""
         from sqlalchemy import text
 
-        await session.execute(text("SELECT 1"))
+        async with session.begin():
+            from app.core.constants import HEALTH_CHECK_QUERY
+            await session.execute(text(HEALTH_CHECK_QUERY))
 
 
 __all__ = ["AuditSessionRepository"]

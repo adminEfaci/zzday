@@ -334,7 +334,7 @@ class CompressionService:
             try:
                 self._decompress_data(data[:1024], algo)
                 return algo
-            except:
+            except (ValueError, OSError, Exception):
                 continue
 
         raise ValueError("Unable to detect compression algorithm")

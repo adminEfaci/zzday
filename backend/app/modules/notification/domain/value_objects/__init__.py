@@ -580,7 +580,7 @@ class TemplateVariable(ValueObject):
         if self.format_pattern:
             try:
                 return self.format_pattern.format(value)
-            except:
+            except (ValueError, KeyError, TypeError):
                 pass
 
         # Default formatting based on type

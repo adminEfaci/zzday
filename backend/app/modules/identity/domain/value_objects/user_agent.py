@@ -326,7 +326,8 @@ class UserAgent(ValueObject):
                 min_version = min_versions.get(self.browser_type)
                 if min_version:
                     return major_version >= min_version
-            except:
+            except (ValueError, AttributeError, IndexError):
+                # Ignore version parsing errors
                 pass
         
         # Unknown browsers assumed not modern

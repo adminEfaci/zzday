@@ -1,6 +1,7 @@
 """GraphQL schemas for audit module."""
 
 from .enums import AuditCategoryEnum, AuditOutcomeEnum, AuditSeverityEnum, SortOrderEnum
+from .schema import AuditMutations, AuditQueries, AuditSubscriptions, audit_schema
 from .inputs.audit_create_input import AuditCreateInput
 from .inputs.audit_search_input import AuditFilterInput, AuditSearchInput
 from .inputs.compliance_check_input import ComplianceCheckInput
@@ -55,4 +56,9 @@ __all__ = [
     "ReportParametersInput",
     "SortOrderEnum",
     "TimelineEventType",
+    # Schema components
+    "AuditMutations",
+    "AuditQueries",
+    "AuditSubscriptions",
+    "audit_schema",
 ]

@@ -8,26 +8,26 @@ combining all queries, mutations, and subscriptions into a unified interface.
 import strawberry
 
 # Import mutation classes
-from .resolvers.mutations.admin_mutations import AdminMutations as AdminMutationResolvers
-from .resolvers.mutations.auth_mutations import AuthMutations as AuthMutationResolvers
-from .resolvers.mutations.role_mutations import RoleMutations as RoleMutationResolvers
-from .resolvers.mutations.security_mutations import SecurityMutations as SecurityMutationResolvers
-from .resolvers.mutations.user_mutations import UserMutations as UserMutationResolvers
+from ..resolvers.mutations.admin_mutations import AdminMutations as AdminMutationResolvers
+from ..resolvers.mutations.auth_mutations import AuthMutations as AuthMutationResolvers
+from ..resolvers.mutations.role_mutations import RoleMutations as RoleMutationResolvers
+from ..resolvers.mutations.security_mutations import SecurityMutations as SecurityMutationResolvers
+from ..resolvers.mutations.user_mutations import UserMutations as UserMutationResolvers
 
 # Import query classes
-from .resolvers.queries.administrative_queries import AdministrativeQueries
-from .resolvers.queries.permission_queries import PermissionQueries
-from .resolvers.queries.role_queries import RoleQueries
-from .resolvers.queries.security_queries import SecurityQueries
-from .resolvers.queries.session_queries import SessionQueries
-from .resolvers.queries.user_queries import UserQueries
+from ..resolvers.queries.administrative_queries import AdministrativeQueries
+from ..resolvers.queries.permission_queries import PermissionQueries
+from ..resolvers.queries.role_queries import RoleQueries
+from ..resolvers.queries.security_queries import SecurityQueries
+from ..resolvers.queries.session_queries import SessionQueries
+from ..resolvers.queries.user_queries import UserQueries
 
 # Import subscription classes
-from .resolvers.subscriptions.administrative_subscriptions import AdministrativeSubscriptions
-from .resolvers.subscriptions.audit_compliance_subscriptions import AuditComplianceSubscriptions
-from .resolvers.subscriptions.security_event_subscriptions import SecurityEventSubscriptions
-from .resolvers.subscriptions.session_management_subscriptions import SessionManagementSubscriptions
-from .resolvers.subscriptions.user_status_subscriptions import UserStatusSubscriptions
+from ..resolvers.subscriptions.administrative_subscriptions import AdministrativeSubscriptions
+from ..resolvers.subscriptions.audit_compliance_subscriptions import AuditComplianceSubscriptions
+from ..resolvers.subscriptions.security_event_subscriptions import SecurityEventSubscriptions
+from ..resolvers.subscriptions.session_management_subscriptions import SessionManagementSubscriptions
+from ..resolvers.subscriptions.user_status_subscriptions import UserStatusSubscriptions
 
 
 @strawberry.type

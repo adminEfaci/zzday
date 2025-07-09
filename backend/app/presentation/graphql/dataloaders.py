@@ -9,7 +9,7 @@ import logging
 from abc import abstractmethod
 from collections import defaultdict
 from collections.abc import Callable
-from typing import Any, Generic, Optional, TypeVar
+from typing import Any, Generic, TypeVar
 
 from strawberry.dataloader import DataLoader
 

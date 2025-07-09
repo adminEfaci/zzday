@@ -120,6 +120,14 @@ from .security_types import (
     SecurityEventUpdateInput,
 )
 
+# Schema components
+from .schema import (
+    IdentityMutations,
+    IdentityQueries,
+    IdentitySubscriptions,
+    identity_schema,
+)
+
 # User types
 from .user_types import (
     EmergencyContactInput,
@@ -256,4 +264,9 @@ __all__ = [
     "UserUpdateInput",
     "ValidationErrorType",
     "VerificationStatusEnum",
+    # Schema components
+    "IdentityMutations",
+    "IdentityQueries",
+    "IdentitySubscriptions",
+    "identity_schema",
 ]

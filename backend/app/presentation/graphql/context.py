@@ -6,7 +6,7 @@ Provides utilities for accessing context in GraphQL resolvers.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Optional, Union
+from typing import TYPE_CHECKING, Any
 
 from strawberry.types import Info
 
@@ -48,26 +48,26 @@ class GraphQLContext:
         return self.context.get("is_authenticated", False)
 
     @property
-    def container(self) -> "Container" | None:
+    def container(self) -> Container | None:
         """Get the dependency injection container."""
         return self.context.get("container")
 
     @property
-    def event_bus(self) -> "IEventBus" | None:
+    def event_bus(self) -> IEventBus | None:
         """Get the event bus instance."""
         return self.context.get("event_bus")
 
     @property
-    def cache_manager(self) -> "CacheManager" | None:
+    def cache_manager(self) -> CacheManager | None:
         """Get the cache manager instance."""
         return self.context.get("cache_manager")
     
     @property
-    def loaders(self) -> Optional["DataLoaderRegistry"]:
+    def loaders(self) -> DataLoaderRegistry | None:
         """Get the dataloader registry."""
         return self.context.get("loaders")
 
-    async def get_db_session(self) -> "AsyncSession":
+    async def get_db_session(self) -> AsyncSession:
         """
         Get a database session.
 

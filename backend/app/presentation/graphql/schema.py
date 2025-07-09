@@ -11,13 +11,18 @@ from typing import Any
 
 import strawberry
 
+from .caching import QueryCacheExtension, cache_manager
+from .middleware import create_graphql_extensions
+from .playground import DocumentationGenerator, PlaygroundConfig
+from .subscriptions import AuthenticatedSubscriptionHandler, subscription_manager
+
 logger = logging.getLogger(__name__)
 
 # Safe imports with fallbacks for modules that might not have presentation layers yet
 
 # Identity Module
 try:
-    from app.modules.identity.presentation.graphql.schema import (
+    from app.modules.identity.presentation.graphql.schemas.schema import (
         IdentityMutations,
         IdentityQueries,
     )
@@ -69,7 +74,7 @@ except ImportError as e:
 
 # Audit Module
 try:
-    from app.modules.audit.presentation.graphql.schema import (
+    from app.modules.audit.presentation.graphql.schemas.schema import (
         AuditMutations,
         AuditQueries,
         AuditSubscriptions,
@@ -293,12 +298,15 @@ def build_subscription_class():
 Subscription = build_subscription_class()
 
 
-def create_schema() -> strawberry.Schema:
+def create_schema(environment: str = "development") -> strawberry.Schema:
     """
     Create the main GraphQL schema with all module schemas combined.
 
+    Args:
+        environment: Deployment environment (development/production)
+
     Returns:
-        strawberry.Schema: The complete application schema
+        strawberry.Schema: The complete application schema with extensions
     """
     logger.info("Creating main GraphQL schema with all modules")
 
@@ -310,14 +318,27 @@ def create_schema() -> strawberry.Schema:
             f"Integration: {integration_available}"
         )
 
-        # Create schema with subscription support
+        # Create GraphQL extensions
+        extensions = create_graphql_extensions(
+            environment=environment,
+            enable_logging=True,
+            enable_performance=True,
+            enable_security=True,
+            enable_rate_limiting=True,
+        )
+
+        # Add cache extension
+        extensions.append(QueryCacheExtension(cache_manager))
+
+        # Create schema with subscription support and extensions
         schema = strawberry.Schema(
             query=Query,
             mutation=Mutation,
             subscription=Subscription,
+            extensions=extensions,
         )
 
-        logger.info("Main GraphQL schema created successfully")
+        logger.info("Main GraphQL schema created successfully with extensions")
         
     except Exception as e:
         logger.error(f"Failed to create GraphQL schema: {e}", exc_info=True)
@@ -336,6 +357,8 @@ async def get_context(request: Any, response: Any = None) -> dict:
     - Request and response objects
     - Database session factory
     - DataLoader registry for efficient data fetching
+    - Cache manager for query caching
+    - Subscription manager for real-time features
 
     Args:
         request: The incoming request object
@@ -352,6 +375,8 @@ async def get_context(request: Any, response: Any = None) -> dict:
         "response": response,
         "container": getattr(request.app.state, "container", None),
         "get_session": get_session,  # Pass the session factory, not an open session
+        "cache_manager": cache_manager,
+        "subscription_manager": subscription_manager,
     }
 
     # Add current user if authenticated
@@ -373,5 +398,82 @@ async def get_context(request: Any, response: Any = None) -> dict:
     return context
 
 
+async def initialize_graphql_components():
+    """
+    Initialize all GraphQL components (cache, subscriptions, etc.).
+    
+    This should be called during application startup.
+    """
+    logger.info("Initializing GraphQL components")
+    
+    # Start cache manager
+    await cache_manager.start()
+    logger.info("GraphQL cache manager started")
+    
+    # Start subscription manager
+    await subscription_manager.start()
+    logger.info("GraphQL subscription manager started")
+
+
+async def shutdown_graphql_components():
+    """
+    Shutdown all GraphQL components.
+    
+    This should be called during application shutdown.
+    """
+    logger.info("Shutting down GraphQL components")
+    
+    # Stop subscription manager
+    await subscription_manager.stop()
+    logger.info("GraphQL subscription manager stopped")
+    
+    # Stop cache manager
+    await cache_manager.stop()
+    logger.info("GraphQL cache manager stopped")
+
+
+def create_playground_config() -> PlaygroundConfig:
+    """
+    Create GraphQL Playground configuration.
+    
+    Returns:
+        PlaygroundConfig: Configured playground settings
+    """
+    return PlaygroundConfig(
+        endpoint="/graphql",
+        subscription_endpoint="/graphql/ws",
+        title="EzzDay GraphQL API",
+        enable_tabs=True,
+        enable_request_credentials=True,
+        theme="dark"
+    )
+
+
+def create_documentation_generator(schema: strawberry.Schema) -> DocumentationGenerator:
+    """
+    Create documentation generator for the schema.
+    
+    Args:
+        schema: The GraphQL schema to document
+        
+    Returns:
+        DocumentationGenerator: Documentation generator instance
+    """
+    return DocumentationGenerator(schema)
+
+
 # Export for main.py
-__all__ = ["Mutation", "Query", "Subscription", "create_schema", "get_context"]
+__all__ = [
+    "AuthenticatedSubscriptionHandler",
+    "Mutation",
+    "Query",
+    "Subscription",
+    "cache_manager",
+    "create_documentation_generator",
+    "create_playground_config",
+    "create_schema",
+    "get_context",
+    "initialize_graphql_components",
+    "shutdown_graphql_components",
+    "subscription_manager",
+]

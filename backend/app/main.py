@@ -24,7 +24,12 @@ from app.core.logging import configure_logging, get_logger
 from app.core.middleware.auth import AuthMiddleware, CoreAuthenticator
 from app.core.middleware.rate_limiter import RateLimitMiddleware
 from app.core.monitoring import register_metrics
-from app.presentation.graphql.schema import create_schema, get_context
+from app.presentation.graphql.schema import (
+    create_schema,
+    get_context,
+    initialize_graphql_components,
+    shutdown_graphql_components,
+)
 
 # Configure structured logging
 configure_logging()
@@ -272,6 +277,10 @@ async def lifespan(app: FastAPI) -> AsyncGenerator:
     await cache_manager.start()
     app.state.cache_manager = cache_manager
 
+    # Initialize GraphQL components
+    logger.info("Initializing GraphQL components")
+    await initialize_graphql_components()
+
     # Register Prometheus metrics
     register_metrics()
 
@@ -319,6 +328,13 @@ async def lifespan(app: FastAPI) -> AsyncGenerator:
         logger.info("Event bus stopped")
     except Exception as e:
         logger.exception("Error stopping event bus", error=str(e))
+
+    # Stop GraphQL components
+    try:
+        await shutdown_graphql_components()
+        logger.info("GraphQL components stopped")
+    except Exception as e:
+        logger.exception("Error stopping GraphQL components", error=str(e))
 
     # Stop cache manager
     try:
@@ -504,7 +520,7 @@ def create_app() -> FastAPI:
 
     # Mount GraphQL with enhanced context
     try:
-        schema = create_schema()
+        schema = create_schema(environment=settings.ENVIRONMENT.value)
 
         async def context_getter(request, response=None):
             """Enhanced context getter that includes all necessary dependencies."""

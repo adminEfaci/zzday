@@ -9,22 +9,23 @@ Tests cover:
 - Performance characteristics
 """
 
-import pytest
-import asyncio
-from datetime import datetime, timedelta, UTC
+from datetime import UTC, datetime, timedelta
 from uuid import uuid4
+
+import pytest
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
 
-from app.modules.identity.infrastructure.repositories.user_repository import SQLUserRepository
-from app.modules.identity.infrastructure.models.user_model import UserModel
+from app.core.infrastructure.database import Base
 from app.modules.identity.domain.aggregates.user import User
+from app.modules.identity.domain.enums import UserStatus, UserType
 from app.modules.identity.domain.value_objects.email import Email
-from app.modules.identity.domain.value_objects.username import Username
 from app.modules.identity.domain.value_objects.password_hash import PasswordHash
 from app.modules.identity.domain.value_objects.user_id import UserId
-from app.modules.identity.domain.enums import UserStatus, UserType
-from app.core.infrastructure.database import Base
+from app.modules.identity.domain.value_objects.username import Username
+from app.modules.identity.infrastructure.repositories.user_repository import (
+    SQLUserRepository,
+)
 
 
 @pytest.fixture(scope="function")

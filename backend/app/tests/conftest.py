@@ -8,32 +8,25 @@ Provides:
 - Common test data
 """
 
-import pytest
 import asyncio
-from typing import AsyncGenerator, Generator
-from datetime import datetime, UTC
-from unittest.mock import Mock, AsyncMock
+from collections.abc import AsyncGenerator, Generator
+from datetime import UTC, datetime
+from unittest.mock import AsyncMock, Mock
 
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
+import pytest
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.pool import NullPool
 
 from app.core.database import Base, get_db
-from app.core.config import get_settings
 from app.main import app
 from app.modules.identity.domain.entities.user import User
-from app.modules.identity.domain.value_objects.email import Email
-from app.modules.identity.domain.value_objects.password_hash import (
-    HashAlgorithm,
-    PasswordHash,
-)
-from app.modules.identity.domain.value_objects.security_stamp import SecurityStamp
 from app.modules.identity.infrastructure.models.user_model import UserModel
 from app.shared.domain.events.event_dispatcher import EventDispatcher
 
 # Test data builders - ADDED: Eliminate hardcoded test data
-from app.tests.builders import UserBuilder, SessionBuilder, EmailBuilder
-from app.tests.builders.user_builder import UserMother
+from app.tests.builders import EmailBuilder, SessionBuilder, UserBuilder
 from app.tests.builders.session_builder import SessionMother
+from app.tests.builders.user_builder import UserMother
 
 # Test Database Configuration
 TEST_DATABASE_URL = (

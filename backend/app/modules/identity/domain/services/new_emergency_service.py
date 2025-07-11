@@ -4,9 +4,8 @@ Emergency Contact Domain Service
 Handles emergency contact verification and management logic.
 """
 
-from datetime import datetime, UTC
+from datetime import UTC, datetime
 from typing import Any
-from uuid import UUID
 
 from app.modules.identity.domain.entities.user.emergency_contact import EmergencyContact
 from app.modules.identity.domain.value_objects import ContactInfo
@@ -121,20 +120,19 @@ class EmergencyContactService:
                 "message": "Verification call initiated",
                 "verification_token": "mock_token_123"
             }
-        elif method == "sms":
+        if method == "sms":
             return {
                 "success": True,
                 "message": "SMS verification code sent",
                 "verification_code": "123456"
             }
-        elif method == "email":
+        if method == "email":
             return {
                 "success": True,
                 "message": "Email verification sent",
                 "verification_link": "https://example.com/verify/token123"
             }
-        else:
-            return {
-                "success": False,
-                "message": f"Unsupported verification method: {method}"
-            }
+        return {
+            "success": False,
+            "message": f"Unsupported verification method: {method}"
+        }

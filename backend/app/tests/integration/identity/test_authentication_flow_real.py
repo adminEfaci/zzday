@@ -6,7 +6,6 @@ Tests actual system behavior end-to-end with no mocks.
 """
 
 import asyncio
-from uuid import uuid4
 
 import pytest
 

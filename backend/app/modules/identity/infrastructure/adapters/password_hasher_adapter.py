@@ -13,8 +13,10 @@ from app.core.logging import logger
 from app.modules.identity.domain.interfaces.services.authentication.password_hasher import (
     IPasswordHasher,
 )
-from app.modules.identity.domain.value_objects.password_hash import PasswordHash
-from app.modules.identity.domain.value_objects.password_hash import HashAlgorithm
+from app.modules.identity.domain.value_objects.password_hash import (
+    HashAlgorithm,
+    PasswordHash,
+)
 
 
 @dataclass

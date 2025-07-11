@@ -7,10 +7,9 @@ Addresses the service explosion issue by grouping related user operations.
 
 from dataclasses import dataclass
 from datetime import UTC, datetime
-from typing import Any, Optional
 from uuid import UUID, uuid4
 
-from app.core.cqrs import Command, CommandHandler
+from app.core.cqrs import Command
 from app.core.events import EventBus
 from app.core.infrastructure import UnitOfWork
 from app.modules.identity.application.contracts.ports import (
@@ -18,9 +17,9 @@ from app.modules.identity.application.contracts.ports import (
     ICacheService,
     IEmailService,
     IStorageService,
-    IUserRepository,
     IUserPreferenceRepository,
     IUserProfileRepository,
+    IUserRepository,
 )
 from app.modules.identity.application.decorators import (
     audit_action,
@@ -30,21 +29,24 @@ from app.modules.identity.application.decorators import (
 )
 from app.modules.identity.application.dtos.command_params import (
     CreateUserParams,
-    UpdateProfileParams,
     UpdatePreferencesParams,
+    UpdateProfileParams,
     UserMergeParams,
 )
 from app.modules.identity.application.dtos.request import (
     CreateUserRequest,
-    UpdateProfileRequest,
     UpdatePreferencesRequest,
+    UpdateProfileRequest,
 )
 from app.modules.identity.application.dtos.response import (
     CreateUserResponse,
     DeleteUserResponse,
-    UpdateProfileResponse,
     UpdatePreferencesResponse,
+    UpdateProfileResponse,
     UserMergeResponse,
+)
+from app.modules.identity.application.services.shared.validation_utils import (
+    ValidationUtils,
 )
 from app.modules.identity.domain.entities import User, UserPreferences, UserProfile
 from app.modules.identity.domain.enums import (
@@ -67,11 +69,9 @@ from app.modules.identity.domain.exceptions import (
 )
 from app.modules.identity.domain.services import UserDomainService
 from app.modules.identity.domain.specifications import (
-    ActiveUserSpecification,
     EmailAvailableSpecification,
 )
 from app.modules.identity.domain.value_objects import Email, PhoneNumber, UserId
-from app.modules.identity.application.services.shared.validation_utils import ValidationUtils
 
 
 # Consolidated Commands
@@ -115,7 +115,7 @@ class DeleteUserCommand(Command[DeleteUserResponse]):
     """Command to permanently delete a user."""
     user_id: UUID
     hard_delete: bool = False
-    performed_by: Optional[UUID] = None
+    performed_by: UUID | None = None
 
 
 @dataclass
@@ -129,9 +129,9 @@ class MergeUsersCommand(Command[UserMergeResponse]):
 class UpdateContactInfoCommand(Command[UpdateProfileResponse]):
     """Command to update user contact information."""
     user_id: UUID
-    email: Optional[str] = None
-    phone_number: Optional[str] = None
-    performed_by: Optional[UUID] = None
+    email: str | None = None
+    phone_number: str | None = None
+    performed_by: UUID | None = None
 
 
 @dataclass

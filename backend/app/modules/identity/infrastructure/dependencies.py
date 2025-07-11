@@ -15,8 +15,12 @@ async def configure_identity_dependencies(container: Container) -> None:
     
     # User repository
     try:
-        from app.modules.identity.domain.interfaces.repositories.user_repository import IUserRepository
-        from app.modules.identity.infrastructure.repositories.user_repository import SQLUserRepository
+        from app.modules.identity.domain.interfaces.repositories.user_repository import (
+            IUserRepository,
+        )
+        from app.modules.identity.infrastructure.repositories.user_repository import (
+            SQLUserRepository,
+        )
         
         await container.register(RegistrationRequest(
             interface=IUserRepository,
@@ -35,8 +39,12 @@ async def configure_identity_dependencies(container: Container) -> None:
     
     # Session repository
     try:
-        from app.modules.identity.domain.interfaces.repositories.session.session_repository import ISessionRepository
-        from app.modules.identity.infrastructure.repositories.session_repository import SQLSessionRepository
+        from app.modules.identity.domain.interfaces.repositories.session.session_repository import (
+            ISessionRepository,
+        )
+        from app.modules.identity.infrastructure.repositories.session_repository import (
+            SQLSessionRepository,
+        )
         
         await container.register(RegistrationRequest(
             interface=ISessionRepository,
@@ -55,8 +63,12 @@ async def configure_identity_dependencies(container: Container) -> None:
     
     # Group repository
     try:
-        from app.modules.identity.domain.interfaces.repositories.group_repository import IGroupRepository
-        from app.modules.identity.infrastructure.repositories.group_repository import SQLGroupRepository
+        from app.modules.identity.domain.interfaces.repositories.group_repository import (
+            IGroupRepository,
+        )
+        from app.modules.identity.infrastructure.repositories.group_repository import (
+            SQLGroupRepository,
+        )
         
         await container.register(RegistrationRequest(
             interface=IGroupRepository,
@@ -75,8 +87,12 @@ async def configure_identity_dependencies(container: Container) -> None:
     
     # Role repository
     try:
-        from app.modules.identity.domain.interfaces.repositories.role_repository import IRoleRepository
-        from app.modules.identity.infrastructure.repositories.role_repository import SQLRoleRepository
+        from app.modules.identity.domain.interfaces.repositories.role_repository import (
+            IRoleRepository,
+        )
+        from app.modules.identity.infrastructure.repositories.role_repository import (
+            SQLRoleRepository,
+        )
         
         await container.register(RegistrationRequest(
             interface=IRoleRepository,
@@ -95,8 +111,12 @@ async def configure_identity_dependencies(container: Container) -> None:
     
     # Permission repository
     try:
-        from app.modules.identity.domain.interfaces.repositories.permission_repository import IPermissionRepository
-        from app.modules.identity.infrastructure.repositories.permission_repository import SQLPermissionRepository
+        from app.modules.identity.domain.interfaces.repositories.permission_repository import (
+            IPermissionRepository,
+        )
+        from app.modules.identity.infrastructure.repositories.permission_repository import (
+            SQLPermissionRepository,
+        )
         
         await container.register(RegistrationRequest(
             interface=IPermissionRepository,
@@ -115,8 +135,12 @@ async def configure_identity_dependencies(container: Container) -> None:
     
     # Device registration repository
     try:
-        from app.modules.identity.domain.interfaces.repositories.session.device_registration_repository import IDeviceRegistrationRepository
-        from app.modules.identity.infrastructure.repositories.device_registration_repository import SQLDeviceRegistrationRepository
+        from app.modules.identity.domain.interfaces.repositories.session.device_registration_repository import (
+            IDeviceRegistrationRepository,
+        )
+        from app.modules.identity.infrastructure.repositories.device_registration_repository import (
+            SQLDeviceRegistrationRepository,
+        )
         
         await container.register(RegistrationRequest(
             interface=IDeviceRegistrationRepository,
@@ -135,8 +159,12 @@ async def configure_identity_dependencies(container: Container) -> None:
     
     # MFA repository
     try:
-        from app.modules.identity.domain.interfaces.repositories.user.mfa_repository import IMFARepository
-        from app.modules.identity.infrastructure.repositories.mfa_repository import SQLMFARepository
+        from app.modules.identity.domain.interfaces.repositories.user.mfa_repository import (
+            IMFARepository,
+        )
+        from app.modules.identity.infrastructure.repositories.mfa_repository import (
+            SQLMFARepository,
+        )
         
         await container.register(RegistrationRequest(
             interface=IMFARepository,
@@ -155,8 +183,12 @@ async def configure_identity_dependencies(container: Container) -> None:
     
     # MFA device repository
     try:
-        from app.modules.identity.domain.interfaces.repositories.user.mfa_device_repository import IMFADeviceRepository
-        from app.modules.identity.infrastructure.repositories.mfa_device_repository import SQLMFADeviceRepository
+        from app.modules.identity.domain.interfaces.repositories.user.mfa_device_repository import (
+            IMFADeviceRepository,
+        )
+        from app.modules.identity.infrastructure.repositories.mfa_device_repository import (
+            SQLMFADeviceRepository,
+        )
         
         await container.register(RegistrationRequest(
             interface=IMFADeviceRepository,
@@ -175,8 +207,12 @@ async def configure_identity_dependencies(container: Container) -> None:
     
     # MFA challenge repository
     try:
-        from app.modules.identity.domain.interfaces.repositories.user.mfa_challenge_repository import IMFAChallengeRepository
-        from app.modules.identity.infrastructure.repositories.mfa_challenge_repository import CacheMFAChallengeRepository
+        from app.modules.identity.domain.interfaces.repositories.user.mfa_challenge_repository import (
+            IMFAChallengeRepository,
+        )
+        from app.modules.identity.infrastructure.repositories.mfa_challenge_repository import (
+            CacheMFAChallengeRepository,
+        )
         
         await container.register(RegistrationRequest(
             interface=IMFAChallengeRepository,
@@ -195,8 +231,12 @@ async def configure_identity_dependencies(container: Container) -> None:
     
     # Access token repository
     try:
-        from app.modules.identity.domain.interfaces.repositories.session.access_token_repository import IAccessTokenRepository
-        from app.modules.identity.infrastructure.repositories.access_token_repository import SQLAccessTokenRepository
+        from app.modules.identity.domain.interfaces.repositories.session.access_token_repository import (
+            IAccessTokenRepository,
+        )
+        from app.modules.identity.infrastructure.repositories.access_token_repository import (
+            SQLAccessTokenRepository,
+        )
         
         await container.register(RegistrationRequest(
             interface=IAccessTokenRepository,
@@ -215,8 +255,12 @@ async def configure_identity_dependencies(container: Container) -> None:
     
     # User preference repository
     try:
-        from app.modules.identity.domain.interfaces.repositories.user.user_preference_repository import IUserPreferenceRepository
-        from app.modules.identity.infrastructure.repositories.user_preference_repository import SQLUserPreferenceRepository
+        from app.modules.identity.domain.interfaces.repositories.user.user_preference_repository import (
+            IUserPreferenceRepository,
+        )
+        from app.modules.identity.infrastructure.repositories.user_preference_repository import (
+            SQLUserPreferenceRepository,
+        )
         
         await container.register(RegistrationRequest(
             interface=IUserPreferenceRepository,
@@ -235,8 +279,12 @@ async def configure_identity_dependencies(container: Container) -> None:
     
     # Emergency contact repository
     try:
-        from app.modules.identity.domain.interfaces.repositories.user.emergency_contact_repository import IEmergencyContactRepository
-        from app.modules.identity.infrastructure.repositories.emergency_contact_repository import SQLEmergencyContactRepository
+        from app.modules.identity.domain.interfaces.repositories.user.emergency_contact_repository import (
+            IEmergencyContactRepository,
+        )
+        from app.modules.identity.infrastructure.repositories.emergency_contact_repository import (
+            SQLEmergencyContactRepository,
+        )
         
         await container.register(RegistrationRequest(
             interface=IEmergencyContactRepository,
@@ -255,8 +303,12 @@ async def configure_identity_dependencies(container: Container) -> None:
     
     # Login attempt repository
     try:
-        from app.modules.identity.domain.interfaces.repositories.session.login_attempt_repository import ILoginAttemptRepository
-        from app.modules.identity.infrastructure.repositories.login_attempt_repository import SQLLoginAttemptRepository
+        from app.modules.identity.domain.interfaces.repositories.session.login_attempt_repository import (
+            ILoginAttemptRepository,
+        )
+        from app.modules.identity.infrastructure.repositories.login_attempt_repository import (
+            SQLLoginAttemptRepository,
+        )
         
         await container.register(RegistrationRequest(
             interface=ILoginAttemptRepository,
@@ -275,8 +327,12 @@ async def configure_identity_dependencies(container: Container) -> None:
     
     # Security event repository
     try:
-        from app.modules.identity.domain.interfaces.repositories.session.security_event_repository import ISecurityEventRepository
-        from app.modules.identity.infrastructure.repositories.security_event_repository import SQLSecurityEventRepository
+        from app.modules.identity.domain.interfaces.repositories.session.security_event_repository import (
+            ISecurityEventRepository,
+        )
+        from app.modules.identity.infrastructure.repositories.security_event_repository import (
+            SQLSecurityEventRepository,
+        )
         
         await container.register(RegistrationRequest(
             interface=ISecurityEventRepository,
@@ -284,6 +340,13 @@ async def configure_identity_dependencies(container: Container) -> None:
             lifetime=ServiceLifetime.SCOPED,
             name="security_event_repository",
             description="Security event repository implementation"
+        ))
+    except ImportError:
+        await container.register(RegistrationRequest(
+            interface=type('ISecurityEventRepository', (), {}),
+            implementation=lambda: None,
+            lifetime=ServiceLifetime.SCOPED,
+            name="security_event_repository_placeholder"
         ))
 
     # NOTE: Application services should be registered in the application layer
@@ -297,7 +360,9 @@ async def configure_identity_dependencies(container: Container) -> None:
     try:
         # Password services
         from app.modules.identity.domain.interfaces.services import IPasswordService
-        from app.modules.identity.infrastructure.services.password_service import PasswordService
+        from app.modules.identity.infrastructure.services.password_service import (
+            PasswordService,
+        )
         
         await container.register(RegistrationRequest(
             interface=IPasswordService,
@@ -318,7 +383,9 @@ async def configure_identity_dependencies(container: Container) -> None:
     try:
         # Token services
         from app.modules.identity.domain.interfaces.services import ITokenService
-        from app.modules.identity.infrastructure.services.token_service import TokenService
+        from app.modules.identity.infrastructure.services.token_service import (
+            TokenService,
+        )
         
         await container.register(RegistrationRequest(
             interface=ITokenService,

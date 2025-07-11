@@ -110,7 +110,7 @@ def create_application() -> ApplicationContainer:
         logger.info("Application bootstrap completed successfully")
         return container
 
-    except Exception as e:
+    except Exception:
         logger.exception("Application bootstrap failed")
         raise
 
@@ -346,6 +346,6 @@ def shutdown_application(container: ApplicationContainer) -> None:
 
         logger.info("Application shutdown completed")
 
-    except Exception as e:
+    except Exception:
         logger.exception("Error during application shutdown")
         raise

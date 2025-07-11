@@ -14,8 +14,12 @@ async def configure_integration_dependencies(container: Container) -> None:
     # Try to import and register integration services with fallbacks
     try:
         # Core integration services
-        from app.modules.integration.domain.interfaces.repositories import IIntegrationRepository
-        from app.modules.integration.infrastructure.repositories.integration_repository import IntegrationRepository
+        from app.modules.integration.domain.interfaces.repositories import (
+            IIntegrationRepository,
+        )
+        from app.modules.integration.infrastructure.repositories.integration_repository import (
+            IntegrationRepository,
+        )
         
         await container.register(RegistrationRequest(
             interface=IIntegrationRepository,
@@ -36,8 +40,12 @@ async def configure_integration_dependencies(container: Container) -> None:
 
     try:
         # Integration orchestration services
-        from app.modules.integration.domain.interfaces.services import IIntegrationService
-        from app.modules.integration.application.services.integration_service import IntegrationService
+        from app.modules.integration.application.services.integration_service import (
+            IntegrationService,
+        )
+        from app.modules.integration.domain.interfaces.services import (
+            IIntegrationService,
+        )
         
         await container.register(RegistrationRequest(
             interface=IIntegrationService,
@@ -57,7 +65,9 @@ async def configure_integration_dependencies(container: Container) -> None:
 
     try:
         # API client services
-        from app.modules.integration.application.services.api_client_service import ApiClientService
+        from app.modules.integration.application.services.api_client_service import (
+            ApiClientService,
+        )
         from app.modules.integration.domain.interfaces.services import IApiClientService
         
         await container.register(RegistrationRequest(
@@ -78,7 +88,9 @@ async def configure_integration_dependencies(container: Container) -> None:
 
     try:
         # Webhook services
-        from app.modules.integration.application.services.webhook_service import WebhookService
+        from app.modules.integration.application.services.webhook_service import (
+            WebhookService,
+        )
         from app.modules.integration.domain.interfaces.services import IWebhookService
         
         await container.register(RegistrationRequest(

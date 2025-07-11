@@ -24,7 +24,7 @@ from urllib.parse import urlparse
 from uuid import UUID
 
 # Import regex patterns from your existing constants
-from app.core.constants import EMAIL_REGEX, PHONE_REGEX, UUID_REGEX
+from app.core.constants import EMAIL_REGEX, UUID_REGEX
 from app.core.errors import ValidationError
 
 # =====================================================================================
@@ -653,6 +653,7 @@ class UUIDValidator:
 # =====================================================================================
 
 import warnings
+
 
 class EmailValidator:
     """
@@ -1751,8 +1752,7 @@ class IPAddressValidator:
         """Check if loopback address."""
         if self.is_ipv4:
             return self.value.startswith("127.")
-        else:
-            return self.value == "::1"
+        return self.value == "::1"
     
     def __str__(self) -> str:
         """String representation."""
@@ -1908,9 +1908,7 @@ class EnhancedPhoneValidator:
         if normalized.startswith('+'):
             if self.country_code == "US" and normalized.startswith('+1'):
                 normalized = normalized[2:]
-            elif self.country_code == "GB" and normalized.startswith('+44'):
-                normalized = normalized[3:]
-            elif self.country_code == "AU" and normalized.startswith('+61'):
+            elif (self.country_code == "GB" and normalized.startswith('+44')) or (self.country_code == "AU" and normalized.startswith('+61')):
                 normalized = normalized[3:]
         
         # Check if only digits
@@ -1923,10 +1921,9 @@ class EnhancedPhoneValidator:
                 raise ValidationError("US/CA phone numbers must be 10 digits")
             if normalized[0] in ['0', '1']:
                 raise ValidationError("US/CA phone numbers cannot start with 0 or 1")
-        else:
-            # Basic length check for other countries
-            if len(normalized) < 7 or len(normalized) > 15:
-                raise ValidationError("Phone number must be 7-15 digits")
+        # Basic length check for other countries
+        elif len(normalized) < 7 or len(normalized) > 15:
+            raise ValidationError("Phone number must be 7-15 digits")
         
         return normalized
     

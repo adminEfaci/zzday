@@ -264,7 +264,11 @@ async def get_event_system_status() -> dict:
 def _register_system_events():
     """Register core system events with the event factory."""
     try:
-        from app.core.events.types import ApplicationStarted, ApplicationStopping, SystemEvent
+        from app.core.events.types import (
+            ApplicationStarted,
+            ApplicationStopping,
+            SystemEvent,
+        )
         
         EventFactory.register_event_type(SystemEvent)
         EventFactory.register_event_type(ApplicationStarted)
@@ -286,7 +290,7 @@ def _register_module_events():
             PasswordChanged,
             UserCreated,
             UserDeleted,
-            UserUpdated
+            UserUpdated,
         )
         
         events_to_register = [
@@ -303,7 +307,7 @@ def _register_module_events():
         from app.modules.audit.domain.events.audit_events import (
             AuditEntryRecorded,
             AuditReportGenerated,
-            HighRiskAuditDetected
+            HighRiskAuditDetected,
         )
         
         audit_events = [AuditEntryRecorded, AuditReportGenerated, HighRiskAuditDetected]
@@ -317,7 +321,7 @@ def _register_module_events():
         from app.modules.integration.domain.events.webhook_events import (
             WebhookFailed,
             WebhookProcessed,
-            WebhookReceived
+            WebhookReceived,
         )
         
         integration_events = [WebhookReceived, WebhookProcessed, WebhookFailed]

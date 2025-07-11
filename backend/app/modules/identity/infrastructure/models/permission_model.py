@@ -8,7 +8,7 @@ from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID
 
-from sqlmodel import Column, Field, JSON, SQLModel
+from sqlmodel import JSON, Column, Field, SQLModel
 
 
 class PermissionModel(SQLModel, table=True):

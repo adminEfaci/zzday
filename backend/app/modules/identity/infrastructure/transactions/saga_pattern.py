@@ -6,10 +6,10 @@ across multiple services and ensuring data consistency in microservices architec
 
 import asyncio
 import uuid
-from datetime import datetime, timedelta
-from enum import Enum
-from typing import Any, Dict, List, Optional, Type, Union
 from dataclasses import dataclass, field
+from datetime import datetime
+from enum import Enum
+from typing import Any
 
 from app.core.logging import get_logger
 
@@ -42,13 +42,13 @@ class SagaStep:
     step_id: str
     name: str
     action: callable
-    compensation: Optional[callable] = None
+    compensation: callable | None = None
     status: StepStatus = StepStatus.PENDING
-    started_at: Optional[datetime] = None
-    completed_at: Optional[datetime] = None
-    error: Optional[str] = None
-    result: Optional[Any] = None
-    compensation_result: Optional[Any] = None
+    started_at: datetime | None = None
+    completed_at: datetime | None = None
+    error: str | None = None
+    result: Any | None = None
+    compensation_result: Any | None = None
     retry_count: int = 0
     max_retries: int = 3
     timeout: int = 30  # seconds
@@ -63,13 +63,13 @@ class SagaExecution:
     """Saga execution state."""
     saga_id: str
     name: str
-    steps: List[SagaStep]
+    steps: list[SagaStep]
     status: SagaStatus = SagaStatus.PENDING
-    started_at: Optional[datetime] = None
-    completed_at: Optional[datetime] = None
+    started_at: datetime | None = None
+    completed_at: datetime | None = None
     current_step: int = 0
-    context: Dict[str, Any] = field(default_factory=dict)
-    error: Optional[str] = None
+    context: dict[str, Any] = field(default_factory=dict)
+    error: str | None = None
     
     def __post_init__(self):
         if not self.saga_id:
@@ -81,15 +81,15 @@ class SagaTransaction:
     
     def __init__(self, name: str):
         self.name = name
-        self.steps: List[SagaStep] = []
+        self.steps: list[SagaStep] = []
         self.timeout = 300  # 5 minutes default
-        self.context: Dict[str, Any] = {}
+        self.context: dict[str, Any] = {}
     
     def add_step(
         self,
         name: str,
         action: callable,
-        compensation: Optional[callable] = None,
+        compensation: callable | None = None,
         max_retries: int = 3,
         timeout: int = 30,
     ) -> "SagaTransaction":
@@ -163,7 +163,7 @@ class SagaCoordinator:
     """Coordinates saga execution."""
     
     def __init__(self):
-        self.running_sagas: Dict[str, SagaExecution] = {}
+        self.running_sagas: dict[str, SagaExecution] = {}
     
     async def execute_saga(self, execution: SagaExecution) -> SagaExecution:
         """Execute a saga.
@@ -251,7 +251,7 @@ class SagaCoordinator:
         
         return execution
     
-    async def _execute_step(self, step: SagaStep, context: Dict[str, Any]) -> bool:
+    async def _execute_step(self, step: SagaStep, context: dict[str, Any]) -> bool:
         """Execute a single step.
         
         Args:
@@ -294,7 +294,7 @@ class SagaCoordinator:
                 
                 return True
                 
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 step.error = f"Step timeout after {step.timeout} seconds"
                 logger.warning(
                     "Saga step timeout",
@@ -352,7 +352,7 @@ class SagaCoordinator:
             if step.status == StepStatus.COMPLETED and step.compensation:
                 await self._compensate_step(step, execution.context)
     
-    async def _compensate_step(self, step: SagaStep, context: Dict[str, Any]) -> None:
+    async def _compensate_step(self, step: SagaStep, context: dict[str, Any]) -> None:
         """Compensate a single step.
         
         Args:
@@ -393,7 +393,7 @@ class SagaCoordinator:
             )
             # Continue with other compensations
     
-    def get_saga_status(self, saga_id: str) -> Optional[SagaExecution]:
+    def get_saga_status(self, saga_id: str) -> SagaExecution | None:
         """Get saga execution status.
         
         Args:
@@ -404,7 +404,7 @@ class SagaCoordinator:
         """
         return self.running_sagas.get(saga_id)
     
-    def get_running_sagas(self) -> Dict[str, SagaExecution]:
+    def get_running_sagas(self) -> dict[str, SagaExecution]:
         """Get all running sagas.
         
         Returns:
@@ -418,7 +418,7 @@ class SagaManager:
     
     def __init__(self):
         self.coordinator = SagaCoordinator()
-        self.saga_history: Dict[str, SagaExecution] = {}
+        self.saga_history: dict[str, SagaExecution] = {}
     
     def create_saga(self, name: str) -> SagaTransaction:
         """Create a new saga transaction.
@@ -447,7 +447,7 @@ class SagaManager:
         
         return execution
     
-    def get_saga_history(self, limit: int = 100) -> List[SagaExecution]:
+    def get_saga_history(self, limit: int = 100) -> list[SagaExecution]:
         """Get saga execution history.
         
         Args:
@@ -460,7 +460,7 @@ class SagaManager:
         executions.sort(key=lambda x: x.started_at or datetime.min, reverse=True)
         return executions[:limit]
     
-    def get_saga_stats(self) -> Dict[str, Any]:
+    def get_saga_stats(self) -> dict[str, Any]:
         """Get saga statistics.
         
         Returns:
@@ -524,20 +524,20 @@ async def execute_saga(saga: SagaTransaction) -> SagaExecution:
 async def example_user_registration_saga():
     """Example saga for user registration across multiple services."""
     
-    async def create_user_account(context: Dict[str, Any]) -> Dict[str, Any]:
+    async def create_user_account(context: dict[str, Any]) -> dict[str, Any]:
         """Create user account."""
         # Simulate user account creation
         user_id = str(uuid.uuid4())
         context["user_id"] = user_id
         return {"user_id": user_id}
     
-    async def compensate_user_account(context: Dict[str, Any]) -> None:
+    async def compensate_user_account(context: dict[str, Any]) -> None:
         """Compensate user account creation."""
         # Simulate user account deletion
         user_id = context.get("user_id")
         logger.info(f"Compensating user account: {user_id}")
     
-    async def send_welcome_email(context: Dict[str, Any]) -> Dict[str, Any]:
+    async def send_welcome_email(context: dict[str, Any]) -> dict[str, Any]:
         """Send welcome email."""
         # Simulate email sending
         user_id = context.get("user_id")
@@ -545,13 +545,13 @@ async def example_user_registration_saga():
         context["email_id"] = email_id
         return {"email_id": email_id}
     
-    async def compensate_welcome_email(context: Dict[str, Any]) -> None:
+    async def compensate_welcome_email(context: dict[str, Any]) -> None:
         """Compensate welcome email."""
         # Simulate email cancellation (if possible)
         email_id = context.get("email_id")
         logger.info(f"Compensating welcome email: {email_id}")
     
-    async def setup_user_profile(context: Dict[str, Any]) -> Dict[str, Any]:
+    async def setup_user_profile(context: dict[str, Any]) -> dict[str, Any]:
         """Set up user profile."""
         # Simulate profile setup
         user_id = context.get("user_id")
@@ -559,7 +559,7 @@ async def example_user_registration_saga():
         context["profile_id"] = profile_id
         return {"profile_id": profile_id}
     
-    async def compensate_user_profile(context: Dict[str, Any]) -> None:
+    async def compensate_user_profile(context: dict[str, Any]) -> None:
         """Compensate user profile setup."""
         # Simulate profile deletion
         profile_id = context.get("profile_id")

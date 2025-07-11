@@ -65,11 +65,10 @@ Performance Features:
 import asyncio
 import enum
 import time
-from contextlib import asynccontextmanager
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
-from typing import Any, Callable, Generic, TypeVar
-from weakref import WeakKeyDictionary
+from typing import Any, TypeVar
 
 from app.core.errors import InfrastructureError, ValidationError
 from app.core.logging import get_logger
@@ -626,8 +625,7 @@ class CircuitBreaker:
         """Decorator interface for circuit breaker."""
         if asyncio.iscoroutinefunction(func):
             return self._async_decorator(func)
-        else:
-            return self._sync_decorator(func)
+        return self._sync_decorator(func)
     
     def _async_decorator(self, func: Callable[..., T]) -> Callable[..., T]:
         """Async decorator implementation."""
@@ -838,13 +836,13 @@ async def reset_all_circuit_breakers() -> None:
 # Export main classes and functions
 __all__ = [
     "CircuitBreaker",
-    "CircuitBreakerConfig", 
+    "CircuitBreakerConfig",
     "CircuitBreakerError",
     "CircuitBreakerOpenError",
     "CircuitBreakerRegistry",
     "CircuitBreakerState",
     "circuit_breaker",
-    "get_circuit_breaker",
     "get_all_circuit_breakers",
+    "get_circuit_breaker",
     "reset_all_circuit_breakers",
 ]

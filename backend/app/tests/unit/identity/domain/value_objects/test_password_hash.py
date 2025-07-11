@@ -8,12 +8,13 @@ Tests cover:
 - Security properties
 """
 
-import pytest
 from unittest.mock import patch
-import bcrypt
 
-from app.modules.identity.domain.value_objects.password_hash import PasswordHash
+import bcrypt
+import pytest
+
 from app.modules.identity.domain.errors import DomainError
+from app.modules.identity.domain.value_objects.password_hash import PasswordHash
 
 
 class TestPasswordHash:
@@ -164,7 +165,7 @@ class TestPasswordHash:
     def test_equality_comparison(self):
         """Test equality comparison of PasswordHash objects."""
         hash_value = bcrypt.hashpw(
-            "TestPass123!".encode('utf-8'),
+            b"TestPass123!",
             bcrypt.gensalt()
         ).decode('utf-8')
         

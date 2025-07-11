@@ -7,14 +7,18 @@ Email-based Multi-Factor Authentication provider.
 import logging
 import random
 import string
-from datetime import datetime, UTC, timedelta
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from app.modules.identity.domain.entities.admin.mfa_device import MFADevice
 from app.modules.identity.domain.enums import MFAMethod
-from app.modules.identity.domain.interfaces.services.communication.notification_service import IEmailService
+from app.modules.identity.domain.interfaces.services.communication.notification_service import (
+    IEmailService,
+)
 from app.modules.identity.domain.value_objects.email import Email
-from app.modules.identity.infrastructure.services.mfa_provider_factory import IMFAProvider
+from app.modules.identity.infrastructure.services.mfa_provider_factory import (
+    IMFAProvider,
+)
 
 logger = logging.getLogger(__name__)
 

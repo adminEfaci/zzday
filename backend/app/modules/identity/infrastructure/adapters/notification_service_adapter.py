@@ -5,7 +5,7 @@ Production-ready implementation for multi-channel notifications (email, SMS, pus
 """
 
 import json
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 from typing import Any
 from uuid import uuid4
 
@@ -115,11 +115,10 @@ class NotificationServiceAdapter(INotificationService):
                 
                 logger.info(f"Email sent successfully: {message_id} to {to}")
                 return message_id
-            else:
-                # Mock/fallback implementation
-                await self._mock_email_delivery(message)
-                logger.info(f"Email sent (mock): {message_id} to {to}")
-                return message_id
+            # Mock/fallback implementation
+            await self._mock_email_delivery(message)
+            logger.info(f"Email sent (mock): {message_id} to {to}")
+            return message_id
                 
         except Exception as e:
             logger.error(f"Error sending email to {to}: {e}")
@@ -185,11 +184,10 @@ class NotificationServiceAdapter(INotificationService):
                 
                 logger.info(f"SMS sent successfully: {message_id} to {phone}")
                 return message_id
-            else:
-                # Mock/fallback implementation
-                await self._mock_sms_delivery(sms_message)
-                logger.info(f"SMS sent (mock): {message_id} to {phone}")
-                return message_id
+            # Mock/fallback implementation
+            await self._mock_sms_delivery(sms_message)
+            logger.info(f"SMS sent (mock): {message_id} to {phone}")
+            return message_id
                 
         except Exception as e:
             logger.error(f"Error sending SMS to {phone}: {e}")
@@ -266,16 +264,15 @@ class NotificationServiceAdapter(INotificationService):
                     "failed_count": result.get("failure_count", 0),
                     "results": result.get("results", []),
                 }
-            else:
-                # Mock/fallback implementation
-                await self._mock_push_delivery(push_message)
-                logger.info(f"Push notification sent (mock): {message_id} to {len(valid_tokens)} devices")
-                return {
-                    "message_id": message_id,
-                    "sent_count": len(valid_tokens),
-                    "failed_count": 0,
-                    "results": [{"token": token, "status": "success"} for token in valid_tokens],
-                }
+            # Mock/fallback implementation
+            await self._mock_push_delivery(push_message)
+            logger.info(f"Push notification sent (mock): {message_id} to {len(valid_tokens)} devices")
+            return {
+                "message_id": message_id,
+                "sent_count": len(valid_tokens),
+                "failed_count": 0,
+                "results": [{"token": token, "status": "success"} for token in valid_tokens],
+            }
                 
         except Exception as e:
             logger.error(f"Error sending push notification: {e}")
@@ -347,11 +344,10 @@ class NotificationServiceAdapter(INotificationService):
                 
                 logger.info(f"Bulk email batch processed: {batch_id} ({len(valid_recipients)} recipients)")
                 return batch_id
-            else:
-                # Mock/fallback implementation
-                await self._mock_bulk_email_delivery(batch)
-                logger.info(f"Bulk email batch processed (mock): {batch_id} ({len(valid_recipients)} recipients)")
-                return batch_id
+            # Mock/fallback implementation
+            await self._mock_bulk_email_delivery(batch)
+            logger.info(f"Bulk email batch processed (mock): {batch_id} ({len(valid_recipients)} recipients)")
+            return batch_id
                 
         except Exception as e:
             logger.error(f"Error sending bulk email: {e}")
@@ -453,21 +449,19 @@ class NotificationServiceAdapter(INotificationService):
         """Render email template."""
         if self._template_engine:
             return await self._template_engine.render_email(template, data)
-        else:
-            # Fallback template rendering
-            return {
-                "html": f"<html><body><h1>{template}</h1><pre>{json.dumps(data, indent=2)}</pre></body></html>",
-                "text": f"{template}\n\n{json.dumps(data, indent=2)}",
-            }
+        # Fallback template rendering
+        return {
+            "html": f"<html><body><h1>{template}</h1><pre>{json.dumps(data, indent=2)}</pre></body></html>",
+            "text": f"{template}\n\n{json.dumps(data, indent=2)}",
+        }
 
     async def _render_sms_template(self, template: str, data: dict[str, Any]) -> str:
         """Render SMS template."""
         if self._template_engine:
             return await self._template_engine.render_sms(template, data)
-        else:
-            # Fallback template rendering
-            message = data.get("message", "")
-            return f"{template}: {message}"
+        # Fallback template rendering
+        message = data.get("message", "")
+        return f"{template}: {message}"
 
     def _validate_email(self, email: str) -> bool:
         """Validate email address."""
@@ -497,13 +491,12 @@ class NotificationServiceAdapter(INotificationService):
                 message["content"]["html"],
                 message["content"].get("text"),
             )
-        else:
-            return await self._email_service.send_email(
-                message["to"],
-                message["subject"],
-                message["content"]["html"],
-                message["content"].get("text"),
-            )
+        return await self._email_service.send_email(
+            message["to"],
+            message["subject"],
+            message["content"]["html"],
+            message["content"].get("text"),
+        )
 
     async def _send_sms_with_retry(self, message: dict[str, Any]) -> dict[str, Any]:
         """Send SMS with retry logic."""
@@ -513,11 +506,10 @@ class NotificationServiceAdapter(INotificationService):
                 message["to"],
                 message["message"],
             )
-        else:
-            return await self._sms_service.send_sms(
-                message["to"],
-                message["message"],
-            )
+        return await self._sms_service.send_sms(
+            message["to"],
+            message["message"],
+        )
 
     async def _send_push_with_retry(self, message: dict[str, Any]) -> dict[str, Any]:
         """Send push notification with retry logic."""
@@ -529,13 +521,12 @@ class NotificationServiceAdapter(INotificationService):
                 message["body"],
                 message["data"],
             )
-        else:
-            return await self._push_service.send_push(
-                message["device_tokens"],
-                message["title"],
-                message["body"],
-                message["data"],
-            )
+        return await self._push_service.send_push(
+            message["device_tokens"],
+            message["title"],
+            message["body"],
+            message["data"],
+        )
 
     async def _send_bulk_email_batch(self, batch: dict[str, Any]) -> dict[str, Any]:
         """Send bulk email batch."""

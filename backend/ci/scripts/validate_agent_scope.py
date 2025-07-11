@@ -4,12 +4,11 @@ Agent scope validation script
 Ensures agents only modify files within their designated scope
 """
 
-import os
-import sys
-import subprocess
 import re
+import subprocess
+import sys
 from pathlib import Path
-from typing import Dict, List, Optional
+
 
 class AgentScopeValidator:
     """Validates that agents only modify files within their designated scope"""
@@ -117,13 +116,13 @@ class AgentScopeValidator:
                 ['git', 'rev-parse', '--abbrev-ref', 'HEAD'],
                 capture_output=True,
                 text=True,
-                cwd=self.project_root
+                cwd=self.project_root, check=False
             )
             return result.stdout.strip()
         except subprocess.SubprocessError:
             return "unknown"
     
-    def _extract_agent_number(self) -> Optional[int]:
+    def _extract_agent_number(self) -> int | None:
         """Extract agent number from branch name"""
         if not self.current_branch:
             return None
@@ -140,7 +139,7 @@ class AgentScopeValidator:
         
         return None
     
-    def _get_changed_files(self) -> List[str]:
+    def _get_changed_files(self) -> list[str]:
         """Get list of changed files compared to master"""
         try:
             # Get files changed in current branch vs master
@@ -148,7 +147,7 @@ class AgentScopeValidator:
                 ['git', 'diff', '--name-only', 'origin/master...HEAD'],
                 capture_output=True,
                 text=True,
-                cwd=self.project_root
+                cwd=self.project_root, check=False
             )
             
             if result.returncode != 0:
@@ -157,7 +156,7 @@ class AgentScopeValidator:
                     ['git', 'diff', '--name-only', '--cached'],
                     capture_output=True,
                     text=True,
-                    cwd=self.project_root
+                    cwd=self.project_root, check=False
                 )
             
             files = [f.strip() for f in result.stdout.split('\n') if f.strip()]
@@ -165,7 +164,7 @@ class AgentScopeValidator:
         except subprocess.SubprocessError:
             return []
     
-    def validate_agent_scope(self) -> Dict:
+    def validate_agent_scope(self) -> dict:
         """Validate that changed files are within agent scope"""
         if self.agent_number is None:
             return {
@@ -206,21 +205,20 @@ class AgentScopeValidator:
             'message': self._generate_message(is_valid, violations, agent_config)
         }
     
-    def _is_file_allowed(self, file_path: str, allowed_patterns: List[str]) -> bool:
+    def _is_file_allowed(self, file_path: str, allowed_patterns: list[str]) -> bool:
         """Check if file path matches any allowed pattern"""
         for pattern in allowed_patterns:
             if re.match(pattern, file_path):
                 return True
         return False
     
-    def _generate_message(self, is_valid: bool, violations: List[str], agent_config: Dict) -> str:
+    def _generate_message(self, is_valid: bool, violations: list[str], agent_config: dict) -> str:
         """Generate validation message"""
         if is_valid:
             return f"✅ All changes are within Agent {self.agent_number} scope"
-        else:
-            return f"❌ Agent {self.agent_number} ({agent_config['name']}) has {len(violations)} scope violations"
+        return f"❌ Agent {self.agent_number} ({agent_config['name']}) has {len(violations)} scope violations"
     
-    def print_validation_report(self, result: Dict) -> None:
+    def print_validation_report(self, result: dict) -> None:
         """Print detailed validation report"""
         print("=" * 60)
         print("🔍 Agent Scope Validation Report")
@@ -249,7 +247,7 @@ class AgentScopeValidator:
         
         print("\n" + "=" * 60)
     
-    def generate_report_file(self, result: Dict) -> None:
+    def generate_report_file(self, result: dict) -> None:
         """Generate validation report file"""
         report_dir = self.project_root / "docs" / "agent-0-reports" / "scope-validations"
         report_dir.mkdir(parents=True, exist_ok=True)

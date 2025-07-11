@@ -4,10 +4,8 @@ Session Constants
 Constants used across session entities and services.
 """
 
-from datetime import timedelta
-from typing import Dict, Any
 from dataclasses import dataclass
-
+from datetime import timedelta
 
 # =============================================================================
 # Session Configuration
@@ -284,7 +282,7 @@ def get_session_config(session_type: str) -> SessionConfig:
     return SESSION_CONFIGS[session_type]
 
 
-def calculate_risk_score(risk_factors: Dict[str, float]) -> float:
+def calculate_risk_score(risk_factors: dict[str, float]) -> float:
     """Calculate cumulative risk score."""
     total_risk = sum(
         RISK_FACTORS.get(factor, 0.0) * weight
@@ -297,12 +295,11 @@ def get_risk_level(risk_score: float) -> str:
     """Get risk level from score."""
     if risk_score >= RISK_THRESHOLDS["critical"]:
         return "critical"
-    elif risk_score >= RISK_THRESHOLDS["high"]:
+    if risk_score >= RISK_THRESHOLDS["high"]:
         return "high"
-    elif risk_score >= RISK_THRESHOLDS["medium"]:
+    if risk_score >= RISK_THRESHOLDS["medium"]:
         return "medium"
-    else:
-        return "low"
+    return "low"
 
 
 def is_privileged_session(session_type: str) -> bool:

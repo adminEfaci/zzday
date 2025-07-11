@@ -6,10 +6,11 @@ when external services are unavailable, improving overall system availability.
 
 import asyncio
 import time
+from collections.abc import Callable
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import datetime
 from enum import Enum
-from typing import Any, Callable, Dict, Optional, Type, Union
+from typing import Any
 
 from app.core.logging import get_logger
 
@@ -30,7 +31,7 @@ class CircuitBreakerConfig:
     recovery_timeout: int = 60        # Seconds before attempting recovery
     success_threshold: int = 3        # Successful calls to close circuit
     timeout: int = 30                 # Timeout for individual calls
-    expected_exception: Type[Exception] = Exception  # Exception type to catch
+    expected_exception: type[Exception] = Exception  # Exception type to catch
     
     # Advanced settings
     half_open_max_calls: int = 10     # Max calls in half-open state
@@ -40,17 +41,14 @@ class CircuitBreakerConfig:
 
 class CircuitBreakerError(Exception):
     """Circuit breaker specific errors."""
-    pass
 
 
 class CircuitBreakerOpenError(CircuitBreakerError):
     """Raised when circuit breaker is open."""
-    pass
 
 
 class CircuitBreakerTimeoutError(CircuitBreakerError):
     """Raised when circuit breaker times out."""
-    pass
 
 
 class CircuitBreakerStats:
@@ -62,8 +60,8 @@ class CircuitBreakerStats:
         self.successful_calls = 0
         self.timeout_calls = 0
         self.rejected_calls = 0
-        self.last_failure_time: Optional[datetime] = None
-        self.last_success_time: Optional[datetime] = None
+        self.last_failure_time: datetime | None = None
+        self.last_success_time: datetime | None = None
         self.state_changes = 0
         self.current_state_start_time = datetime.utcnow()
     
@@ -121,7 +119,7 @@ class CircuitBreakerStats:
         self.state_changes = 0
         self.current_state_start_time = datetime.utcnow()
     
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert stats to dictionary."""
         return {
             "total_calls": self.total_calls,
@@ -203,7 +201,7 @@ class CircuitBreaker:
                 await self._handle_success()
                 return result
                 
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 self.stats.record_timeout()
                 await self._handle_failure()
                 raise CircuitBreakerTimeoutError(
@@ -219,8 +217,7 @@ class CircuitBreaker:
         """Execute the actual function call."""
         if asyncio.iscoroutinefunction(func):
             return await func(*args, **kwargs)
-        else:
-            return func(*args, **kwargs)
+        return func(*args, **kwargs)
     
     def _should_allow_call(self) -> bool:
         """Check if call should be allowed based on current state."""
@@ -229,14 +226,14 @@ class CircuitBreaker:
         if self.state == CircuitBreakerState.CLOSED:
             return True
         
-        elif self.state == CircuitBreakerState.OPEN:
+        if self.state == CircuitBreakerState.OPEN:
             # Check if recovery timeout has passed
             if current_time - self.last_failure_time >= self.config.recovery_timeout:
                 self._transition_to_half_open()
                 return True
             return False
         
-        elif self.state == CircuitBreakerState.HALF_OPEN:
+        if self.state == CircuitBreakerState.HALF_OPEN:
             # Allow limited calls in half-open state
             return self.half_open_calls < self.config.half_open_max_calls
         
@@ -286,11 +283,7 @@ class CircuitBreaker:
             should_open = False
             
             # Check simple failure threshold
-            if self.stats.failed_calls >= self.config.failure_threshold:
-                should_open = True
-            
-            # Check failure rate threshold
-            elif (self.stats.total_calls >= self.config.minimum_throughput and
+            if self.stats.failed_calls >= self.config.failure_threshold or (self.stats.total_calls >= self.config.minimum_throughput and
                   self.stats.failure_rate >= self.config.failure_rate_threshold):
                 should_open = True
             
@@ -343,7 +336,7 @@ class CircuitBreaker:
         """Get current state."""
         return self.state
     
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """Get circuit breaker statistics."""
         return {
             "name": self.name,
@@ -371,7 +364,7 @@ class CircuitBreaker:
         
         logger.info("Circuit breaker reset", name=self.name)
     
-    async def health_check(self) -> Dict[str, Any]:
+    async def health_check(self) -> dict[str, Any]:
         """Perform health check on circuit breaker."""
         return {
             "name": self.name,
@@ -387,12 +380,12 @@ class CircuitBreakerManager:
     
     def __init__(self):
         """Initialize circuit breaker manager."""
-        self._circuit_breakers: Dict[str, CircuitBreaker] = {}
+        self._circuit_breakers: dict[str, CircuitBreaker] = {}
     
     def create_circuit_breaker(
         self, 
         name: str, 
-        config: Optional[CircuitBreakerConfig] = None
+        config: CircuitBreakerConfig | None = None
     ) -> CircuitBreaker:
         """Create or get existing circuit breaker.
         
@@ -414,7 +407,7 @@ class CircuitBreakerManager:
         
         return circuit_breaker
     
-    def get_circuit_breaker(self, name: str) -> Optional[CircuitBreaker]:
+    def get_circuit_breaker(self, name: str) -> CircuitBreaker | None:
         """Get circuit breaker by name.
         
         Args:
@@ -425,7 +418,7 @@ class CircuitBreakerManager:
         """
         return self._circuit_breakers.get(name)
     
-    def get_all_circuit_breakers(self) -> Dict[str, CircuitBreaker]:
+    def get_all_circuit_breakers(self) -> dict[str, CircuitBreaker]:
         """Get all circuit breakers.
         
         Returns:
@@ -433,7 +426,7 @@ class CircuitBreakerManager:
         """
         return self._circuit_breakers.copy()
     
-    def get_global_stats(self) -> Dict[str, Any]:
+    def get_global_stats(self) -> dict[str, Any]:
         """Get statistics for all circuit breakers.
         
         Returns:
@@ -464,7 +457,7 @@ class CircuitBreakerManager:
         
         return stats
     
-    async def health_check(self) -> Dict[str, Any]:
+    async def health_check(self) -> dict[str, Any]:
         """Perform health check on all circuit breakers.
         
         Returns:
@@ -508,7 +501,7 @@ def get_circuit_breaker_manager() -> CircuitBreakerManager:
 
 def circuit_breaker(
     name: str, 
-    config: Optional[CircuitBreakerConfig] = None
+    config: CircuitBreakerConfig | None = None
 ) -> Callable:
     """Decorator for applying circuit breaker to functions.
     

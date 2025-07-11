@@ -6,15 +6,18 @@ for temporary challenge storage during MFA verification.
 """
 
 import json
-from datetime import datetime, UTC, timedelta
+from datetime import UTC, datetime, timedelta
 from typing import Any
 from uuid import UUID
 
-from app.modules.identity.domain.interfaces.services.infrastructure.cache_port import ICachePort as ICacheService
-from app.modules.identity.domain.interfaces.repositories.mfa_challenge_repository import IMFAChallengeRepository
 from app.core.errors import InfrastructureError
 from app.core.logging import get_logger
-
+from app.modules.identity.domain.interfaces.repositories.mfa_challenge_repository import (
+    IMFAChallengeRepository,
+)
+from app.modules.identity.domain.interfaces.services.infrastructure.cache_port import (
+    ICachePort as ICacheService,
+)
 
 logger = get_logger(__name__)
 
@@ -84,7 +87,7 @@ class CacheMFAChallengeRepository(IMFAChallengeRepository):
                 session_id=str(session_id),
                 error=str(e)
             )
-            raise InfrastructureError(f"Failed to create MFA challenge: {str(e)}")
+            raise InfrastructureError(f"Failed to create MFA challenge: {e!s}")
     
     async def get_challenge(self, session_id: UUID) -> dict[str, Any] | None:
         """Get active challenge for session.
@@ -228,13 +231,13 @@ class CacheMFAChallengeRepository(IMFAChallengeRepository):
             patterns = [
                 f"mfa_sms:*:{session_id}",
                 f"mfa_email:*:{session_id}",
-                f"mfa_verify:*"  # Generic verification codes
+                "mfa_verify:*"  # Generic verification codes
             ]
             
             for pattern in patterns:
                 try:
                     await self._cache_service.clear_pattern(pattern)
-                except (AttributeError, NotImplementedError, ValueError) as e:
+                except (AttributeError, NotImplementedError, ValueError):
                     # Pattern clearing might not be supported by all cache implementations
                     pass
             
@@ -268,8 +271,7 @@ class CacheMFAChallengeRepository(IMFAChallengeRepository):
         """
         if challenge_type == "sms":
             return f"mfa_sms:{device_id}:{session_id}"
-        elif challenge_type == "email":
+        if challenge_type == "email":
             return f"mfa_email:{device_id}:{session_id}"
-        else:
-            # Generic key for other types
-            return f"mfa_verify:{device_id}"
+        # Generic key for other types
+        return f"mfa_verify:{device_id}"

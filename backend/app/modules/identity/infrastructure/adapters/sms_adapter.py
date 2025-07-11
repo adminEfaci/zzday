@@ -7,9 +7,9 @@ Supports multiple SMS providers through a common interface.
 
 import asyncio
 import re
-from datetime import datetime, UTC
+from datetime import UTC, datetime
 from typing import Any
-from uuid import UUID, uuid4
+from uuid import uuid4
 
 from app.core.logging import logger
 from app.modules.identity.application.contracts.ports import ISMSService
@@ -125,7 +125,7 @@ class TwilioSMSAdapter(ISMSService):
             self._sent_messages.append(sms_record)
             
             logger.info(
-                f"SMS sent successfully",
+                "SMS sent successfully",
                 to=to_number,
                 sms_type=sms_type,
                 message_length=len(message)

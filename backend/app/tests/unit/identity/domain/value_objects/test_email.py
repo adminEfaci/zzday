@@ -10,8 +10,9 @@ Tests cover:
 """
 
 import pytest
-from app.modules.identity.domain.value_objects.email import Email
+
 from app.modules.identity.domain.errors import DomainError
+from app.modules.identity.domain.value_objects.email import Email
 
 
 class TestEmail:

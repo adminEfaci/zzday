@@ -4,18 +4,18 @@ Tests for Identity Module Adapters
 Verifies that all adapters are properly implemented and functional.
 """
 
-import pytest
-from datetime import timedelta
 from uuid import uuid4
+
+import pytest
 
 from app.modules.identity.infrastructure.adapters.application_cache_adapter import (
     ApplicationCacheAdapter,
 )
-from app.modules.identity.infrastructure.adapters.notification_adapter import (
-    NotificationAdapter,
-)
 from app.modules.identity.infrastructure.adapters.email_adapter import (
     SMTPEmailAdapter,
+)
+from app.modules.identity.infrastructure.adapters.notification_adapter import (
+    NotificationAdapter,
 )
 from app.modules.identity.infrastructure.adapters.sms_adapter import (
     MockSMSAdapter,

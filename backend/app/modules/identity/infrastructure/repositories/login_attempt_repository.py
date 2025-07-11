@@ -4,19 +4,23 @@ Login Attempt Repository Implementation
 Concrete implementation of the login attempt repository interface.
 """
 
-from datetime import datetime, timedelta, UTC
+from datetime import UTC, datetime, timedelta
 from typing import Any
 from uuid import UUID, uuid4
 
 from sqlalchemy import and_, desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
 
 from app.core.infrastructure.repository import BaseRepository
-from app.modules.identity.domain.entities.admin.login_attempt import LoginAttempt, RiskIndicator
+from app.modules.identity.domain.entities.admin.login_attempt import (
+    LoginAttempt,
+    RiskIndicator,
+)
 from app.modules.identity.domain.enums import LoginFailureReason
-from app.modules.identity.domain.interfaces.repositories.login_attempt_repository import ILoginAttemptRepository
-from app.modules.identity.domain.value_objects import IpAddress, Geolocation
+from app.modules.identity.domain.interfaces.repositories.login_attempt_repository import (
+    ILoginAttemptRepository,
+)
+from app.modules.identity.domain.value_objects import Geolocation, IpAddress
 from app.modules.identity.infrastructure.models.audit_model import LoginAttemptModel
 
 

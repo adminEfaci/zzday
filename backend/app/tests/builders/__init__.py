@@ -5,8 +5,8 @@ This module provides fluent test data builders that eliminate hardcoded test dat
 and enable parallel test execution.
 """
 
-from .user_builder import UserBuilder
-from .session_builder import SessionBuilder
 from .email_builder import EmailBuilder
+from .session_builder import SessionBuilder
+from .user_builder import UserBuilder
 
-__all__ = ["UserBuilder", "SessionBuilder", "EmailBuilder"]
+__all__ = ["EmailBuilder", "SessionBuilder", "UserBuilder"]

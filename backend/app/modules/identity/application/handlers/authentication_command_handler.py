@@ -9,72 +9,33 @@ from dataclasses import dataclass
 from typing import Any
 from uuid import UUID
 
-from app.core.cqrs import Command, CommandHandler
-from app.core.events import EventBus
-from app.core.infrastructure import UnitOfWork
-from app.modules.identity.domain.interfaces.services.infrastructure.cache_port import ICachePort as ICacheService
-from app.modules.identity.domain.interfaces.services.security.geolocation_service import IGeolocationService
-from app.modules.identity.domain.interfaces.repositories.login_attempt_repository import ILoginAttemptRepository
-from app.modules.identity.domain.interfaces.repositories.mfa_device_repository import IMFADeviceRepository
-from app.modules.identity.domain.interfaces.repositories.session_repository import ISessionRepository
-from app.modules.identity.domain.interfaces.repositories.user_repository import IUserRepository
 from app.modules.identity.application.decorators import (
     audit_action,
-    rate_limit,
-    validate_request,
-)
-from app.modules.identity.application.dtos.command_params import (
-    AuthenticationParams,
-    LogoutParams,
-    RefreshTokenParams,
-    SocialLoginParams,
-)
-from app.modules.identity.application.dtos.request import (
-    LoginRequest,
-    LogoutRequest,
-    RefreshTokenRequest,
-    SocialLoginRequest,
 )
 from app.modules.identity.application.dtos.response import (
-    LoginResponse,
     LogoutResponse,
-    MFAChallengeResponse,
     RefreshTokenResponse,
     SocialLoginResponse,
 )
-from app.modules.identity.domain.entities import Session, User
+from app.modules.identity.application.services.shared.security_utils import (
+    SecurityUtils,
+)
+from app.modules.identity.application.services.shared.validation_utils import (
+    ValidationUtils,
+)
+from app.modules.identity.domain.entities import User
 from app.modules.identity.domain.enums import (
     AuditAction,
-    LoginFailureReason,
-    MFAMethod,
-    RiskLevel,
-    SecurityEventType,
-    SessionType,
-    UserStatus,
 )
 from app.modules.identity.domain.events import (
-    LoginAttemptFailed,
-    SuspiciousLoginDetected,
-    UserLoggedIn,
-    UserLoggedOut,
     TokenRefreshed,
+    UserLoggedOut,
 )
 from app.modules.identity.domain.exceptions import (
-    AccountLockedException,
     AuthenticationError,
-    InvalidCredentialsError,
     InvalidTokenError,
 )
-from app.modules.identity.domain.services import (
-    PasswordService,
-    RiskAssessmentService,
-    SecurityService,
-    SessionService,
-    TokenService,
-)
 from app.modules.identity.domain.specifications import ActiveUserSpecification
-from app.modules.identity.application.services.shared.validation_utils import ValidationUtils
-from app.modules.identity.application.services.shared.security_utils import SecurityUtils
 
 
 @dataclass
@@ -251,7 +212,6 @@ class AuthenticationCommandHandler:
         """
         # Implementation for social login
         # This would integrate with OAuth providers
-        pass
 
     @audit_action(action=AuditAction.TOKEN_REVOCATION, resource_type="user")
     async def handle_invalidate_all_tokens(self, command: InvalidateAllTokensCommand) -> LogoutResponse:

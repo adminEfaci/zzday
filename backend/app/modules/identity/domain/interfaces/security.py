@@ -5,7 +5,7 @@ Domain ports for security operations following hexagonal architecture.
 These interfaces define contracts that infrastructure adapters must implement.
 """
 
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 from typing import Protocol
 
 from ..value_objects import PasswordHash

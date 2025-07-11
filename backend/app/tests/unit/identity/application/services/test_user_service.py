@@ -8,26 +8,23 @@ Tests cover:
 - Transaction management
 """
 
-import pytest
-from unittest.mock import Mock, AsyncMock, patch
-from datetime import datetime, timedelta, UTC
-from uuid import uuid4
+from datetime import UTC, datetime, timedelta
+from unittest.mock import AsyncMock, Mock
 
+import pytest
+
+from app.modules.identity.application.errors import (
+    NotFoundError,
+)
 from app.modules.identity.application.services.user_service import UserService
 from app.modules.identity.domain.aggregates.user import User
 from app.modules.identity.domain.entities.role import Role
+from app.modules.identity.domain.enums import UserType
 from app.modules.identity.domain.value_objects.email import Email
-from app.modules.identity.domain.value_objects.username import Username
 from app.modules.identity.domain.value_objects.password_hash import PasswordHash
-from app.modules.identity.domain.value_objects.user_id import UserId
 from app.modules.identity.domain.value_objects.role_id import RoleId
-from app.modules.identity.domain.enums import UserStatus, UserType
-from app.modules.identity.application.errors import (
-    ApplicationError,
-    ValidationError,
-    ConflictError,
-    NotFoundError,
-)
+from app.modules.identity.domain.value_objects.user_id import UserId
+from app.modules.identity.domain.value_objects.username import Username
 
 
 class TestUserService:

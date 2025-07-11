@@ -7,16 +7,24 @@ from typing import Any
 
 from app.core.cqrs import Query, QueryHandler
 from app.core.infrastructure import UnitOfWork
-from app.modules.identity.domain.interfaces.repositories.audit_repository import IAuditRepository
-from app.modules.identity.domain.interfaces.repositories.security_event_repository import ISecurityRepository
-from app.modules.identity.domain.interfaces.repositories.session_repository import ISessionRepository
-from app.modules.identity.domain.interfaces.repositories.user_repository import IUserRepository
 from app.modules.identity.application.decorators import (
     rate_limit,
     require_permission,
     validate_request,
 )
 from app.modules.identity.application.dtos.response import SystemMetricsResponse
+from app.modules.identity.domain.interfaces.repositories.audit_repository import (
+    IAuditRepository,
+)
+from app.modules.identity.domain.interfaces.repositories.security_event_repository import (
+    ISecurityRepository,
+)
+from app.modules.identity.domain.interfaces.repositories.session_repository import (
+    ISessionRepository,
+)
+from app.modules.identity.domain.interfaces.repositories.user_repository import (
+    IUserRepository,
+)
 
 
 class MetricGranularity(Enum):

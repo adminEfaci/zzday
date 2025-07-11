@@ -5,16 +5,15 @@ Defines performance baselines for all critical operations and provides
 utilities for measuring and asserting performance requirements.
 """
 
+import asyncio
 import time
+from collections.abc import Callable, Generator
 from contextlib import contextmanager
 from dataclasses import dataclass
-from typing import Dict, List, Optional, Any, Callable, Generator
-from unittest.mock import Mock
+from typing import Any
 
-import pytest
 import psutil
-import asyncio
-from sqlalchemy.ext.asyncio import AsyncSession
+import pytest
 
 
 @dataclass
@@ -171,12 +170,12 @@ class PerformanceRegistry:
     }
     
     @classmethod
-    def get_baseline(cls, operation_name: str) -> Optional[PerformanceBaseline]:
+    def get_baseline(cls, operation_name: str) -> PerformanceBaseline | None:
         """Get performance baseline for operation."""
         return cls.BASELINES.get(operation_name)
     
     @classmethod
-    def get_all_baselines(cls) -> Dict[str, PerformanceBaseline]:
+    def get_all_baselines(cls) -> dict[str, PerformanceBaseline]:
         """Get all performance baselines."""
         return cls.BASELINES.copy()
 
@@ -189,14 +188,14 @@ class PerformanceMetrics:
     memory_usage_mb: float
     cpu_percent: float
     timestamp: float
-    additional_metrics: Dict[str, Any]
+    additional_metrics: dict[str, Any]
 
 
 class PerformanceMonitor:
     """Monitor and measure performance metrics during test execution."""
     
     def __init__(self):
-        self.metrics: List[PerformanceMetrics] = []
+        self.metrics: list[PerformanceMetrics] = []
         self.process = psutil.Process()
         
     @contextmanager
@@ -234,7 +233,7 @@ class PerformanceMonitor:
             )
             self.metrics.append(metrics)
     
-    def get_metrics(self, operation_name: Optional[str] = None) -> List[PerformanceMetrics]:
+    def get_metrics(self, operation_name: str | None = None) -> list[PerformanceMetrics]:
         """Get performance metrics, optionally filtered by operation name."""
         if operation_name is None:
             return self.metrics.copy()
@@ -279,7 +278,7 @@ class LoadTestScenario:
         self.name = name
         self.concurrent_users = concurrent_users
         self.duration_seconds = duration_seconds
-        self.results: List[PerformanceMetrics] = []
+        self.results: list[PerformanceMetrics] = []
     
     async def run_load_test(self, operation_func: Callable, *args, **kwargs):
         """Run load test with specified operation function."""
@@ -299,7 +298,7 @@ class LoadTestScenario:
                 asyncio.gather(*tasks, return_exceptions=True), 
                 timeout=self.duration_seconds + 10
             )
-        except asyncio.TimeoutError:
+        except TimeoutError:
             # Cancel remaining tasks
             for task in tasks:
                 if not task.done():
@@ -328,7 +327,7 @@ class LoadTestScenario:
         # Add metrics to results
         self.results.extend(monitor.get_metrics())
     
-    def get_load_test_summary(self) -> Dict[str, Any]:
+    def get_load_test_summary(self) -> dict[str, Any]:
         """Get summary of load test results."""
         if not self.results:
             return {"error": "No results available"}

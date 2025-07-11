@@ -5,6 +5,7 @@ Provides utilities for generating unique Email test data.
 """
 
 import uuid
+
 from app.modules.identity.domain.value_objects.email import Email
 
 

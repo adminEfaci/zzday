@@ -4,16 +4,19 @@ Emergency Contact Model
 SQLModel definition for emergency contact persistence.
 """
 
-from datetime import datetime, UTC
+from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID
 
-from sqlmodel import Field, SQLModel, Column, JSON
-from app.modules.identity.domain.entities.admin.emergency_contact import EmergencyContact
+from sqlmodel import JSON, Column, Field, SQLModel
+
+from app.modules.identity.domain.entities.admin.emergency_contact import (
+    EmergencyContact,
+)
 from app.modules.identity.domain.enums import ContactRelationship
+from app.shared.value_objects.address import Address
 from app.shared.value_objects.email import EmailAddress
 from app.shared.value_objects.phone import PhoneNumber
-from app.shared.value_objects.address import Address
 
 
 class EmergencyContactModel(SQLModel, table=True):

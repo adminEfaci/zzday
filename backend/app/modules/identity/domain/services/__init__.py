@@ -11,6 +11,13 @@ from .admin.password_service import PasswordService as AdminPasswordService
 from .admin.risk_assessment_service import RiskAssessmentService
 from .admin.security_service import SecurityService
 
+# Role services
+from .role.role_factory import RoleFactory
+from .role.role_service import RoleService
+
+# Session services
+from .session.session_service import SessionService
+
 # User services
 from .user.authentication_service import AuthenticationService
 from .user.factory_service import UserFactory
@@ -21,13 +28,6 @@ from .user.preference_service import PreferenceService
 from .user.profile_service import ProfileService
 from .user.registration_service import RegistrationService
 from .user.user_domain_service import UserDomainService
-
-# Role services
-from .role.role_factory import RoleFactory
-from .role.role_service import RoleService
-
-# Session services
-from .session.session_service import SessionService
 
 __all__ = [
     # Admin services

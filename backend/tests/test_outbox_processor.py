@@ -2,15 +2,15 @@
 Tests for OutboxProcessor service.
 """
 
-import pytest
 import asyncio
-from unittest.mock import Mock, AsyncMock, patch
+from unittest.mock import AsyncMock, Mock
 from uuid import uuid4
-from datetime import datetime, UTC
 
-from app.services.outbox_processor import OutboxProcessor, EventBus, RetryPolicy
+import pytest
+
 from app.models.outbox_event import OutboxEvent
 from app.repositories.outbox_repository import OutboxRepository
+from app.services.outbox_processor import EventBus, OutboxProcessor, RetryPolicy
 
 
 class MockEventBus(EventBus):
@@ -24,7 +24,7 @@ class MockEventBus(EventBus):
     async def publish(self, event):
         """Mock publish method."""
         if self.should_fail:
-            raise Exception(self.failure_message)
+            raise RuntimeError(self.failure_message)
         self.published_events.append(event)
 
 

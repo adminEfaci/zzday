@@ -5,17 +5,22 @@ Handles login events (successful/failed) from the Identity module
 and creates corresponding audit trails with risk assessment and compliance tracking.
 """
 
-import logging
-from datetime import datetime, UTC
-from typing import Any
 from uuid import UUID
 
-from app.modules.identity.domain.entities.user.user_events import LoginSuccessful, LoginFailed, AccountLockedOut
-from app.modules.audit.application.services.audit_service import AuditService
-from app.modules.audit.domain.enums import AuditAction, AuditOutcome, AuditSeverity, AuditCategory
 from app.core.events.handlers import EventHandler
 from app.core.logging import get_logger
-
+from app.modules.audit.application.services.audit_service import AuditService
+from app.modules.audit.domain.enums import (
+    AuditAction,
+    AuditCategory,
+    AuditOutcome,
+    AuditSeverity,
+)
+from app.modules.identity.domain.entities.user.user_events import (
+    AccountLockedOut,
+    LoginFailed,
+    LoginSuccessful,
+)
 
 logger = get_logger(__name__)
 
@@ -313,10 +318,9 @@ class LoginFailedEventHandler(EventHandler[LoginFailed]):
         """
         if event.attempt_count >= 5 or event.risk_score > 0.8:
             return AuditSeverity.HIGH
-        elif event.attempt_count >= 3 or event.risk_score > 0.6:
+        if event.attempt_count >= 3 or event.risk_score > 0.6:
             return AuditSeverity.MEDIUM
-        else:
-            return AuditSeverity.LOW
+        return AuditSeverity.LOW
 
 
 class AccountLockedOutEventHandler(EventHandler[AccountLockedOut]):

@@ -9,8 +9,8 @@ import hashlib
 import time
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
-from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional, Set, Union
+from datetime import datetime
+from typing import Any
 from uuid import uuid4
 
 from app.core.logging import get_logger
@@ -23,14 +23,14 @@ class CacheEntry:
     """Cache entry with metadata."""
     key: str
     value: Any
-    ttl: Optional[int] = None
+    ttl: int | None = None
     created_at: float = None
     last_accessed: float = None
     version: int = 1
-    checksum: Optional[str] = None
+    checksum: str | None = None
     locked: bool = False
-    lock_owner: Optional[str] = None
-    lock_expires: Optional[float] = None
+    lock_owner: str | None = None
+    lock_expires: float | None = None
     
     def __post_init__(self):
         if self.created_at is None:
@@ -70,12 +70,10 @@ class CacheEntry:
 
 class DistributedLockError(Exception):
     """Distributed lock specific errors."""
-    pass
 
 
 class CacheConsistencyError(Exception):
     """Cache consistency specific errors."""
-    pass
 
 
 class DistributedLock:
@@ -85,8 +83,8 @@ class DistributedLock:
         self.key = key
         self.owner = owner
         self.ttl = ttl
-        self.acquired_at: Optional[float] = None
-        self.expires_at: Optional[float] = None
+        self.acquired_at: float | None = None
+        self.expires_at: float | None = None
         self.extended_count = 0
     
     def is_expired(self) -> bool:
@@ -110,10 +108,10 @@ class DistributedCache:
     def __init__(self, cache_id: str, node_id: str):
         self.cache_id = cache_id
         self.node_id = node_id
-        self.entries: Dict[str, CacheEntry] = {}
-        self.locks: Dict[str, DistributedLock] = {}
+        self.entries: dict[str, CacheEntry] = {}
+        self.locks: dict[str, DistributedLock] = {}
         self.invalidation_queue: asyncio.Queue = asyncio.Queue()
-        self.peer_nodes: Set[str] = set()
+        self.peer_nodes: set[str] = set()
         self.stats = {
             "hits": 0,
             "misses": 0,
@@ -125,8 +123,8 @@ class DistributedCache:
             "consistency_checks": 0,
             "consistency_failures": 0,
         }
-        self._cleanup_task: Optional[asyncio.Task] = None
-        self._invalidation_task: Optional[asyncio.Task] = None
+        self._cleanup_task: asyncio.Task | None = None
+        self._invalidation_task: asyncio.Task | None = None
         self.running = False
     
     async def start(self):
@@ -167,7 +165,7 @@ class DistributedCache:
         
         logger.info("Stopped distributed cache", cache_id=self.cache_id)
     
-    async def get(self, key: str) -> Optional[Any]:
+    async def get(self, key: str) -> Any | None:
         """Get value from cache with consistency checks.
         
         Args:
@@ -193,11 +191,10 @@ class DistributedCache:
             if not entry.is_lock_expired():
                 self.stats["misses"] += 1
                 return None
-            else:
-                # Lock expired, clear it
-                entry.locked = False
-                entry.lock_owner = None
-                entry.lock_expires = None
+            # Lock expired, clear it
+            entry.locked = False
+            entry.lock_owner = None
+            entry.lock_expires = None
         
         # Update access time and return value
         entry.update_access_time()
@@ -205,7 +202,7 @@ class DistributedCache:
         
         return entry.value
     
-    async def set(self, key: str, value: Any, ttl: Optional[int] = None) -> bool:
+    async def set(self, key: str, value: Any, ttl: int | None = None) -> bool:
         """Set value in cache with consistency guarantees.
         
         Args:
@@ -407,7 +404,7 @@ class DistributedCache:
                 # Send invalidation to peer nodes
                 await self._send_invalidation_to_peers(key)
                 
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 continue
             except Exception as e:
                 logger.exception("Error in invalidation loop", error=str(e))
@@ -459,7 +456,7 @@ class DistributedCache:
         self.peer_nodes.discard(node_id)
         logger.info(f"Removed peer node: {node_id}")
     
-    async def consistency_check(self) -> Dict[str, Any]:
+    async def consistency_check(self) -> dict[str, Any]:
         """Perform consistency check across cache entries.
         
         Returns:
@@ -498,7 +495,7 @@ class DistributedCache:
         
         return results
     
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """Get cache statistics.
         
         Returns:
@@ -517,7 +514,7 @@ class DistributedCache:
             "stats": self.stats.copy(),
         }
     
-    async def health_check(self) -> Dict[str, Any]:
+    async def health_check(self) -> dict[str, Any]:
         """Perform health check on the cache.
         
         Returns:
@@ -544,8 +541,8 @@ class CacheCluster:
     
     def __init__(self, cluster_id: str):
         self.cluster_id = cluster_id
-        self.nodes: Dict[str, DistributedCache] = {}
-        self.hash_ring: List[str] = []
+        self.nodes: dict[str, DistributedCache] = {}
+        self.hash_ring: list[str] = []
         self.replication_factor = 2
     
     def add_node(self, cache: DistributedCache):
@@ -592,7 +589,7 @@ class CacheCluster:
                 node_id=node_id,
             )
     
-    def get_node_for_key(self, key: str) -> Optional[DistributedCache]:
+    def get_node_for_key(self, key: str) -> DistributedCache | None:
         """Get the primary node for a key using consistent hashing.
         
         Args:
@@ -610,7 +607,7 @@ class CacheCluster:
         
         return self.nodes.get(node_id)
     
-    async def get(self, key: str) -> Optional[Any]:
+    async def get(self, key: str) -> Any | None:
         """Get value from the cluster.
         
         Args:
@@ -624,7 +621,7 @@ class CacheCluster:
             return await node.get(key)
         return None
     
-    async def set(self, key: str, value: Any, ttl: Optional[int] = None) -> bool:
+    async def set(self, key: str, value: Any, ttl: int | None = None) -> bool:
         """Set value in the cluster with replication.
         
         Args:
@@ -675,7 +672,7 @@ class CacheCluster:
             cluster_id=self.cluster_id,
         )
     
-    def get_cluster_stats(self) -> Dict[str, Any]:
+    def get_cluster_stats(self) -> dict[str, Any]:
         """Get cluster statistics.
         
         Returns:
@@ -706,7 +703,7 @@ class CacheCluster:
 
 
 # Global cache cluster
-_cache_cluster: Optional[CacheCluster] = None
+_cache_cluster: CacheCluster | None = None
 
 
 def get_cache_cluster() -> CacheCluster:

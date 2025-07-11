@@ -5,12 +5,11 @@ Provides real-time visibility into CI/CD pipeline health
 """
 
 import json
-import os
-import sys
 import subprocess
-from datetime import datetime, timedelta
+from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Optional, Any
+from typing import Any
+
 
 class BuildDashboard:
     """Generate build health dashboard for CI/CD monitoring"""
@@ -21,7 +20,7 @@ class BuildDashboard:
         self.dashboard_dir = self.project_root / "docs" / "agent-0-reports" / "dashboard"
         self.dashboard_dir.mkdir(parents=True, exist_ok=True)
     
-    def gather_build_metrics(self) -> Dict[str, Any]:
+    def gather_build_metrics(self) -> dict[str, Any]:
         """Gather current build and quality metrics"""
         metrics = {
             'timestamp': datetime.now().isoformat(),
@@ -35,20 +34,20 @@ class BuildDashboard:
         }
         return metrics
     
-    def _get_git_info(self) -> Dict[str, Any]:
+    def _get_git_info(self) -> dict[str, Any]:
         """Get git repository information"""
         try:
             # Current branch
             branch_result = subprocess.run(
                 ['git', 'rev-parse', '--abbrev-ref', 'HEAD'],
-                capture_output=True, text=True, cwd=self.project_root
+                capture_output=True, text=True, cwd=self.project_root, check=False
             )
             current_branch = branch_result.stdout.strip()
             
             # Latest commit
             commit_result = subprocess.run(
                 ['git', 'log', '-1', '--format=%H|%s|%an|%ad'],
-                capture_output=True, text=True, cwd=self.project_root
+                capture_output=True, text=True, cwd=self.project_root, check=False
             )
             if commit_result.stdout:
                 commit_hash, commit_msg, author, date = commit_result.stdout.strip().split('|')
@@ -58,7 +57,7 @@ class BuildDashboard:
             # Get all agent branches
             branch_list_result = subprocess.run(
                 ['git', 'branch', '-a'],
-                capture_output=True, text=True, cwd=self.project_root
+                capture_output=True, text=True, cwd=self.project_root, check=False
             )
             all_branches = [
                 line.strip().replace('* ', '').replace('remotes/origin/', '')
@@ -79,13 +78,13 @@ class BuildDashboard:
         except Exception as e:
             return {'error': str(e)}
     
-    def _get_test_metrics(self) -> Dict[str, Any]:
+    def _get_test_metrics(self) -> dict[str, Any]:
         """Get test execution metrics"""
         try:
             # Run basic test collection
             result = subprocess.run(
                 ['python', '-m', 'pytest', '--collect-only', '--quiet'],
-                capture_output=True, text=True, cwd=self.project_root, timeout=30
+                capture_output=True, text=True, cwd=self.project_root, timeout=30, check=False
             )
             
             # Parse test count from output
@@ -112,7 +111,7 @@ class BuildDashboard:
         except Exception as e:
             return {'error': str(e)}
     
-    def _get_coverage_metrics(self) -> Dict[str, Any]:
+    def _get_coverage_metrics(self) -> dict[str, Any]:
         """Get test coverage metrics"""
         coverage_file = self.project_root / "coverage.json"
         if coverage_file.exists():
@@ -126,17 +125,17 @@ class BuildDashboard:
                     'last_updated': datetime.now().isoformat()
                 }
             except Exception as e:
-                return {'error': f'Failed to parse coverage: {str(e)}'}
+                return {'error': f'Failed to parse coverage: {e!s}'}
         
         return {'total_coverage': 0, 'status': 'no_coverage_data'}
     
-    def _get_quality_metrics(self) -> Dict[str, Any]:
+    def _get_quality_metrics(self) -> dict[str, Any]:
         """Get code quality metrics"""
         try:
             # Run ruff check
             ruff_result = subprocess.run(
                 ['python', '-m', 'ruff', 'check', 'app', '--format', 'json'],
-                capture_output=True, text=True, cwd=self.project_root, timeout=30
+                capture_output=True, text=True, cwd=self.project_root, timeout=30, check=False
             )
             
             violations = []
@@ -156,13 +155,13 @@ class BuildDashboard:
         except Exception as e:
             return {'error': str(e)}
     
-    def _get_security_metrics(self) -> Dict[str, Any]:
+    def _get_security_metrics(self) -> dict[str, Any]:
         """Get security scan metrics"""
         try:
             # Run bandit security scan
             bandit_result = subprocess.run(
                 ['python', '-m', 'bandit', '-r', 'app', '-f', 'json'],
-                capture_output=True, text=True, cwd=self.project_root, timeout=60
+                capture_output=True, text=True, cwd=self.project_root, timeout=60, check=False
             )
             
             security_issues = []
@@ -188,13 +187,13 @@ class BuildDashboard:
         except Exception as e:
             return {'error': str(e)}
     
-    def _get_build_status(self) -> Dict[str, Any]:
+    def _get_build_status(self) -> dict[str, Any]:
         """Get overall build status"""
         try:
             # Try to import the app to check if it's buildable
             import_result = subprocess.run(
                 ['python', '-c', 'import app; print("OK")'],
-                capture_output=True, text=True, cwd=self.project_root, timeout=10
+                capture_output=True, text=True, cwd=self.project_root, timeout=10, check=False
             )
             
             build_status = 'passed' if import_result.returncode == 0 else 'failed'
@@ -209,7 +208,7 @@ class BuildDashboard:
         except Exception as e:
             return {'status': 'failed', 'error': str(e)}
     
-    def _get_agent_status(self) -> Dict[str, Any]:
+    def _get_agent_status(self) -> dict[str, Any]:
         """Get agent-specific status"""
         agent_status = {}
         
@@ -229,7 +228,7 @@ class BuildDashboard:
         
         return agent_status
     
-    def _get_last_modified(self, directory: Path) -> Optional[str]:
+    def _get_last_modified(self, directory: Path) -> str | None:
         """Get last modified time for directory"""
         try:
             latest_time = 0
@@ -263,7 +262,7 @@ class BuildDashboard:
         
         return str(dashboard_file)
     
-    def _generate_html_dashboard(self, metrics: Dict[str, Any]) -> str:
+    def _generate_html_dashboard(self, metrics: dict[str, Any]) -> str:
         """Generate HTML dashboard content"""
         git_info = metrics.get('git_info', {})
         test_metrics = metrics.get('test_metrics', {})
@@ -472,7 +471,7 @@ class BuildDashboard:
         
         return html
     
-    def _get_health_color(self, metrics: Dict[str, Any]) -> str:
+    def _get_health_color(self, metrics: dict[str, Any]) -> str:
         """Determine overall health color"""
         build_status = metrics.get('build_status', {}).get('status', 'unknown')
         coverage = metrics.get('coverage_metrics', {}).get('total_coverage', 0)
@@ -481,12 +480,11 @@ class BuildDashboard:
         
         if build_status == 'failed':
             return '#dc3545'  # Red
-        elif coverage < 50 or quality_status == 'failed' or security_status == 'failed':
+        if coverage < 50 or quality_status == 'failed' or security_status == 'failed':
             return '#ffc107'  # Yellow
-        elif build_status == 'passed' and coverage >= 80:
+        if build_status == 'passed' and coverage >= 80:
             return '#28a745'  # Green
-        else:
-            return '#17a2b8'  # Blue
+        return '#17a2b8'  # Blue
     
     def generate_markdown_report(self) -> str:
         """Generate markdown build report"""

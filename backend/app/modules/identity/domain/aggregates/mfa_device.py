@@ -11,6 +11,7 @@ from typing import Any
 from uuid import UUID, uuid4
 
 from ...entities.user.user_events import BackupCodeGenerated, BackupCodeUsed, MFAEnabled
+from ...shared.base_entity import IdentityAggregate, SecurityValidationMixin
 from ..enums import MFAMethod
 from ..events import (
     MFACodeVerificationFailed,
@@ -18,7 +19,6 @@ from ..events import (
     MFADeviceDisabled,
     MFADeviceVerified,
 )
-from ...shared.base_entity import IdentityAggregate, SecurityValidationMixin
 
 
 # Create missing value object classes locally
@@ -230,16 +230,15 @@ class MFADevice(IdentityAggregate, SecurityValidationMixin):
             # For TOTP, check if code is 6 digits
             # In production, would use pyotp library to verify against secret
             return len(code) == 6 and code.isdigit()
-        elif self.method == MFAMethod.SMS:
+        if self.method == MFAMethod.SMS:
             # For SMS, would check against stored code sent to phone
             # This is a simplified check
             return len(code) == 6 and code.isdigit()
-        elif self.method == MFAMethod.EMAIL:
+        if self.method == MFAMethod.EMAIL:
             # For email, would check against stored code sent to email
             return len(code) == 6 and code.isdigit()
-        else:
-            # For other methods, basic validation
-            return len(code) >= 6
+        # For other methods, basic validation
+        return len(code) >= 6
     
     def generate_backup_codes(self, count: int = 8) -> list[str]:
         """Generate backup codes."""

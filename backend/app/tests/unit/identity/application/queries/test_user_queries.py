@@ -9,37 +9,34 @@ Tests cover:
 - User profile queries
 """
 
-import pytest
-from unittest.mock import Mock, AsyncMock
-from datetime import datetime, UTC
+from datetime import UTC, datetime
+from unittest.mock import AsyncMock, Mock
 from uuid import uuid4
 
-from app.modules.identity.application.queries.user_queries import (
-    GetUserByIdQuery,
-    GetUserByIdQueryHandler,
-    SearchUsersQuery,
-    SearchUsersQueryHandler,
-    ListUsersQuery,
-    ListUsersQueryHandler,
-    GetUserProfileQuery,
-    GetUserProfileQueryHandler,
-    GetUsersByRoleQuery,
-    GetUsersByRoleQueryHandler,
-)
+import pytest
+
 from app.modules.identity.application.dtos.response.user_dtos import (
+    PaginatedUsersDTO,
     UserDTO,
     UserListDTO,
     UserProfileDTO,
-    PaginatedUsersDTO,
+)
+from app.modules.identity.application.errors import NotFoundError, ValidationError
+from app.modules.identity.application.queries.user_queries import (
+    GetUserByIdQuery,
+    GetUserByIdQueryHandler,
+    GetUserProfileQuery,
+    GetUserProfileQueryHandler,
+    ListUsersQuery,
+    ListUsersQueryHandler,
+    SearchUsersQuery,
+    SearchUsersQueryHandler,
 )
 from app.modules.identity.domain.aggregates.user import User
-from app.modules.identity.domain.value_objects.email import Email
-from app.modules.identity.domain.value_objects.username import Username
-from app.modules.identity.domain.value_objects.password_hash import PasswordHash
-from app.modules.identity.domain.value_objects.user_id import UserId
-from app.modules.identity.domain.value_objects.role_id import RoleId
 from app.modules.identity.domain.enums import UserStatus, UserType
-from app.modules.identity.application.errors import NotFoundError, ValidationError
+from app.modules.identity.domain.value_objects.email import Email
+from app.modules.identity.domain.value_objects.password_hash import PasswordHash
+from app.modules.identity.domain.value_objects.username import Username
 
 
 class TestGetUserByIdQuery:

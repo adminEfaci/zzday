@@ -8,7 +8,11 @@ from datetime import UTC, datetime, timedelta
 from typing import Any
 from uuid import UUID
 
-from ..aggregates.access_token import AccessToken, RefreshStrategy, TokenFamily, TokenStatus
+from ..aggregates.access_token import (
+    AccessToken,
+    RefreshStrategy,
+    TokenStatus,
+)
 
 
 class AccessTokenService:
@@ -150,7 +154,6 @@ class AccessTokenService:
         token.suspicious_activity_score += 0.1
         
         # Log security event (would be handled by application layer)
-        pass
     
     def _update_token_security_context(
         self,

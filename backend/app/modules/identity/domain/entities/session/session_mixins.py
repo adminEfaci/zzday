@@ -9,8 +9,12 @@ from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from .session_constants import (
-    RISK_ADJUSTMENTS, MAX_SECURITY_EVENTS, SECURITY_EVENTS_KEEP_COUNT,
-    DEFAULT_RATE_LIMITS, RISK_DECAY_RATE, MINIMUM_RISK_DECAY
+    DEFAULT_RATE_LIMITS,
+    MAX_SECURITY_EVENTS,
+    MINIMUM_RISK_DECAY,
+    RISK_ADJUSTMENTS,
+    RISK_DECAY_RATE,
+    SECURITY_EVENTS_KEEP_COUNT,
 )
 
 
@@ -67,7 +71,6 @@ class RiskManagementMixin(ABC):
     @abstractmethod
     def _handle_high_risk(self) -> None:
         """Handle high-risk scenarios."""
-        pass
 
 
 class RateLimitingMixin(ABC):

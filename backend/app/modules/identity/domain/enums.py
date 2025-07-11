@@ -395,12 +395,11 @@ class ResourceType(Enum):
         
         if self in identity_resources:
             return "identity"
-        elif self in system_resources:
+        if self in system_resources:
             return "system"
-        elif self in business_resources:
+        if self in business_resources:
             return "business"
-        else:
-            return "other"
+        return "other"
     
     def is_sensitive(self) -> bool:
         """Check if resource type contains sensitive data."""

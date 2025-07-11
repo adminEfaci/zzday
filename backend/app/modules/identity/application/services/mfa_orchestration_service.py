@@ -5,29 +5,42 @@ Coordinates Multi-Factor Authentication across different providers and methods.
 """
 
 import logging
-from datetime import datetime, UTC, timedelta
+from datetime import UTC, datetime, timedelta
 from typing import Any
 from uuid import UUID
 
-from app.modules.identity.domain.interfaces.services.authentication.mfa_service import IMFAProvider
-from app.modules.identity.domain.interfaces.repositories.user.mfa_repository import IMFARepository
-from app.modules.identity.domain.interfaces.repositories.user.user_repository import IUserRepository
-from app.modules.identity.domain.interfaces.repositories.session.session_repository import ISessionRepository
-from app.modules.identity.domain.interfaces.services.infrastructure.cache_port import ICachePort
-from app.modules.identity.domain.interfaces.services.infrastructure.event_publisher_port import IEventPublisherPort
 from app.modules.identity.domain.entities.admin.mfa_device import MFADevice, MFAMethod
 from app.modules.identity.domain.entities.session.session import Session
 from app.modules.identity.domain.entities.session.session_enums import SessionStatus
 from app.modules.identity.domain.events import (
-    MFAChallengeInitiated,
     MFAChallengeCompleted,
     MFAChallengeFailed,
-    MFADeviceSelected
+    MFAChallengeInitiated,
 )
-from app.modules.identity.infrastructure.services.totp_service import TOTPService
-from app.modules.identity.infrastructure.services.sms_mfa_provider import SMSMFAProvider
-from app.modules.identity.infrastructure.services.email_mfa_provider import EmailMFAProvider
+from app.modules.identity.domain.interfaces.repositories.session.session_repository import (
+    ISessionRepository,
+)
+from app.modules.identity.domain.interfaces.repositories.user.mfa_repository import (
+    IMFARepository,
+)
+from app.modules.identity.domain.interfaces.repositories.user.user_repository import (
+    IUserRepository,
+)
+from app.modules.identity.domain.interfaces.services.authentication.mfa_service import (
+    IMFAProvider,
+)
+from app.modules.identity.domain.interfaces.services.infrastructure.cache_port import (
+    ICachePort,
+)
+from app.modules.identity.domain.interfaces.services.infrastructure.event_publisher_port import (
+    IEventPublisherPort,
+)
 from app.modules.identity.domain.value_objects.risk_assessment import RiskLevel
+from app.modules.identity.infrastructure.services.email_mfa_provider import (
+    EmailMFAProvider,
+)
+from app.modules.identity.infrastructure.services.sms_mfa_provider import SMSMFAProvider
+from app.modules.identity.infrastructure.services.totp_service import TOTPService
 
 logger = logging.getLogger(__name__)
 
@@ -246,32 +259,31 @@ class MFAOrchestrationService:
                 "device_id": str(device.id),
                 **verify_metadata
             }
-        else:
-            # Increment attempts
-            challenge_data["attempts"] = attempts + 1
-            await self.cache.set(
-                challenge_id,
-                challenge_data,
-                ttl=self.challenge_expiry_minutes * 60
+        # Increment attempts
+        challenge_data["attempts"] = attempts + 1
+        await self.cache.set(
+            challenge_id,
+            challenge_data,
+            ttl=self.challenge_expiry_minutes * 60
+        )
+        
+        # Publish failure event
+        await self.event_publisher.publish(
+            MFAChallengeFailed(
+                aggregate_id=UUID(challenge_data["user_id"]),
+                session_id=session_id,
+                attempts=challenge_data["attempts"],
+                reason=verify_metadata.get("error", "Invalid code")
             )
-            
-            # Publish failure event
-            await self.event_publisher.publish(
-                MFAChallengeFailed(
-                    aggregate_id=UUID(challenge_data["user_id"]),
-                    session_id=session_id,
-                    attempts=challenge_data["attempts"],
-                    reason=verify_metadata.get("error", "Invalid code")
-                )
-            )
-            
-            remaining_attempts = self.max_challenge_attempts - challenge_data["attempts"]
-            logger.warning(f"MFA challenge failed for session {session_id}, {remaining_attempts} attempts remaining")
-            
-            return False, {
-                "error": verify_metadata.get("error", "Invalid code"),
-                "remaining_attempts": remaining_attempts
-            }
+        )
+        
+        remaining_attempts = self.max_challenge_attempts - challenge_data["attempts"]
+        logger.warning(f"MFA challenge failed for session {session_id}, {remaining_attempts} attempts remaining")
+        
+        return False, {
+            "error": verify_metadata.get("error", "Invalid code"),
+            "remaining_attempts": remaining_attempts
+        }
     
     async def get_available_methods(self, user_id: UUID) -> list[dict[str, Any]]:
         """Get available MFA methods for user.

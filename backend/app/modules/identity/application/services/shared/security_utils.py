@@ -11,10 +11,8 @@ import secrets
 import string
 from datetime import UTC, datetime, timedelta
 from typing import Any
-from uuid import UUID
 
 from app.modules.identity.domain.enums import MFAMethod, RiskLevel, SecurityEventType
-from app.modules.identity.domain.value_objects import IpAddress
 
 
 class SecurityUtils:
@@ -154,14 +152,13 @@ class SecurityUtils:
         """
         if risk_score >= 0.8:
             return RiskLevel.CRITICAL
-        elif risk_score >= 0.6:
+        if risk_score >= 0.6:
             return RiskLevel.HIGH
-        elif risk_score >= 0.4:
+        if risk_score >= 0.4:
             return RiskLevel.MEDIUM
-        elif risk_score >= 0.2:
+        if risk_score >= 0.2:
             return RiskLevel.LOW
-        else:
-            return RiskLevel.MINIMAL
+        return RiskLevel.MINIMAL
     
     @staticmethod
     def is_suspicious_user_agent(user_agent: str) -> bool:
@@ -368,8 +365,8 @@ class SecurityUtils:
         
         if level == "full":
             return "***.***.***.***"
-        else:  # partial
-            return f"{parts[0]}.{parts[1]}.***.***"
+        # partial
+        return f"{parts[0]}.{parts[1]}.***.***"
     
     @staticmethod
     def generate_device_fingerprint(
@@ -492,9 +489,8 @@ class SecurityUtils:
         
         if event_type in critical_events or severity_score >= 0.8:
             return SecurityEventType.CRITICAL_INCIDENT
-        elif event_type in high_events or severity_score >= 0.6:
+        if event_type in high_events or severity_score >= 0.6:
             return SecurityEventType.SECURITY_VIOLATION
-        elif severity_score >= 0.4:
+        if severity_score >= 0.4:
             return SecurityEventType.SUSPICIOUS_ACTIVITY
-        else:
-            return SecurityEventType.AUTHENTICATION_FAILURE
+        return SecurityEventType.AUTHENTICATION_FAILURE

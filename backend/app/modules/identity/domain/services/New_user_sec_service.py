@@ -4,14 +4,20 @@ User Security Domain Service
 Handles risk assessment and security decisions for user authentication.
 """
 
-from datetime import datetime, timedelta
 from typing import Any
-from uuid import UUID
 
 from app.modules.identity.domain.entities.user.login_attempt import LoginAttempt
-from app.modules.identity.domain.value_objects import AuthorizationContext, RiskAssessment
+from app.modules.identity.domain.entities.user.user_constants import (
+    BehavioralLimits,
+    DeviceRisk,
+    LocationRisk,
+    SecurityThresholds,
+)
 from app.modules.identity.domain.enums import RiskLevel
-from app.modules.identity.domain.entities.user.user_constants import SecurityThresholds, BehavioralLimits, LocationRisk, DeviceRisk
+from app.modules.identity.domain.value_objects import (
+    AuthorizationContext,
+    RiskAssessment,
+)
 
 
 class UserSecurityService:

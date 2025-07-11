@@ -7,15 +7,12 @@ Handles complex authentication logic including login, MFA, and session managemen
 from __future__ import annotations
 
 import hashlib
-import secrets
 from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING, Any
 from uuid import UUID, uuid4
 
 if TYPE_CHECKING:
     from app.modules.identity.domain.aggregates.user import User
-
-from ...interfaces.security import IPasswordHasher
 
 from ...entities.admin.login_attempt import LoginAttempt
 from ...entities.device.device_registration import DeviceRegistration
@@ -33,6 +30,7 @@ from ...entities.user.user_events import (
     UserSessionCreated,
 )
 from ...enums import DevicePlatform, DeviceType, LoginFailureReason
+from ...interfaces.security import IPasswordHasher
 from ...value_objects import IpAddress
 
 

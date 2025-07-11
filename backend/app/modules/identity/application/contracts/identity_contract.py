@@ -1,231 +1,405 @@
 """
-Identity Module Public Contract
+Identity Module Contract
 
-This module defines the public interface that other modules can use to interact
-with the Identity module. This contract ensures loose coupling between modules
-and maintains clear boundaries.
-
-Key Principles:
-- Only expose necessary operations
-- Use DTOs for data transfer
-- No domain objects exposed
-- Async/await for all operations
+Defines the public API for the Identity module including all
+events, commands, and queries that other modules can use.
 """
 
-from abc import ABC, abstractmethod
-from typing import List, Optional, Dict, Any
+from dataclasses import dataclass
 from datetime import datetime
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from app.core.contracts import (
+    ContractCommand,
+    ContractEvent,
+    ContractQuery,
+    ModuleContract,
+)
 
+# ===== EVENTS =====
+# Events that the Identity module publishes
 
-# DTOs for Identity Module Communication
-class UserInfoDTO(BaseModel):
-    """Basic user information DTO."""
-    
-    id: UUID
+@dataclass(frozen=True)
+class UserRegisteredEvent(ContractEvent):
+    """A new user has been registered in the system."""
+    user_id: UUID
     email: str
-    username: Optional[str] = None
-    is_active: bool = True
-    created_at: datetime
+    username: str
+    registered_at: datetime
+    requires_verification: bool = True
+
+
+@dataclass(frozen=True)
+class UserLoggedInEvent(ContractEvent):
+    """A user has successfully logged in."""
+    user_id: UUID
+    session_id: UUID
+    ip_address: str
+    user_agent: str
+    logged_in_at: datetime
+    mfa_used: bool = False
+
+
+@dataclass(frozen=True)
+class UserLoggedOutEvent(ContractEvent):
+    """A user has logged out."""
+    user_id: UUID
+    session_id: UUID
+    logged_out_at: datetime
+
+
+@dataclass(frozen=True)
+class LoginFailedEvent(ContractEvent):
+    """A login attempt has failed."""
+    email: str
+    ip_address: str
+    reason: str
+    attempt_number: int
+    failed_at: datetime
+
+
+@dataclass(frozen=True)
+class UserLockedOutEvent(ContractEvent):
+    """A user account has been locked due to too many failed attempts."""
+    user_id: UUID
+    locked_until: datetime
+    reason: str
+    locked_at: datetime
+
+
+@dataclass(frozen=True)
+class UserActivatedEvent(ContractEvent):
+    """A user account has been activated."""
+    user_id: UUID
+    activated_at: datetime
+
+
+@dataclass(frozen=True)
+class UserDeactivatedEvent(ContractEvent):
+    """A user account has been deactivated."""
+    user_id: UUID
+    reason: str
+    deactivated_at: datetime
+    deactivated_by: UUID | None = None
+
+
+@dataclass(frozen=True)
+class UserDeletedEvent(ContractEvent):
+    """A user account has been deleted."""
+    user_id: UUID
+    deleted_at: datetime
+    deletion_type: str  # "soft" or "hard"
+
+
+@dataclass(frozen=True)
+class PasswordChangedEvent(ContractEvent):
+    """A user's password has been changed."""
+    user_id: UUID
+    changed_at: datetime
+    change_method: str  # "user", "admin", "reset"
+
+
+@dataclass(frozen=True)
+class PasswordResetRequestedEvent(ContractEvent):
+    """A password reset has been requested."""
+    user_id: UUID
+    email: str
+    token_id: UUID
+    requested_at: datetime
+    expires_at: datetime
+
+
+@dataclass(frozen=True)
+class MFAEnabledEvent(ContractEvent):
+    """Multi-factor authentication has been enabled."""
+    user_id: UUID
+    mfa_method: str  # "totp", "sms", "email", "hardware"
+    enabled_at: datetime
+
+
+@dataclass(frozen=True)
+class MFADisabledEvent(ContractEvent):
+    """Multi-factor authentication has been disabled."""
+    user_id: UUID
+    mfa_method: str
+    disabled_at: datetime
+    reason: str
+
+
+@dataclass(frozen=True)
+class RoleAssignedEvent(ContractEvent):
+    """A role has been assigned to a user."""
+    user_id: UUID
+    role_id: UUID
+    role_name: str
+    assigned_by: UUID
+    assigned_at: datetime
+
+
+@dataclass(frozen=True)
+class RoleRevokedEvent(ContractEvent):
+    """A role has been revoked from a user."""
+    user_id: UUID
+    role_id: UUID
+    role_name: str
+    revoked_by: UUID
+    revoked_at: datetime
+
+
+@dataclass(frozen=True)
+class SessionExpiredEvent(ContractEvent):
+    """A user session has expired."""
+    user_id: UUID
+    session_id: UUID
+    expired_at: datetime
+    reason: str  # "timeout", "manual", "security"
+
+
+@dataclass(frozen=True)
+class SecurityAlertEvent(ContractEvent):
+    """A security alert has been triggered."""
+    user_id: UUID | None
+    alert_type: str  # "suspicious_login", "password_breach", "unusual_activity"
+    severity: str  # "low", "medium", "high", "critical"
+    details: dict[str, str]
+    triggered_at: datetime
+
+
+# ===== COMMANDS =====
+# Commands that the Identity module accepts
+
+@dataclass
+class RegisterUserCommand(ContractCommand):
+    """Command to register a new user."""
+    email: str
+    username: str
+    password: str
+    first_name: str | None = None
+    last_name: str | None = None
+    phone_number: str | None = None
+
+
+@dataclass
+class AuthenticateUserCommand(ContractCommand):
+    """Command to authenticate a user."""
+    email: str
+    password: str
+    ip_address: str
+    user_agent: str
+    device_fingerprint: str | None = None
+
+
+@dataclass
+class LogoutUserCommand(ContractCommand):
+    """Command to logout a user."""
+    user_id: UUID
+    session_id: UUID
+    logout_all_sessions: bool = False
+
+
+@dataclass
+class ChangePasswordCommand(ContractCommand):
+    """Command to change a user's password."""
+    user_id: UUID
+    current_password: str
+    new_password: str
+
+
+@dataclass
+class ResetPasswordCommand(ContractCommand):
+    """Command to reset a user's password."""
+    token: str
+    new_password: str
+
+
+@dataclass
+class EnableMFACommand(ContractCommand):
+    """Command to enable MFA for a user."""
+    user_id: UUID
+    mfa_method: str
+    setup_data: dict[str, str]  # Method-specific setup data
+
+
+@dataclass
+class DisableMFACommand(ContractCommand):
+    """Command to disable MFA for a user."""
+    user_id: UUID
+    mfa_method: str
+    verification_code: str
+    reason: str
+
+
+@dataclass
+class AssignRoleCommand(ContractCommand):
+    """Command to assign a role to a user."""
+    user_id: UUID
+    role_id: UUID
+    assigned_by: UUID
+
+
+@dataclass
+class RevokeRoleCommand(ContractCommand):
+    """Command to revoke a role from a user."""
+    user_id: UUID
+    role_id: UUID
+    revoked_by: UUID
+    reason: str
+
+
+@dataclass
+class ActivateUserCommand(ContractCommand):
+    """Command to activate a user account."""
+    user_id: UUID
+    activation_token: str | None = None
+
+
+@dataclass
+class DeactivateUserCommand(ContractCommand):
+    """Command to deactivate a user account."""
+    user_id: UUID
+    reason: str
+    deactivated_by: UUID
+
+
+# ===== QUERIES =====
+# Queries that the Identity module supports
+
+@dataclass
+class GetUserByIdQuery(ContractQuery):
+    """Query to get user information by ID."""
+    user_id: UUID
+    include_roles: bool = False
+    include_permissions: bool = False
+
+
+@dataclass
+class GetUserByEmailQuery(ContractQuery):
+    """Query to get user information by email."""
+    email: str
+    include_roles: bool = False
+    include_permissions: bool = False
+
+
+@dataclass
+class GetUserSessionsQuery(ContractQuery):
+    """Query to get active sessions for a user."""
+    user_id: UUID
+    include_expired: bool = False
+    limit: int = 10
+
+
+@dataclass
+class GetUserRolesQuery(ContractQuery):
+    """Query to get roles assigned to a user."""
+    user_id: UUID
+    include_permissions: bool = False
+
+
+@dataclass
+class GetUserPermissionsQuery(ContractQuery):
+    """Query to get effective permissions for a user."""
+    user_id: UUID
+    resource_type: str | None = None
+
+
+@dataclass
+class CheckPermissionQuery(ContractQuery):
+    """Query to check if a user has a specific permission."""
+    user_id: UUID
+    permission: str
+    resource_id: UUID | None = None
+    context: dict[str, str] | None = None
+
+
+@dataclass
+class SearchUsersQuery(ContractQuery):
+    """Query to search for users."""
+    search_term: str | None = None
+    filters: dict[str, str] | None = None
+    page: int = 1
+    page_size: int = 20
+    sort_by: str = "created_at"
+    sort_order: str = "desc"
+
+
+@dataclass
+class GetSecurityEventsQuery(ContractQuery):
+    """Query to get security events for a user."""
+    user_id: UUID
+    event_types: list[str] | None = None
+    start_date: datetime | None = None
+    end_date: datetime | None = None
+    limit: int = 50
+
+
+# ===== CONTRACT DEFINITION =====
+
+class IdentityModuleContract(ModuleContract):
+    """
+    Contract definition for the Identity module.
     
-    class Config:
-        json_encoders = {
-            UUID: str,
-            datetime: lambda v: v.isoformat()
+    This contract defines all public events, commands, and queries
+    that other modules can use to interact with the Identity module.
+    """
+    
+    @property
+    def module_name(self) -> str:
+        return "identity"
+    
+    @property
+    def version(self) -> str:
+        return "1.0.0"
+    
+    def get_events(self) -> dict[str, type[ContractEvent]]:
+        """Get all events exposed by the Identity module."""
+        return {
+            "UserRegistered": UserRegisteredEvent,
+            "UserLoggedIn": UserLoggedInEvent,
+            "UserLoggedOut": UserLoggedOutEvent,
+            "LoginFailed": LoginFailedEvent,
+            "UserLockedOut": UserLockedOutEvent,
+            "UserActivated": UserActivatedEvent,
+            "UserDeactivated": UserDeactivatedEvent,
+            "UserDeleted": UserDeletedEvent,
+            "PasswordChanged": PasswordChangedEvent,
+            "PasswordResetRequested": PasswordResetRequestedEvent,
+            "MFAEnabled": MFAEnabledEvent,
+            "MFADisabled": MFADisabledEvent,
+            "RoleAssigned": RoleAssignedEvent,
+            "RoleRevoked": RoleRevokedEvent,
+            "SessionExpired": SessionExpiredEvent,
+            "SecurityAlert": SecurityAlertEvent,
+        }
+    
+    def get_commands(self) -> dict[str, type[ContractCommand]]:
+        """Get all commands accepted by the Identity module."""
+        return {
+            "RegisterUser": RegisterUserCommand,
+            "AuthenticateUser": AuthenticateUserCommand,
+            "LogoutUser": LogoutUserCommand,
+            "ChangePassword": ChangePasswordCommand,
+            "ResetPassword": ResetPasswordCommand,
+            "EnableMFA": EnableMFACommand,
+            "DisableMFA": DisableMFACommand,
+            "AssignRole": AssignRoleCommand,
+            "RevokeRole": RevokeRoleCommand,
+            "ActivateUser": ActivateUserCommand,
+            "DeactivateUser": DeactivateUserCommand,
+        }
+    
+    def get_queries(self) -> dict[str, type[ContractQuery]]:
+        """Get all queries supported by the Identity module."""
+        return {
+            "GetUserById": GetUserByIdQuery,
+            "GetUserByEmail": GetUserByEmailQuery,
+            "GetUserSessions": GetUserSessionsQuery,
+            "GetUserRoles": GetUserRolesQuery,
+            "GetUserPermissions": GetUserPermissionsQuery,
+            "CheckPermission": CheckPermissionQuery,
+            "SearchUsers": SearchUsersQuery,
+            "GetSecurityEvents": GetSecurityEventsQuery,
         }
 
 
-class UserAuthenticationDTO(BaseModel):
-    """User authentication result DTO."""
-    
-    user_id: UUID
-    is_authenticated: bool
-    session_id: Optional[UUID] = None
-    access_token: Optional[str] = None
-    refresh_token: Optional[str] = None
-    expires_at: Optional[datetime] = None
-
-
-class UserPermissionCheckDTO(BaseModel):
-    """Permission check result DTO."""
-    
-    user_id: UUID
-    permission: str
-    resource: Optional[str] = None
-    is_allowed: bool
-    checked_at: datetime = Field(default_factory=datetime.utcnow)
-
-
-class UserRoleDTO(BaseModel):
-    """User role information DTO."""
-    
-    id: UUID
-    name: str
-    permissions: List[str] = []
-
-
-class SessionInfoDTO(BaseModel):
-    """Session information DTO."""
-    
-    id: UUID
-    user_id: UUID
-    is_active: bool
-    created_at: datetime
-    last_activity: datetime
-    expires_at: Optional[datetime] = None
-    device_info: Optional[Dict[str, Any]] = None
-
-
-class IIdentityContract(ABC):
-    """
-    Public contract for Identity module.
-    
-    This interface defines all operations that other modules can perform
-    with the Identity module. All methods are async and return DTOs.
-    """
-    
-    @abstractmethod
-    async def get_user_by_id(self, user_id: UUID) -> Optional[UserInfoDTO]:
-        """
-        Get basic user information by ID.
-        
-        Args:
-            user_id: User identifier
-            
-        Returns:
-            UserInfoDTO if user exists, None otherwise
-        """
-        pass
-    
-    @abstractmethod
-    async def get_user_by_email(self, email: str) -> Optional[UserInfoDTO]:
-        """
-        Get basic user information by email.
-        
-        Args:
-            email: User email address
-            
-        Returns:
-            UserInfoDTO if user exists, None otherwise
-        """
-        pass
-    
-    @abstractmethod
-    async def get_users_by_ids(self, user_ids: List[UUID]) -> List[UserInfoDTO]:
-        """
-        Get multiple users by their IDs.
-        
-        Args:
-            user_ids: List of user identifiers
-            
-        Returns:
-            List of UserInfoDTO for found users
-        """
-        pass
-    
-    @abstractmethod
-    async def authenticate_user(
-        self, 
-        email: str, 
-        password: str,
-        device_info: Optional[Dict[str, Any]] = None
-    ) -> UserAuthenticationDTO:
-        """
-        Authenticate user with credentials.
-        
-        Args:
-            email: User email
-            password: User password
-            device_info: Optional device information
-            
-        Returns:
-            UserAuthenticationDTO with authentication result
-        """
-        pass
-    
-    @abstractmethod
-    async def validate_session(self, session_id: UUID) -> Optional[SessionInfoDTO]:
-        """
-        Validate if session is active and valid.
-        
-        Args:
-            session_id: Session identifier
-            
-        Returns:
-            SessionInfoDTO if session is valid, None otherwise
-        """
-        pass
-    
-    @abstractmethod
-    async def check_permission(
-        self, 
-        user_id: UUID, 
-        permission: str,
-        resource: Optional[str] = None
-    ) -> UserPermissionCheckDTO:
-        """
-        Check if user has specific permission.
-        
-        Args:
-            user_id: User identifier
-            permission: Permission to check
-            resource: Optional resource identifier
-            
-        Returns:
-            UserPermissionCheckDTO with check result
-        """
-        pass
-    
-    @abstractmethod
-    async def get_user_roles(self, user_id: UUID) -> List[UserRoleDTO]:
-        """
-        Get all roles assigned to user.
-        
-        Args:
-            user_id: User identifier
-            
-        Returns:
-            List of UserRoleDTO
-        """
-        pass
-    
-    @abstractmethod
-    async def invalidate_session(self, session_id: UUID) -> bool:
-        """
-        Invalidate user session.
-        
-        Args:
-            session_id: Session identifier
-            
-        Returns:
-            True if session was invalidated, False otherwise
-        """
-        pass
-    
-    @abstractmethod
-    async def get_active_sessions(self, user_id: UUID) -> List[SessionInfoDTO]:
-        """
-        Get all active sessions for user.
-        
-        Args:
-            user_id: User identifier
-            
-        Returns:
-            List of active SessionInfoDTO
-        """
-        pass
-    
-    @abstractmethod
-    async def is_user_active(self, user_id: UUID) -> bool:
-        """
-        Check if user account is active.
-        
-        Args:
-            user_id: User identifier
-            
-        Returns:
-            True if user is active, False otherwise
-        """
-        pass
+# Create and register the contract
+identity_contract = IdentityModuleContract()

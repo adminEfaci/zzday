@@ -246,19 +246,19 @@ class PreferenceService:
         default_value = defaults[key]
         if isinstance(default_value, bool):
             return isinstance(value, bool)
-        elif isinstance(default_value, int):
+        if isinstance(default_value, int):
             return isinstance(value, int) and value >= 0
-        elif isinstance(default_value, str):
+        if isinstance(default_value, str):
             # Additional validation for specific keys
             if key == "theme":
                 return value in ["light", "dark", "system"]
-            elif key == "profile_visibility":
+            if key == "profile_visibility":
                 return value in ["public", "private", "friends"]
-            elif key == "font_size":
+            if key == "font_size":
                 return value in ["small", "medium", "large", "extra-large"]
-            elif key == "time_format":
+            if key == "time_format":
                 return value in ["12h", "24h"]
-            elif key == "first_day_of_week":
+            if key == "first_day_of_week":
                 return value in ["sunday", "monday"]
             return isinstance(value, str)
         
@@ -269,13 +269,12 @@ class PreferenceService:
         """Determine preference type from value."""
         if isinstance(value, bool):
             return PreferenceType.BOOLEAN
-        elif isinstance(value, int):
+        if isinstance(value, int):
             return PreferenceType.INTEGER
-        elif isinstance(value, float):
+        if isinstance(value, float):
             return PreferenceType.FLOAT
-        elif isinstance(value, list):
+        if isinstance(value, list):
             return PreferenceType.LIST
-        elif isinstance(value, dict):
+        if isinstance(value, dict):
             return PreferenceType.JSON
-        else:
-            return PreferenceType.STRING
+        return PreferenceType.STRING

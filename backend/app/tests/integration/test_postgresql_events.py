@@ -6,7 +6,6 @@ and cross-module event handlers in a Docker environment.
 """
 
 import asyncio
-import json
 from datetime import UTC, datetime
 from unittest.mock import AsyncMock, Mock, patch
 from uuid import uuid4
@@ -14,11 +13,14 @@ from uuid import uuid4
 import pytest
 
 from app.core.events.cross_module import CrossModuleEventOrchestrator
-from app.core.events.docker_config import DockerEventSystemConfig, DockerEventSystemInitializer
+from app.core.events.docker_config import (
+    DockerEventSystemConfig,
+)
 from app.core.events.serialization import PostgreSQLEventSerializer
 from app.core.events.types import EventMetadata
-from app.modules.audit.domain.events.audit_events import AuditEntryRecorded
-from app.modules.identity.domain.entities.user.user_events import LoginSuccessful, UserCreated
+from app.modules.identity.domain.entities.user.user_events import (
+    UserCreated,
+)
 
 
 @pytest.mark.integration

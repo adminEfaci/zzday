@@ -13,8 +13,10 @@ import pyotp
 import qrcode
 from qrcode.image.svg import SvgPathImage
 
-from app.modules.identity.domain.interfaces.services.authentication.mfa_service import ITOTPService
 from app.modules.identity.domain.entities.admin.mfa_device import MFADevice, MFAMethod
+from app.modules.identity.domain.interfaces.services.authentication.mfa_service import (
+    ITOTPService,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -107,18 +109,17 @@ class TOTPService(ITOTPService):
             img.save(stream)
             return stream.getvalue().decode('utf-8')
         
-        elif format == "png":
+        if format == "png":
             img = qr.make_image(fill_color="black", back_color="white")
             stream = io.BytesIO()
             img.save(stream, format='PNG')
             return base64.b64encode(stream.getvalue()).decode('utf-8')
         
-        elif format == "ascii":
+        if format == "ascii":
             # Generate ASCII representation
             return qr.get_matrix()
         
-        else:
-            raise ValueError(f"Unsupported format: {format}")
+        raise ValueError(f"Unsupported format: {format}")
     
     def verify_token(
         self,

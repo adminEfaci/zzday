@@ -9,25 +9,26 @@ Tests cover:
 - Security rules enforcement
 """
 
-import pytest
-from datetime import datetime, timedelta, UTC
-from unittest.mock import Mock, AsyncMock
+from datetime import UTC, datetime, timedelta
+from unittest.mock import AsyncMock, Mock
 
-from app.modules.identity.domain.services.authentication_service import AuthenticationService
+import pytest
+
 from app.modules.identity.domain.aggregates.user import User
-from app.modules.identity.domain.value_objects.email import Email
-from app.modules.identity.domain.value_objects.username import Username
-from app.modules.identity.domain.value_objects.password_hash import PasswordHash
-from app.modules.identity.domain.value_objects.ip_address import IpAddress
-from app.modules.identity.domain.value_objects.user_agent import UserAgent
-from app.modules.identity.domain.enums import UserStatus
 from app.modules.identity.domain.errors import (
-    DomainError,
-    AuthenticationError,
     AccountLockedError,
-    InvalidCredentialsError,
     AccountNotActiveError,
+    AuthenticationError,
+    InvalidCredentialsError,
 )
+from app.modules.identity.domain.services.authentication_service import (
+    AuthenticationService,
+)
+from app.modules.identity.domain.value_objects.email import Email
+from app.modules.identity.domain.value_objects.ip_address import IpAddress
+from app.modules.identity.domain.value_objects.password_hash import PasswordHash
+from app.modules.identity.domain.value_objects.user_agent import UserAgent
+from app.modules.identity.domain.value_objects.username import Username
 
 
 class TestAuthenticationService:

@@ -4,18 +4,14 @@ This module provides connection pooling configuration to improve database
 performance and reliability according to CAP theorem requirements.
 """
 
-import asyncio
-import logging
 from contextlib import asynccontextmanager
-from datetime import datetime, timedelta
-from typing import Any, Dict, Optional
+from datetime import datetime
+from typing import Any
 
 from sqlalchemy import event
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.pool import QueuePool
-from sqlalchemy.engine.events import PoolEvents
 
-from app.core.config import get_settings
 from app.core.logging import get_logger
 
 logger = get_logger(__name__)
@@ -218,7 +214,7 @@ class ConnectionPoolManager:
             session = self.session_maker()
             yield session
             
-        except asyncio.TimeoutError:
+        except TimeoutError:
             self.config.connection_timeouts += 1
             logger.warning(
                 "Database connection timeout",
@@ -254,7 +250,7 @@ class ConnectionPoolManager:
                         close_error=str(close_error),
                     )
     
-    async def get_pool_status(self) -> Dict[str, Any]:
+    async def get_pool_status(self) -> dict[str, Any]:
         """Get current pool status.
         
         Returns:
@@ -279,7 +275,7 @@ class ConnectionPoolManager:
             "last_health_check": self.config.last_health_check.isoformat(),
         }
     
-    async def health_check(self) -> Dict[str, Any]:
+    async def health_check(self) -> dict[str, Any]:
         """Perform health check on connection pool.
         
         Returns:
@@ -361,7 +357,7 @@ class ConnectionPoolManager:
 
 
 # Global connection pool manager
-_connection_pool_manager: Optional[ConnectionPoolManager] = None
+_connection_pool_manager: ConnectionPoolManager | None = None
 
 
 def get_connection_pool_manager() -> ConnectionPoolManager:
@@ -383,7 +379,7 @@ def get_connection_pool_manager() -> ConnectionPoolManager:
 
 async def initialize_connection_pool(
     database_url: str,
-    pool_config: Optional[ConnectionPoolConfig] = None,
+    pool_config: ConnectionPoolConfig | None = None,
 ) -> ConnectionPoolManager:
     """Initialize the global connection pool.
     

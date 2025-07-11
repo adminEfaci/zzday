@@ -156,8 +156,8 @@ __all__ = [
     'ContactLimits',
     'LoginLimits',
     'NotificationLimits',
-    'PasswordPolicy',
     'PasswordHistoryPolicy',
+    'PasswordPolicy',
     'PreferenceLimits',
     'ProfileLimits',
     'SecurityThresholds'

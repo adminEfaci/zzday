@@ -1,8 +1,8 @@
 """
-Internal adapters for Audit module.
+Internal Adapters for Audit Module
 
-These adapters provide the Audit module with access to other modules
-following the established contract patterns.
+These adapters handle communication with other modules through
+their contracts, ensuring proper module boundaries.
 """
 
 from .identity_adapter import IdentityAdapter

@@ -7,11 +7,13 @@ FIDO2/WebAuthn hardware security key provider.
 import base64
 import json
 import logging
-from datetime import datetime, UTC
+from datetime import UTC, datetime
 from typing import Any
 
 from app.modules.identity.domain.entities.admin.mfa_device import MFADevice, MFAMethod
-from app.modules.identity.infrastructure.services.mfa_provider_factory import IMFAProvider
+from app.modules.identity.infrastructure.services.mfa_provider_factory import (
+    IMFAProvider,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -151,8 +153,7 @@ class HardwareKeyMFAProvider(IMFAProvider):
                     'device_id': str(device.id),
                     'authenticator_data': response.get('authenticatorData')
                 }
-            else:
-                return False, {'error': 'Invalid signature'}
+            return False, {'error': 'Invalid signature'}
                 
         except json.JSONDecodeError:
             return False, {'error': 'Invalid response format'}

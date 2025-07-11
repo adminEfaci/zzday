@@ -12,7 +12,6 @@ import pytest
 
 from app.modules.identity.domain.exceptions import (
     AccountLockedException,
-    InvalidCredentialsError,
     InvalidMFACodeError,
     SessionExpiredError,
 )

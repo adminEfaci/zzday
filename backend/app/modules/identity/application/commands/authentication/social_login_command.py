@@ -9,8 +9,8 @@ from datetime import UTC, datetime, timedelta
 from typing import Any
 from uuid import UUID
 
-from app.core.cqrs import Command, CommandHandler
 from app.core.constants.auth import AUTH_CONSTANTS
+from app.core.cqrs import Command, CommandHandler
 from app.modules.identity.application.decorators import (
     audit_action,
     rate_limit,

@@ -4,19 +4,31 @@ Group Repository Implementation
 SQLModel-based implementation of the group repository interface.
 """
 
-from datetime import datetime, UTC
+from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID
 
-from sqlmodel import Session, select, and_, or_, col, func
-from app.core.infrastructure.repository import BaseRepository
-from app.modules.identity.domain.aggregates.group import Group, GroupMember, GroupName
-from app.modules.identity.domain.interfaces.repositories.group_repository import IGroupRepository
-from app.modules.identity.infrastructure.models.group_model import GroupModel, GroupMemberModel
-from app.modules.identity.domain.specifications.base import Specification
+from sqlmodel import Session, and_, col, func, or_, select
+
+from app.core.infrastructure.repository import SQLRepository
 from app.modules.identity.domain.aggregates.group import (
-    GroupStatus, GroupType, GroupVisibility, GroupJoinMethod,
-    GroupMemberRole, GroupMembershipType
+    Group,
+    GroupJoinMethod,
+    GroupMember,
+    GroupMemberRole,
+    GroupMembershipType,
+    GroupName,
+    GroupStatus,
+    GroupType,
+    GroupVisibility,
+)
+from app.modules.identity.domain.interfaces.repositories.group_repository import (
+    IGroupRepository,
+)
+from app.modules.identity.domain.specifications.base import Specification
+from app.modules.identity.infrastructure.models.group_model import (
+    GroupMemberModel,
+    GroupModel,
 )
 
 

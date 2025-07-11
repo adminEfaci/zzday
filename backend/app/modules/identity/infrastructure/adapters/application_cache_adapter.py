@@ -12,7 +12,9 @@ from typing import Any
 from redis.asyncio import Redis
 
 from app.core.logging import logger
-from app.modules.identity.domain.interfaces.services.infrastructure.cache_port import ICachePort as ICacheService
+from app.modules.identity.domain.interfaces.services.infrastructure.cache_port import (
+    ICachePort as ICacheService,
+)
 
 
 class ApplicationCacheAdapter(ICacheService):

@@ -6,7 +6,7 @@ Supports multiple email providers through a common interface.
 """
 
 import asyncio
-from datetime import datetime, UTC
+from datetime import UTC, datetime
 from typing import Any
 
 from app.core.logging import logger
@@ -322,7 +322,7 @@ class SMTPEmailAdapter(IEmailService):
             self._sent_emails.append(email_record)
             
             logger.info(
-                f"Email sent successfully",
+                "Email sent successfully",
                 to=to_email,
                 subject=subject,
                 email_type=email_type

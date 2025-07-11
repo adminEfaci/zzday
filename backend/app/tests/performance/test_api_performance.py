@@ -4,19 +4,18 @@ API Performance Tests
 Tests performance of all API endpoints against established baselines.
 """
 
-import pytest
 import asyncio
-from httpx import AsyncClient
-from fastapi.testclient import TestClient
 
+import pytest
+from httpx import AsyncClient
+
+from app.tests.builders.user_builder import UserBuilder
 from app.tests.performance.performance_baselines import (
+    LoadTestScenario,
     PerformanceMonitor,
     PerformanceRegistry,
-    LoadTestScenario,
     get_load_test_scenario,
 )
-from app.tests.builders.user_builder import UserBuilder
-from app.tests.builders.session_builder import SessionBuilder
 
 
 @pytest.mark.performance

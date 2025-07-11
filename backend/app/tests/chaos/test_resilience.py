@@ -5,8 +5,8 @@ Tests system behavior under various failure conditions.
 """
 
 import asyncio
+
 import pytest
-from httpx import AsyncClient
 
 from app.tests.chaos import ChaosMonkey
 from app.tests.containers import TestContainer

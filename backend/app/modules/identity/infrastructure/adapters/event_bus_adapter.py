@@ -5,9 +5,8 @@ Generic event bus implementation supporting multiple backends.
 Provides unified interface for publishing domain events.
 """
 
-import asyncio
 import json
-from datetime import datetime, UTC
+from datetime import UTC, datetime
 from typing import Any
 from uuid import uuid4
 

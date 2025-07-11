@@ -4,12 +4,18 @@ MFA Device Model
 SQLModel definition for MFA device persistence.
 """
 
-from datetime import datetime, UTC
+from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID
 
-from sqlmodel import Field, SQLModel, Column, JSON
-from app.modules.identity.domain.entities.admin.mfa_device import MFADevice, BackupCode, DeviceName, MFASecret
+from sqlmodel import JSON, Column, Field, SQLModel
+
+from app.modules.identity.domain.entities.admin.mfa_device import (
+    BackupCode,
+    DeviceName,
+    MFADevice,
+    MFASecret,
+)
 from app.modules.identity.domain.enums import MFAMethod as MfaMethod
 
 

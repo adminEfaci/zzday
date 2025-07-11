@@ -82,13 +82,12 @@ class ValueObject(ABC, Generic[T]):
         """Serialize a single value for dictionary representation."""
         if isinstance(value, datetime):
             return value.isoformat()
-        elif isinstance(value, Enum):
+        if isinstance(value, Enum):
             return value.value
-        elif hasattr(value, '__dict__'):
+        if hasattr(value, '__dict__'):
             # For complex objects without to_dict, use their dict
             return {k: self._serialize_value(v) for k, v in value.__dict__.items()}
-        else:
-            return value
+        return value
     
     def __repr__(self) -> str:
         """Debug representation showing class and key attributes."""

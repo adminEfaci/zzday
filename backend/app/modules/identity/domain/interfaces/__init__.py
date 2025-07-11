@@ -5,6 +5,11 @@ All domain interfaces for the identity module including repositories, services, 
 """
 
 # Repository Interfaces
+# Create IAuthenticationService interface that wasn't found
+from abc import abstractmethod
+from typing import Protocol
+from uuid import UUID
+
 from .repositories import (
     IAccessTokenRepository,
     IDeviceRegistrationRepository,
@@ -27,26 +32,21 @@ from .services.authentication.mfa_service import IMFAService
 from .services.authentication.password_service import IPasswordService
 from .services.authentication.token_generator import ITokenGenerator
 
-# Service Interfaces - Security
-from .services.security.authorization_service import IAuthorizationService
-from .services.security.geolocation_service import IGeolocationService
-from .services.security.risk_assessment_service import IRiskAssessmentService
-from .services.security.security_service import ISecurityService
-
-# Service Interfaces - Monitoring
-from .services.monitoring.audit_service import IAuditService
-from .services.monitoring.rate_limit_port import IRateLimitPort
-
 # Service Interfaces - Infrastructure
 from .services.infrastructure.cache_port import ICachePort
 from .services.infrastructure.event_publisher_port import IEventPublisherPort
 from .services.infrastructure.file_storage_port import IFileStoragePort
 from .services.infrastructure.task_queue_port import ITaskQueuePort
 
-# Create IAuthenticationService interface that wasn't found
-from abc import abstractmethod
-from typing import Protocol
-from uuid import UUID
+# Service Interfaces - Monitoring
+from .services.monitoring.audit_service import IAuditService
+from .services.monitoring.rate_limit_port import IRateLimitPort
+
+# Service Interfaces - Security
+from .services.security.authorization_service import IAuthorizationService
+from .services.security.geolocation_service import IGeolocationService
+from .services.security.risk_assessment_service import IRiskAssessmentService
+from .services.security.security_service import ISecurityService
 
 
 class IAuthenticationService(Protocol):

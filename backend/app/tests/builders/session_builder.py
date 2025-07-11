@@ -5,8 +5,7 @@ Provides fluent interface for creating Session test data.
 """
 
 import uuid
-from datetime import datetime, timezone, timedelta
-from typing import Optional
+from datetime import UTC, datetime, timedelta
 
 from app.modules.identity.domain.entities.session import Session
 from app.modules.identity.domain.value_objects.ip_address import IpAddress
@@ -23,9 +22,9 @@ class SessionBuilder:
         self._user_agent = "Mozilla/5.0 (Test Browser)"
         self._device_id = f"device_{uuid.uuid4().hex[:8]}"
         self._is_active = True
-        self._created_at = datetime.now(timezone.utc)
-        self._expires_at = datetime.now(timezone.utc) + timedelta(hours=24)
-        self._last_accessed_at = datetime.now(timezone.utc)
+        self._created_at = datetime.now(UTC)
+        self._expires_at = datetime.now(UTC) + timedelta(hours=24)
+        self._last_accessed_at = datetime.now(UTC)
         
     def with_user_id(self, user_id: uuid.UUID) -> "SessionBuilder":
         """Set specific user ID."""
@@ -44,7 +43,7 @@ class SessionBuilder:
         
     def expired(self) -> "SessionBuilder":
         """Make session expired."""
-        self._expires_at = datetime.now(timezone.utc) - timedelta(hours=1)
+        self._expires_at = datetime.now(UTC) - timedelta(hours=1)
         return self
         
     def inactive(self) -> "SessionBuilder":
@@ -76,7 +75,7 @@ class SessionMother:
     """Object Mother pattern for common Session scenarios."""
     
     @staticmethod
-    def active_session(user_id: Optional[uuid.UUID] = None) -> Session:
+    def active_session(user_id: uuid.UUID | None = None) -> Session:
         """Create active session."""
         builder = SessionBuilder()
         if user_id:
@@ -84,7 +83,7 @@ class SessionMother:
         return builder.build()
         
     @staticmethod
-    def expired_session(user_id: Optional[uuid.UUID] = None) -> Session:
+    def expired_session(user_id: uuid.UUID | None = None) -> Session:
         """Create expired session."""
         builder = SessionBuilder().expired()
         if user_id:
@@ -92,7 +91,7 @@ class SessionMother:
         return builder.build()
         
     @staticmethod
-    def mobile_session(user_id: Optional[uuid.UUID] = None) -> Session:
+    def mobile_session(user_id: uuid.UUID | None = None) -> Session:
         """Create mobile session."""
         builder = (SessionBuilder()
                   .with_device_id("mobile_device_123")

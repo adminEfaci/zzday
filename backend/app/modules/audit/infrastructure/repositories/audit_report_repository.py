@@ -8,9 +8,8 @@ from datetime import datetime, timedelta
 from typing import Any
 from uuid import UUID
 
-from sqlalchemy import and_, delete, func, or_, select, update
+from sqlalchemy import and_, delete, func, or_, select, text, update
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import text
 
 from app.core.infrastructure.repository import BaseRepository
 from app.core.logging import get_logger
@@ -489,7 +488,6 @@ class AuditReportRepository(BaseRepository[AuditReport, UUID]):
 
     async def _test_database_connectivity(self, session: AsyncSession) -> None:
         """Test database connectivity."""
-        from sqlalchemy import text
 
         await session.execute(text("SELECT 1"))
 

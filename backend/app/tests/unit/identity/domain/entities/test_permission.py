@@ -8,12 +8,13 @@ Tests cover:
 - Immutability of permissions
 """
 
+from datetime import UTC, datetime
+
 import pytest
-from datetime import datetime, UTC
 
 from app.modules.identity.domain.entities.permission import Permission
+from app.modules.identity.domain.errors import BusinessRuleViolation, DomainError
 from app.modules.identity.domain.value_objects.permission_id import PermissionId
-from app.modules.identity.domain.errors import DomainError, BusinessRuleViolation
 
 
 class TestPermission:

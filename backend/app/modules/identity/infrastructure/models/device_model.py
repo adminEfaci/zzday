@@ -4,13 +4,16 @@ Device Registration Model
 SQLModel definition for device registration persistence.
 """
 
-from datetime import datetime, UTC
+from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID
 
-from sqlmodel import Field, SQLModel, Column, JSON
-from app.modules.identity.domain.entities.device.device_registration import DeviceRegistration
-from app.modules.identity.domain.enums import DeviceType, DevicePlatform
+from sqlmodel import JSON, Column, Field, SQLModel
+
+from app.modules.identity.domain.entities.device.device_registration import (
+    DeviceRegistration,
+)
+from app.modules.identity.domain.enums import DevicePlatform, DeviceType
 
 
 class DeviceRegistrationModel(SQLModel, table=True):

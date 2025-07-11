@@ -4,7 +4,6 @@ Risk Assessment Service Adapter
 Production-ready implementation for fraud detection and risk scoring.
 """
 
-import hashlib
 from datetime import UTC, datetime, timedelta
 from typing import Any
 from uuid import UUID
@@ -267,10 +266,9 @@ class RiskAssessmentAdapter(IRiskAssessmentService):
         """Determine risk level from score."""
         if risk_score >= 0.8:
             return "high"
-        elif risk_score >= 0.5:
+        if risk_score >= 0.5:
             return "medium"
-        else:
-            return "low"
+        return "low"
 
     async def _is_new_location(self, user_id: UUID, location: dict) -> bool:
         """Check if location is new for user."""

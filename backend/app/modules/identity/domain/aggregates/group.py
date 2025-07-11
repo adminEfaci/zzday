@@ -35,30 +35,26 @@ from app.modules.identity.domain.entities.group.group_errors import (
     UserNotMemberError,
 )
 from app.modules.identity.domain.entities.group.group_events import (
+    GroupArchived,
     GroupCreated,
     GroupDeleted,
-    GroupArchived,
-    GroupRestored,
-    GroupSettingsUpdated,
-    MemberAdded,
-    MemberRemoved,
-    MemberRoleChanged,
-    OwnershipTransferred,
-    InvitationSent,
     InvitationAccepted,
     InvitationDeclined,
     InvitationRevoked,
-    MembershipRequested,
+    InvitationSent,
+    MemberAdded,
+    MemberRemoved,
+    MemberRoleChanged,
     MembershipRequestApproved,
+    MembershipRequested,
     MembershipRequestRejected,
+    OwnershipTransferred,
 )
 from app.modules.identity.domain.entities.group.group_member import GroupMember
 from app.modules.identity.domain.value_objects.group_config import (
     GroupCreationConfig,
-    GroupSettingsConfig,
 )
 from app.modules.identity.domain.value_objects.group_name import GroupName
-
 
 # =============================================================================
 # GROUP AGGREGATE (Main)

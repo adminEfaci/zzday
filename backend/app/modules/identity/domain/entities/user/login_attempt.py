@@ -9,7 +9,10 @@ from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
 from app.core.domain.base import Entity
-from app.modules.identity.domain.value_objects import AuthorizationContext, RiskAssessment
+from app.modules.identity.domain.value_objects import (
+    AuthorizationContext,
+    RiskAssessment,
+)
 
 from .user_enums import LoginFailureReason
 

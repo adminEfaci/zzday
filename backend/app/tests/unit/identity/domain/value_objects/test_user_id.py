@@ -8,11 +8,12 @@ Tests cover:
 - Immutability
 """
 
-import pytest
 from uuid import UUID, uuid4
 
-from app.modules.identity.domain.value_objects.user_id import UserId
+import pytest
+
 from app.modules.identity.domain.errors import DomainError
+from app.modules.identity.domain.value_objects.user_id import UserId
 
 
 class TestUserId:

@@ -5,7 +5,6 @@ Handles preference updates and validation logic.
 """
 
 from typing import Any
-from uuid import UUID
 
 from app.modules.identity.domain.entities.user.preference import UserPreference
 from app.modules.identity.domain.entities.user.user_enums import Language

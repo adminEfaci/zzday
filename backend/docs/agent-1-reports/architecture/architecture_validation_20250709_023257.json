@@ -1,0 +1,55 @@
+{
+  "timestamp": "2025-07-09T02:32:57.303880",
+  "summary": {
+    "total_violations": 4,
+    "critical_violations": 0,
+    "high_violations": 4,
+    "medium_violations": 0,
+    "low_violations": 0,
+    "modules_with_violations": 4
+  },
+  "metrics": {
+    "total_files_analyzed": 0,
+    "total_imports": 0,
+    "cross_module_imports": 0,
+    "foreign_key_violations": 0,
+    "external_api_violations": 0,
+    "missing_contracts": 4,
+    "missing_interfaces": 0
+  },
+  "violations_by_module": {
+    "identity": [
+      {
+        "type": "missing_contracts",
+        "severity": "high",
+        "module": "identity",
+        "expected_path": "modules/identity/application/contracts"
+      }
+    ],
+    "audit": [
+      {
+        "type": "missing_contracts",
+        "severity": "high",
+        "module": "audit",
+        "expected_path": "modules/audit/application/contracts"
+      }
+    ],
+    "integration": [
+      {
+        "type": "missing_contracts",
+        "severity": "high",
+        "module": "integration",
+        "expected_path": "modules/integration/application/contracts"
+      }
+    ],
+    "notification": [
+      {
+        "type": "missing_contracts",
+        "severity": "high",
+        "module": "notification",
+        "expected_path": "modules/notification/application/contracts"
+      }
+    ]
+  },
+  "health_score": 100.0
+}

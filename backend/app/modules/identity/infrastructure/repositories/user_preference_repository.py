@@ -4,15 +4,20 @@ User Preference Repository Implementation
 SQLModel-based implementation of the user preference repository interface.
 """
 
-from datetime import datetime, UTC
+from datetime import UTC, datetime
 from typing import Any
-from uuid import UUID, uuid4
+from uuid import UUID
 
-from sqlmodel import Session, select, and_, or_, col, func
-from app.core.infrastructure.repository import BaseRepository
+from sqlmodel import Session, select
+
+from app.core.infrastructure.repository import SQLRepository
 from app.modules.identity.domain.entities.user.preference import UserPreference
-from app.modules.identity.domain.interfaces.repositories.user_preference_repository import IUserPreferenceRepository
-from app.modules.identity.infrastructure.models.user_preference_model import UserPreferenceModel
+from app.modules.identity.domain.interfaces.repositories.user_preference_repository import (
+    IUserPreferenceRepository,
+)
+from app.modules.identity.infrastructure.models.user_preference_model import (
+    UserPreferenceModel,
+)
 
 
 class SQLUserPreferenceRepository(BaseRepository[UserPreference, UserPreferenceModel], IUserPreferenceRepository):
@@ -85,9 +90,9 @@ class SQLUserPreferenceRepository(BaseRepository[UserPreference, UserPreferenceM
             
             if category == "notification":
                 return model.notification_settings.get(pref_key)
-            elif category == "privacy":
+            if category == "privacy":
                 return model.privacy_settings.get(pref_key)
-            elif category == "accessibility":
+            if category == "accessibility":
                 return model.accessibility_settings.get(pref_key)
         
         # Check direct attributes
@@ -112,13 +117,13 @@ class SQLUserPreferenceRepository(BaseRepository[UserPreference, UserPreferenceM
         
         if category == "notification":
             return model.notification_settings.copy()
-        elif category == "privacy":
+        if category == "privacy":
             return model.privacy_settings.copy()
-        elif category == "accessibility":
+        if category == "accessibility":
             return model.accessibility_settings.copy()
-        elif category == "custom":
+        if category == "custom":
             return model.custom_preferences.copy()
-        elif category == "basic":
+        if category == "basic":
             return {
                 "language": model.language,
                 "timezone": model.timezone,
@@ -126,7 +131,7 @@ class SQLUserPreferenceRepository(BaseRepository[UserPreference, UserPreferenceM
                 "time_format": model.time_format,
                 "theme": model.theme
             }
-        elif category == "communication":
+        if category == "communication":
             return {
                 "email_digest_frequency": model.email_digest_frequency,
                 "show_profile_publicly": model.show_profile_publicly,
@@ -162,13 +167,12 @@ class SQLUserPreferenceRepository(BaseRepository[UserPreference, UserPreferenceM
             model.accessibility_settings[key] = value
         elif category == "custom":
             model.custom_preferences[key] = value
+        # Check if it's a direct attribute
+        elif hasattr(model, key):
+            setattr(model, key, value)
         else:
-            # Check if it's a direct attribute
-            if hasattr(model, key):
-                setattr(model, key, value)
-            else:
-                # Store in custom preferences
-                model.custom_preferences[key] = value
+            # Store in custom preferences
+            model.custom_preferences[key] = value
         
         model.updated_at = datetime.now(UTC)
         self.session.add(model)
@@ -206,12 +210,11 @@ class SQLUserPreferenceRepository(BaseRepository[UserPreference, UserPreferenceM
                     model.accessibility_settings[pref_key] = value
                 else:
                     model.custom_preferences[key] = value
+            # Handle direct attributes
+            elif hasattr(model, key):
+                setattr(model, key, value)
             else:
-                # Handle direct attributes
-                if hasattr(model, key):
-                    setattr(model, key, value)
-                else:
-                    model.custom_preferences[key] = value
+                model.custom_preferences[key] = value
         
         model.updated_at = datetime.now(UTC)
         self.session.add(model)

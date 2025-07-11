@@ -13,10 +13,6 @@ from uuid import UUID
 
 from app.core.cqrs import Query, QueryHandler
 from app.core.infrastructure import UnitOfWork
-from app.modules.identity.domain.interfaces.repositories.audit_repository import IAuditRepository
-from app.modules.identity.domain.interfaces.repositories.device_registration_repository import IDeviceRepository
-from app.modules.identity.domain.interfaces.repositories.session_repository import ISessionRepository
-from app.modules.identity.domain.interfaces.repositories.user_repository import IUserRepository
 from app.modules.identity.application.decorators import (
     rate_limit,
     require_permission,
@@ -28,6 +24,18 @@ from app.modules.identity.domain.exceptions import (
     UnauthorizedAccessError,
     UserNotFoundError,
     UserProfileQueryError,
+)
+from app.modules.identity.domain.interfaces.repositories.audit_repository import (
+    IAuditRepository,
+)
+from app.modules.identity.domain.interfaces.repositories.device_registration_repository import (
+    IDeviceRepository,
+)
+from app.modules.identity.domain.interfaces.repositories.session_repository import (
+    ISessionRepository,
+)
+from app.modules.identity.domain.interfaces.repositories.user_repository import (
+    IUserRepository,
 )
 
 

@@ -9,14 +9,13 @@ Tests cover:
 - Account lockout scenarios
 """
 
-import pytest
-from httpx import AsyncClient
-from datetime import datetime, timedelta, UTC
 import asyncio
 
-from app.main import app
+import pytest
+from httpx import AsyncClient
+
 from app.core.database import get_db
-from app.modules.identity.infrastructure.repositories.user_repository import SQLUserRepository
+from app.main import app
 
 
 @pytest.fixture

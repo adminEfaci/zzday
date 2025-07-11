@@ -268,23 +268,22 @@ class GeolocationAdapter(IGeolocationService):
                 "is_hosting": False,
                 "threat_types": [],
             }
-        else:
-            return {
-                "country": "United States",
-                "country_code": "US",
-                "region": "California",
-                "city": "San Francisco",
-                "latitude": 37.7749,
-                "longitude": -122.4194,
-                "timezone": "America/Los_Angeles",
-                "isp": "Example ISP",
-                "organization": "Example Organization",
-                "connection_type": "residential",
-                "is_proxy": False,
-                "is_vpn": False,
-                "is_hosting": False,
-                "threat_types": [],
-            }
+        return {
+            "country": "United States",
+            "country_code": "US",
+            "region": "California",
+            "city": "San Francisco",
+            "latitude": 37.7749,
+            "longitude": -122.4194,
+            "timezone": "America/Los_Angeles",
+            "isp": "Example ISP",
+            "organization": "Example Organization",
+            "connection_type": "residential",
+            "is_proxy": False,
+            "is_vpn": False,
+            "is_hosting": False,
+            "threat_types": [],
+        }
 
     async def _enrich_location_data(self, location_data: dict[str, Any]) -> dict[str, Any]:
         """Enrich location data with additional analysis."""
@@ -388,19 +387,17 @@ class GeolocationAdapter(IGeolocationService):
         """Determine risk level from score."""
         if risk_score >= 0.8:
             return "high"
-        elif risk_score >= 0.6:
+        if risk_score >= 0.6:
             return "medium"
-        else:
-            return "low"
+        return "low"
 
     def _get_risk_recommendations(self, risk_level: str) -> list[str]:
         """Get risk mitigation recommendations."""
         if risk_level == "high":
             return ["require_mfa", "manual_review", "additional_verification", "restrict_sensitive_actions"]
-        elif risk_level == "medium":
+        if risk_level == "medium":
             return ["require_mfa", "enhanced_monitoring", "verify_identity"]
-        else:
-            return ["normal_monitoring"]
+        return ["normal_monitoring"]
 
     async def _assess_timezone_risk(self, user_id: UUID, location_info: dict[str, Any]) -> float:
         """Assess timezone-based risk."""
@@ -421,9 +418,9 @@ class GeolocationAdapter(IGeolocationService):
         
         if "malware" in threat_types or "botnet" in threat_types:
             return 0.8
-        elif "fraud" in threat_types:
+        if "fraud" in threat_types:
             return 0.6
-        elif "spam" in threat_types:
+        if "spam" in threat_types:
             return 0.3
         
         return 0.0

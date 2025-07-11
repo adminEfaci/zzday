@@ -10,7 +10,7 @@ import hashlib
 import secrets
 from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING
-from uuid import UUID, uuid4
+from uuid import UUID
 
 if TYPE_CHECKING:
     from app.modules.identity.domain.aggregates.user import User
@@ -168,7 +168,7 @@ class MFAService:
     ) -> None:
         """Add a trusted device for the user."""
         from ...entities.device.device_registration import DeviceRegistration
-        from ...enums import DeviceType, DevicePlatform
+        from ...enums import DevicePlatform, DeviceType
         
         # Initialize registered devices collection if needed
         if not hasattr(user, '_registered_devices'):

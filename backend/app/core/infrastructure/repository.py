@@ -1560,7 +1560,6 @@ class SQLRepository(BaseRepository[TEntity, TId]):
         # Infer entity type from generic type if not provided
         if entity_type is None:
             # Try to infer from class generic parameters
-            import inspect
             orig_bases = getattr(self.__class__, '__orig_bases__', ())
             if orig_bases:
                 for base in orig_bases:
@@ -1587,13 +1586,12 @@ class SQLRepository(BaseRepository[TEntity, TId]):
         """
         if hasattr(self.model_type, 'from_domain'):
             return self.model_type.from_domain(entity)
-        else:
-            # Generic conversion - assumes model constructor accepts entity attributes
-            try:
-                entity_dict = entity.__dict__ if hasattr(entity, '__dict__') else {}
-                return self.model_type(**entity_dict)
-            except Exception as e:
-                raise InfrastructureError(f"Failed to convert entity to model: {e}")
+        # Generic conversion - assumes model constructor accepts entity attributes
+        try:
+            entity_dict = entity.__dict__ if hasattr(entity, '__dict__') else {}
+            return self.model_type(**entity_dict)
+        except Exception as e:
+            raise InfrastructureError(f"Failed to convert entity to model: {e}")
     
     def _model_to_entity(self, model: TModel) -> TEntity:
         """
@@ -1607,13 +1605,12 @@ class SQLRepository(BaseRepository[TEntity, TId]):
         """
         if hasattr(model, 'to_domain'):
             return model.to_domain()
-        else:
-            # Generic conversion - assumes entity constructor accepts model attributes
-            try:
-                model_dict = model.__dict__ if hasattr(model, '__dict__') else {}
-                return self.entity_type(**model_dict)
-            except Exception as e:
-                raise InfrastructureError(f"Failed to convert model to entity: {e}")
+        # Generic conversion - assumes entity constructor accepts model attributes
+        try:
+            model_dict = model.__dict__ if hasattr(model, '__dict__') else {}
+            return self.entity_type(**model_dict)
+        except Exception as e:
+            raise InfrastructureError(f"Failed to convert model to entity: {e}")
     
     async def find_by_id(self, entity_id: TId) -> TEntity | None:
         """Find entity by ID using SQL query."""
@@ -1735,8 +1732,7 @@ class SQLRepository(BaseRepository[TEntity, TId]):
         async with self.operation_context("count"):
             try:
                 # Import here to avoid circular imports
-                from sqlmodel import select, func
-from app.core.infrastructure.repository import BaseRepository
+                from sqlmodel import func, select
                 
                 stmt = select(func.count(self.model_type.id))
                 result = await self.session.exec(stmt)

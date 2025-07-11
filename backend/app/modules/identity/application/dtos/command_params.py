@@ -5,7 +5,7 @@ Groups related parameters into logical units for cleaner interfaces.
 """
 
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any
 from uuid import UUID
 
@@ -36,6 +36,11 @@ from app.modules.identity.domain.interfaces.services.infrastructure.cache_port i
     ICachePort as ICacheService,
 )
 from app.modules.identity.domain.services import (
+from app.modules.identity.domain.interfaces.services import (
+    ITokenRepository,
+    ISecurityEventRepository,
+    IAuditService,
+)
     AuthorizationService,
     EncryptionService,
     MFAService,

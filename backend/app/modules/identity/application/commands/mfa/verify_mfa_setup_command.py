@@ -42,6 +42,9 @@ from app.modules.identity.domain.interfaces.services.infrastructure.cache_port i
     ICachePort as ICacheService,
 )
 from app.modules.identity.domain.services import MFAService, SecurityService
+from app.modules.identity.domain.interfaces.services import (
+    ICachePort,
+)
 
 
 class VerifyMFASetupCommand(Command[BaseResponse]):

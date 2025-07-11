@@ -12,6 +12,7 @@ from app.core.errors import NotFoundError, ValidationError
 from app.core.logging import get_logger
 from app.modules.integration.application.dto import WebhookEventDTO, WebhookHistoryDTO
 from app.modules.integration.domain.enums import WebhookStatus
+from typing import Any
 
 logger = get_logger(__name__)
 

@@ -32,6 +32,9 @@ from app.modules.identity.domain.interfaces.repositories.security_event_reposito
     ISecurityRepository,
 )
 from app.modules.identity.domain.interfaces.repositories.user_repository import (
+from app.modules.identity.domain.interfaces.services import (
+    IComplianceRepository,
+)
     IUserRepository,
 )
 

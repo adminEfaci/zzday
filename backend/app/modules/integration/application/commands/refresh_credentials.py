@@ -14,6 +14,7 @@ from app.modules.integration.application.dto import CredentialDTO
 from app.modules.integration.domain.entities import ApiCredential
 from app.modules.integration.domain.enums import AuthType
 from app.modules.integration.domain.errors import AuthenticationError
+from typing import Any
 
 logger = get_logger(__name__)
 

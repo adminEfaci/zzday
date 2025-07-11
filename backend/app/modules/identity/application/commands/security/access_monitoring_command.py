@@ -52,6 +52,11 @@ from app.modules.identity.domain.interfaces.services.communication.notification_
     INotificationService,
 )
 from app.modules.identity.domain.services import (
+from app.modules.identity.domain.interfaces.services import (
+    IAccessRepository,
+    IAuditService,
+    IMonitoringRepository,
+)
     AccessMonitoringService,
     AlertingService,
     AnomalyDetectionService,

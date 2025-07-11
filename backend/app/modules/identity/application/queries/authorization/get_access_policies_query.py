@@ -12,6 +12,9 @@ from app.modules.identity.application.decorators import (
     validate_request,
 )
 from app.modules.identity.application.dtos.response import AccessPoliciesResponse
+from app.modules.identity.domain.interfaces.services import (
+    IPolicyRepository,
+)
 
 
 @dataclass

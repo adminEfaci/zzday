@@ -39,6 +39,9 @@ from app.modules.identity.domain.interfaces.services.infrastructure.cache_port i
 )
 from app.modules.identity.domain.services import AuthorizationService
 from app.modules.identity.domain.specifications import ValidDateOfBirthSpecification
+from app.modules.identity.domain.interfaces.services import (
+    ICachePort,
+)
 
 
 class UpdateProfileCommand(Command[UserProfileResponse]):

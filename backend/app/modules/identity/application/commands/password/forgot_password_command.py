@@ -46,6 +46,11 @@ from app.modules.identity.domain.interfaces.services.security.geolocation_servic
     IGeolocationService,
 )
 from app.modules.identity.domain.services import RiskAssessmentService, SecurityService
+from app.modules.identity.domain.interfaces.services import (
+    ICachePort,
+    IPasswordResetAttemptRepository,
+    IPasswordResetTokenRepository,
+)
 
 
 class ForgotPasswordCommand(Command[PasswordResetResponse]):

@@ -3,7 +3,7 @@
 This module provides the SQLAlchemy model for webhook events.
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any
 from uuid import UUID
 

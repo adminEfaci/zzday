@@ -13,6 +13,9 @@ from app.modules.identity.application.decorators import (
 )
 from app.modules.identity.application.dtos.response import BackupStatusResponse
 from app.modules.identity.domain.interfaces.repositories.audit_repository import (
+from app.modules.identity.domain.interfaces.services import (
+    IConfigurationPort,
+)
     IAuditRepository,
 )
 

@@ -41,6 +41,12 @@ from app.modules.identity.domain.interfaces.services.infrastructure.cache_port i
     ICachePort as ICacheService,
 )
 from app.modules.identity.domain.services import AuthorizationService, ValidationService
+from app.modules.identity.domain.interfaces.services import (
+    IAuditService,
+    ICachePort,
+    IUserPermissionRepository,
+    IUserRoleRepository,
+)
 
 
 @dataclass

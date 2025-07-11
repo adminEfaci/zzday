@@ -24,6 +24,7 @@ from app.modules.integration.application.services.integration_service import (
 from app.modules.integration.application.services.mapping_service import MappingService
 from app.modules.integration.application.services.sync_service import SyncService
 from app.modules.integration.application.services.webhook_service import WebhookService
+import asyncio
 
 
 @dataclass

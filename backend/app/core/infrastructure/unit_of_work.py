@@ -155,6 +155,13 @@ class TransactionError(UnitOfWorkError):
     retryable = True
 
 
+class EventPublishingError(UnitOfWorkError):
+    """Raised when event publishing fails during commit."""
+    
+    default_code = "EVENT_PUBLISHING_ERROR"
+    retryable = True
+
+
 
 
 class BaseUnitOfWork(IUnitOfWork, ABC):

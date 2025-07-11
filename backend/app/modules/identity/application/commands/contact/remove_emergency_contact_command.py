@@ -57,6 +57,10 @@ from app.modules.identity.domain.interfaces.services.communication.notification_
     ISMSService,
 )
 from app.modules.identity.domain.services import SecurityService, ValidationService
+from app.modules.identity.domain.interfaces.services import (
+    IAuditService,
+    IBackupService,
+)
 
 
 class RemoveEmergencyContactCommand(Command[EmergencyContactRemovalResponse]):

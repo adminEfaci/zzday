@@ -59,6 +59,10 @@ from app.modules.identity.domain.interfaces.services.security.threat_intelligenc
     IThreatIntelligenceService,
 )
 from app.modules.identity.domain.services import (
+from app.modules.identity.domain.interfaces.services import (
+    IAuditService,
+    IDevicePolicyRepository,
+)
     DeviceFingerprintService,
     DeviceSecurityService,
     GeoLocationService,

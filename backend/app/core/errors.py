@@ -248,6 +248,19 @@ class UnauthorizedError(ApplicationError):
         self.code = self.default_code
 
 
+class SecurityError(ApplicationError):
+    """Security-related operation failed."""
+
+    default_code = "SECURITY_ERROR"
+    status_code = 400
+    severity = ErrorSeverity.HIGH
+
+    def __init__(self, message: str = "Security operation failed", **kwargs: Any) -> None:
+        user_message = "A security error occurred"
+        super().__init__(message, user_message=user_message, **kwargs)
+        self.code = self.default_code
+
+
 class ForbiddenError(ApplicationError):
     """Forbidden access error."""
 

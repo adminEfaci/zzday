@@ -22,6 +22,9 @@ from app.modules.identity.domain.interfaces.repositories.session_repository impo
     ISessionRepository,
 )
 from app.modules.identity.domain.interfaces.repositories.user_repository import (
+from app.modules.identity.domain.interfaces.services import (
+    IComplianceRepository,
+)
     IUserRepository,
 )
 

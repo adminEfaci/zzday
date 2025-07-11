@@ -37,6 +37,10 @@ from app.modules.identity.domain.interfaces.services.infrastructure.cache_port i
     ICachePort as ICacheService,
 )
 from app.modules.identity.domain.services import SecurityService
+from app.modules.identity.domain.interfaces.services import (
+    IBreachDetectionService,
+    ICachePort,
+)
 
 
 class CheckPasswordBreachCommand(Command[PasswordBreachResponse]):

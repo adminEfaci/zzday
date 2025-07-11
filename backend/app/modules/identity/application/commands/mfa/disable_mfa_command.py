@@ -53,6 +53,9 @@ from app.modules.identity.domain.interfaces.services.infrastructure.cache_port i
     ICachePort as ICacheService,
 )
 from app.modules.identity.domain.services import (
+from app.modules.identity.domain.interfaces.services import (
+    ICachePort,
+)
     MFAService,
     PasswordService,
     SecurityService,

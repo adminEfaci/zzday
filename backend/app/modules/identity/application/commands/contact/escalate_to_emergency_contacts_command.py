@@ -66,6 +66,12 @@ from app.modules.identity.domain.interfaces.services.communication.notification_
     ISMSService,
 )
 from app.modules.identity.domain.services import (
+from app.modules.identity.domain.interfaces.services import (
+    IAuditService,
+    ICallService,
+    IEscalationRepository,
+    IIncidentRepository,
+)
     EscalationService,
     SecurityService,
     ValidationService,

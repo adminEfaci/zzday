@@ -10,6 +10,7 @@ from app.core.cqrs.base import Query, QueryHandler
 from app.core.errors import NotFoundError, ValidationError
 from app.core.logging import get_logger
 from app.modules.integration.application.dto import IntegrationDetailDTO
+from typing import Any
 
 logger = get_logger(__name__)
 

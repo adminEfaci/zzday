@@ -66,6 +66,9 @@ from app.modules.identity.domain.interfaces.services.infrastructure.cache_port i
 from app.modules.identity.domain.interfaces.services.security.geolocation_service import (
     IGeolocationService,
 )
+from app.modules.identity.domain.interfaces.services import (
+    IDeviceFingerprintService,
+)
 from app.modules.identity.domain.services import (
     PasswordService,
     RiskAssessmentService,

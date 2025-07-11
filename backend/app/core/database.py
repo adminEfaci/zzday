@@ -42,6 +42,7 @@ from sqlalchemy.ext.asyncio import (
     async_sessionmaker,
     create_async_engine,
 )
+from sqlalchemy.ext.declarative import declarative_base
 
 from app.core.config import DatabaseConfig
 from app.core.constants import HEALTH_CHECK_QUERY
@@ -50,6 +51,14 @@ from app.core.errors import InfrastructureError
 from app.core.logging import get_logger
 
 logger = get_logger(__name__)
+
+
+# =====================================================================================
+# SQLALCHEMY BASE
+# =====================================================================================
+
+# SQLAlchemy declarative base for all models
+Base = declarative_base()
 
 
 # =====================================================================================
@@ -981,13 +990,21 @@ def get_database_metrics() -> dict[str, Any]:
 # EXPORTS
 # =====================================================================================
 
+# Alias for compatibility
+get_db = get_session
+get_async_session = get_session
+
+
 __all__ = [
+    "Base",
     "ConnectionManager",
     "ConnectionMetrics",
     "HealthChecker",
     "SessionManager",
     "check_database_health",
+    "get_async_session",
     "get_database_metrics",
+    "get_db",
     "get_session",
     "initialize_database",
     "shutdown_database",

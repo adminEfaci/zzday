@@ -5,7 +5,7 @@ Factory for creating role entities with various configurations.
 
 from __future__ import annotations
 
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from ...entities.role.permission import Permission
@@ -18,7 +18,7 @@ class RoleFactory:
     
     # Predefined permission sets
     ADMIN_PERMISSIONS = [
-        (ResourceType.USER, PermissionAction.CREATE),
+        (ResourceType.USER, PermissionAction.CREATE, timedelta),
         (ResourceType.USER, PermissionAction.READ),
         (ResourceType.USER, PermissionAction.UPDATE),
         (ResourceType.USER, PermissionAction.DELETE),

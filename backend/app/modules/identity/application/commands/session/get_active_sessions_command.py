@@ -30,6 +30,10 @@ from app.modules.identity.domain.interfaces.services.security.geolocation_servic
     IGeolocationService,
 )
 from app.modules.identity.domain.services import SecurityService
+from app.modules.identity.domain.interfaces.services import (
+    ICachePort,
+    IDeviceFingerprintService,
+)
 
 
 class GetActiveSessionsCommand(Command[ActiveSessionsResponse]):

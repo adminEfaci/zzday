@@ -17,6 +17,9 @@ from app.modules.identity.domain.interfaces.repositories.audit_repository import
     IAuditRepository,
 )
 from app.modules.identity.domain.interfaces.repositories.user_repository import (
+from app.modules.identity.domain.interfaces.services import (
+    IConfigurationPort,
+)
     IUserRepository,
 )
 

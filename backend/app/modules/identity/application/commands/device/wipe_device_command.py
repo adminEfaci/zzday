@@ -62,6 +62,13 @@ from app.modules.identity.domain.interfaces.services.communication.notification_
     ISMSService,
 )
 from app.modules.identity.domain.services import (
+from app.modules.identity.domain.interfaces.services import (
+    IAuditService,
+    IBackupService,
+    IDevicePolicyRepository,
+    IRemoteWipeService,
+    ITokenRepository,
+)
     DeviceSecurityService,
     SessionService,
     TokenService,

@@ -16,6 +16,10 @@ from app.modules.identity.application.decorators import rate_limit, validate_req
 from app.modules.identity.application.dtos.response import PermissionCheckResponse
 from app.modules.identity.domain.enums import AccessDecision
 from app.modules.identity.domain.interfaces.repositories.user_repository import (
+from app.modules.identity.domain.interfaces.services import (
+    IAuthorizationRepository,
+    IPolicyRepository,
+)
     IUserRepository,
 )
 

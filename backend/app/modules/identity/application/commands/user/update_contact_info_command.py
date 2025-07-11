@@ -41,6 +41,10 @@ from app.modules.identity.domain.interfaces.services.infrastructure.cache_port i
 )
 from app.modules.identity.domain.services import NotificationService, SecurityService
 from app.modules.identity.domain.specifications import UserSpecifications
+from app.modules.identity.domain.interfaces.services import (
+    ICachePort,
+    IPhoneService,
+)
 
 
 class UpdateContactInfoCommand(Command[ContactInfoResponse]):

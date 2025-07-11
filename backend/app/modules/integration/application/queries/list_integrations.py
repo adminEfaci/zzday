@@ -11,6 +11,7 @@ from app.core.errors import ValidationError
 from app.core.logging import get_logger
 from app.modules.integration.application.dto import IntegrationListItemDTO
 from app.modules.integration.domain.enums import ConnectionStatus, IntegrationType
+from typing import Any
 
 logger = get_logger(__name__)
 

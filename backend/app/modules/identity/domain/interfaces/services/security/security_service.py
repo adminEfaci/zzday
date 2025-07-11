@@ -1,10 +1,11 @@
 """
 Security Service Interface
 
-Protocol for security monitoring, threat detection, and incident management.
+Port for security monitoring, threat detection, and incident management.
 """
 
-from typing import TYPE_CHECKING, Any, Protocol
+from abc import ABC, abstractmethod
+from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
 from ....value_objects.ip_address import IpAddress
@@ -13,9 +14,10 @@ if TYPE_CHECKING:
     from ....value_objects.ip_reputation import IpReputation
 
 
-class ISecurityService(Protocol):
-    """Protocol for security monitoring and threat detection."""
+class ISecurityService(ABC):
+    """Port for security monitoring and threat detection."""
     
+    @abstractmethod
     async def detect_anomalies(
         self, 
         user_id: UUID, 
@@ -32,6 +34,7 @@ class ISecurityService(Protocol):
             List of detected anomalies with severity
         """
     
+    @abstractmethod
     async def check_ip_reputation(self, ip_address: IpAddress) -> "IpReputation":
         """
         Check IP address reputation.
@@ -42,8 +45,8 @@ class ISecurityService(Protocol):
         Returns:
             IpReputation value object containing reputation analysis
         """
-        ...
     
+    @abstractmethod
     async def scan_for_threats(self, data: dict[str, Any]) -> list[dict[str, Any]]:
         """
         Scan data for security threats.
@@ -54,8 +57,8 @@ class ISecurityService(Protocol):
         Returns:
             List of detected threats
         """
-        ...
     
+    @abstractmethod
     async def report_security_incident(
         self,
         incident_type: str,

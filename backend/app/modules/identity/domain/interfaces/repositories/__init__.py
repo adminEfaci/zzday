@@ -23,6 +23,14 @@ from .mfa_repository import IMFARepository
 from .device_registration_repository import IDeviceRegistrationRepository
 from .security_event_repository import ISecurityEventRepository
 
+# Monitoring & Analytics Repositories
+from .activity_repository import IActivityRepository
+from .audit_repository import IAuditRepository
+from .analytics_repository import IAnalyticsRepository
+
+# Compliance Repositories
+from .compliance_repository import IComplianceRepository
+
 # User Data Repositories
 from .emergency_contact_repository import IEmergencyContactRepository
 from .notification_setting_repository import INotificationSettingRepository
@@ -46,6 +54,14 @@ __all__ = [
     'IMFARepository',
     'IDeviceRegistrationRepository',
     'ISecurityEventRepository',
+    
+    # Monitoring & Analytics
+    'IActivityRepository',
+    'IAuditRepository',
+    'IAnalyticsRepository',
+    
+    # Compliance
+    'IComplianceRepository',
     
     # User Data
     'IEmergencyContactRepository',

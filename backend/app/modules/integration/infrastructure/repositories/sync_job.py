@@ -17,6 +17,7 @@ from app.modules.integration.domain.entities import SyncJob
 from app.modules.integration.domain.enums import SyncStatus
 from app.modules.integration.domain.value_objects import SyncStatus as SyncStatusVO
 from app.modules.integration.infrastructure.models import SyncJobModel
+from app.core.infrastructure.repository import BaseRepository
 
 
 class SyncJobRepository(BaseRepository[SyncJob, SyncJobModel]):

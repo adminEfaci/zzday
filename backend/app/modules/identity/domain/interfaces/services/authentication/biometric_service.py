@@ -1,16 +1,17 @@
 """
 Biometric Authentication Service Interface
 
-Protocol for biometric authentication operations.
+Port for biometric authentication operations.
 """
 
-from typing import Protocol
+from abc import ABC, abstractmethod
 from uuid import UUID
 
 
-class IBiometricService(Protocol):
-    """Protocol for biometric authentication."""
+class IBiometricService(ABC):
+    """Port for biometric authentication."""
     
+    @abstractmethod
     async def register_biometric(
         self,
         user_id: UUID,
@@ -32,6 +33,7 @@ class IBiometricService(Protocol):
             BiometricRegistrationError: If registration fails
         """
     
+    @abstractmethod
     async def verify_biometric(
         self,
         user_id: UUID,
@@ -50,6 +52,7 @@ class IBiometricService(Protocol):
             True if biometric matches
         """
     
+    @abstractmethod
     async def delete_biometric(
         self,
         user_id: UUID,
@@ -66,6 +69,7 @@ class IBiometricService(Protocol):
             True if deleted successfully
         """
     
+    @abstractmethod
     async def get_registered_biometrics(self, user_id: UUID) -> list[str]:
         """
         Get list of registered biometric types.
@@ -76,4 +80,3 @@ class IBiometricService(Protocol):
         Returns:
             List of biometric types registered
         """
-        ...

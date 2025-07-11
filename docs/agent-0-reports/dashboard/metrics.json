@@ -1,0 +1,69 @@
+{
+  "timestamp": "2025-07-09T02:10:54.817714",
+  "git_info": {
+    "current_branch": "agent-0-cicd",
+    "latest_commit": {
+      "hash": "d751cd91",
+      "message": "Merge branch 'implementation/services'",
+      "author": "adminEfaci",
+      "date": "Wed Jul 9 01:28:32 2025 -0400"
+    },
+    "agent_branches": [
+      "agent-0-cicd"
+    ]
+  },
+  "test_metrics": {
+    "error": "invalid literal for int() with base 10: 'no'"
+  },
+  "coverage_metrics": {
+    "total_coverage": 0,
+    "status": "no_coverage_data"
+  },
+  "quality_metrics": {
+    "ruff_violations": 0,
+    "ruff_status": "passed",
+    "last_checked": "2025-07-09T02:10:55.357779"
+  },
+  "security_metrics": {
+    "total_issues": 0,
+    "high_severity": 0,
+    "medium_severity": 0,
+    "status": "passed",
+    "last_scanned": "2025-07-09T02:10:55.369180"
+  },
+  "build_status": {
+    "status": "failed",
+    "last_build": "2025-07-09T02:10:55.380266",
+    "build_time": "< 1 min"
+  },
+  "agent_status": {
+    "agent_0": {
+      "reports_available": true,
+      "last_activity": null
+    },
+    "agent_1": {
+      "reports_available": false,
+      "last_activity": null
+    },
+    "agent_2": {
+      "reports_available": false,
+      "last_activity": null
+    },
+    "agent_3": {
+      "reports_available": false,
+      "last_activity": null
+    },
+    "agent_4": {
+      "reports_available": false,
+      "last_activity": null
+    },
+    "agent_5": {
+      "reports_available": false,
+      "last_activity": null
+    },
+    "agent_6": {
+      "reports_available": false,
+      "last_activity": null
+    }
+  }
+}

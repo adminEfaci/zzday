@@ -11,13 +11,14 @@ from typing import Any
 from uuid import UUID, uuid4
 
 from app.core.domain.base import Entity
-from app.modules.identity.domain.enums import MfaMethod, SessionType
+from app.modules.identity.domain.enums import MFAMethod
 
 from ...value_objects.device_fingerprint import DeviceFingerprint
 from ...value_objects.geolocation import Geolocation
 from ...value_objects.ip_address import IpAddress
 from ...value_objects.token import Token, TokenType
 from ...value_objects.user_agent import UserAgent
+from .session_enums import SessionType
 from .session_errors import SessionExpiredError, InvalidTokenError
 from .session_constants import (
     MFA_CHALLENGE_TIMEOUT, MFA_SESSION_TIMEOUT, MAX_MFA_ATTEMPTS, MFA_EXTENSION_MINUTES
@@ -34,7 +35,7 @@ class PartialSession(Entity, RiskManagementMixin, RateLimitingMixin, SessionVali
     session_type: SessionType
     
     # MFA challenge details
-    mfa_method: MfaMethod
+    mfa_method: MFAMethod
     mfa_device_id: UUID | None = None
     challenge_token: Token | None = None
     challenge_expires_at: datetime | None = None

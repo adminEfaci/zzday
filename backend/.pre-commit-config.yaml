@@ -1,0 +1,71 @@
+default_language_version:
+  python: python3.11
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-added-large-files
+        args: ['--maxkb=1000']
+      - id: check-case-conflict
+      - id: check-merge-conflict
+      - id: check-json
+      - id: check-toml
+      - id: debug-statements
+      - id: mixed-line-ending
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.4.0
+    hooks:
+      - id: ruff
+        args: [--fix, --exit-non-zero-on-fix]
+        files: ^backend/app/
+      - id: ruff-format
+        files: ^backend/app/
+
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.8.0
+    hooks:
+      - id: mypy
+        args: [--config-file=backend/mypy.ini]
+        files: ^backend/app/
+        additional_dependencies:
+          - types-redis
+          - types-python-dateutil
+          - types-pytz
+          - types-bleach
+          - sqlalchemy[mypy]
+          - pydantic
+
+  - repo: local
+    hooks:
+      - id: pytest-check
+        name: pytest-check
+        entry: bash -c 'cd backend && python -m pytest --collect-only --quiet'
+        language: system
+        pass_filenames: false
+        always_run: true
+        
+      - id: agent-scope-validation
+        name: agent-scope-validation
+        entry: bash -c 'cd backend && python ci/scripts/validate_agent_scope.py'
+        language: system
+        pass_filenames: false
+        always_run: true
+        
+      - id: security-check
+        name: security-check
+        entry: bash -c 'cd backend && python -m bandit -r app -ll'
+        language: system
+        pass_filenames: false
+        always_run: true
+        
+      - id: dependency-check
+        name: dependency-check
+        entry: bash -c 'cd backend && python -m safety check --json || true'
+        language: system
+        pass_filenames: false
+        always_run: true

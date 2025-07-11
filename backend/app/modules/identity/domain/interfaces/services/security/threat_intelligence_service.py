@@ -1,17 +1,19 @@
 """
 Threat Intelligence Service Interface
 
-Protocol for threat intelligence, breach detection, and security incident reporting.
+Port for threat intelligence, breach detection, and security incident reporting.
 """
 
-from typing import Any, Protocol
+from abc import ABC, abstractmethod
+from typing import Any
 
 from ....value_objects.ip_address import IpAddress
 
 
-class IThreatIntelligenceService(Protocol):
-    """Protocol for threat intelligence operations."""
+class IThreatIntelligenceService(ABC):
+    """Port for threat intelligence operations."""
     
+    @abstractmethod
     async def check_compromised_credentials(
         self,
         email: str,
@@ -28,6 +30,7 @@ class IThreatIntelligenceService(Protocol):
             True if credentials found in breach databases
         """
     
+    @abstractmethod
     async def get_threat_indicators(
         self,
         ip_address: IpAddress
@@ -42,6 +45,7 @@ class IThreatIntelligenceService(Protocol):
             List of threat indicators
         """
     
+    @abstractmethod
     async def report_security_incident(
         self,
         incident_type: str,

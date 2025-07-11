@@ -3,6 +3,7 @@
 Domain contract for access token data access that must be implemented by the infrastructure layer.
 """
 
+from abc import abstractmethod
 from datetime import datetime
 from typing import Protocol
 from uuid import UUID
@@ -11,6 +12,7 @@ from uuid import UUID
 class IAccessTokenRepository(Protocol):
     """Repository interface for access token management."""
     
+    @abstractmethod
     async def create(
         self, 
         user_id: UUID, 
@@ -31,6 +33,7 @@ class IAccessTokenRepository(Protocol):
         """
         ...
     
+    @abstractmethod
     async def find_by_hash(self, token_hash: str) -> dict | None:
         """Find token by hash.
         
@@ -42,6 +45,7 @@ class IAccessTokenRepository(Protocol):
         """
         ...
     
+    @abstractmethod
     async def invalidate(self, token_id: UUID) -> bool:
         """Invalidate access token.
         
@@ -53,6 +57,7 @@ class IAccessTokenRepository(Protocol):
         """
         ...
     
+    @abstractmethod
     async def invalidate_by_session(self, session_id: UUID) -> int:
         """Invalidate all tokens for a session.
         
@@ -64,6 +69,7 @@ class IAccessTokenRepository(Protocol):
         """
         ...
     
+    @abstractmethod
     async def invalidate_by_user(self, user_id: UUID) -> int:
         """Invalidate all tokens for a user.
         
@@ -75,6 +81,7 @@ class IAccessTokenRepository(Protocol):
         """
         ...
     
+    @abstractmethod
     async def cleanup_expired(self) -> int:
         """Remove expired tokens.
         
@@ -83,6 +90,7 @@ class IAccessTokenRepository(Protocol):
         """
         ...
     
+    @abstractmethod
     async def is_valid(self, token_hash: str) -> bool:
         """Check if token is valid and not expired.
         

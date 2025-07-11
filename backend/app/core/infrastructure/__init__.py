@@ -34,6 +34,24 @@ try:
         TransactionContext,
         WriteOnlyRepository,
     )
+    from app.core.infrastructure.optimized_sql_repository import (
+        OptimizedSQLRepository,
+        QueryCache,
+        EagerLoadStrategy,
+        BatchOperationManager,
+    )
+    from app.core.infrastructure.cache_coordinator import (
+        CacheCoordinator,
+        get_cache_coordinator,
+    )
+    from app.core.infrastructure.redis_cache_backend import RedisCacheBackend
+    from app.core.infrastructure.multi_level_cache import (
+        MultiLevelCache,
+        CacheConfig,
+        CacheStrategy,
+        CacheLevel,
+        CacheStats,
+    )
 except ImportError as e:
     import warnings
     warnings.warn(f"Failed to import repository components: {e}", ImportWarning, stacklevel=2)
@@ -63,6 +81,43 @@ except ImportError as e:
     
     class TransactionContext:
         """Fallback transaction context."""
+    
+    class OptimizedSQLRepository(BaseRepository):
+        """Fallback optimized SQL repository."""
+    
+    class QueryCache:
+        """Fallback query cache."""
+    
+    class EagerLoadStrategy:
+        """Fallback eager load strategy."""
+    
+    class BatchOperationManager:
+        """Fallback batch operation manager."""
+    
+    class CacheCoordinator:
+        """Fallback cache coordinator."""
+    
+    def get_cache_coordinator():
+        """Fallback cache coordinator getter."""
+        return CacheCoordinator()
+    
+    class RedisCacheBackend:
+        """Fallback Redis cache backend."""
+    
+    class MultiLevelCache:
+        """Fallback multi-level cache."""
+    
+    class CacheConfig:
+        """Fallback cache config."""
+    
+    class CacheStrategy:
+        """Fallback cache strategy."""
+    
+    class CacheLevel:
+        """Fallback cache level."""
+    
+    class CacheStats:
+        """Fallback cache stats."""
 
 # Unit of Work pattern
 try:
@@ -164,17 +219,28 @@ __all__ = [
     "BaseRepository",
     # Unit of Work
     "BaseUnitOfWork",
+    "BatchOperationManager",
     "CacheableRepository",
+    "CacheConfig",
+    "CacheCoordinator",
+    "CacheLevel",
+    "CacheStats",
+    "CacheStrategy",
+    "EagerLoadStrategy",
     # Persistence utilities
     "EnhancedJSONType",
     "EventSourcedRepository",
     "FullAuditModel",
     "MetadataMixin",
     "ModelValidationError",
+    "MultiLevelCache",
     "OptimisticLockError",
+    "OptimizedSQLRepository",
     # Exceptions
     "PersistenceError",
+    "QueryCache",
     "ReadOnlyRepository",
+    "RedisCacheBackend",
     "Repository",
     "RepositoryFactory",
     "SoftDeletableModel",
@@ -188,6 +254,7 @@ __all__ = [
     "WriteOnlyRepository",
     "bulk_restore",
     "bulk_soft_delete",
+    "get_cache_coordinator",
     "monitor_query_performance",
 ]
 

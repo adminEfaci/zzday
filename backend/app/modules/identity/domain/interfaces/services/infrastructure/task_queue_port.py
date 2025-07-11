@@ -1,16 +1,18 @@
 """
 Task Queue Port Interface
 
-Protocol for asynchronous task queue operations.
+Port for asynchronous task queue operations.
 """
 
-from typing import Any, Protocol
+from abc import ABC, abstractmethod
+from typing import Any
 from uuid import UUID
 
 
-class ITaskQueuePort(Protocol):
-    """Protocol for task queue operations."""
+class ITaskQueuePort(ABC):
+    """Port for task queue operations."""
     
+    @abstractmethod
     async def queue_email_verification(
         self,
         user_id: UUID,
@@ -29,6 +31,7 @@ class ITaskQueuePort(Protocol):
             Task ID
         """
     
+    @abstractmethod
     async def queue_welcome_email(self, user_id: UUID) -> str:
         """
         Queue welcome email task.
@@ -39,8 +42,8 @@ class ITaskQueuePort(Protocol):
         Returns:
             Task ID
         """
-        ...
     
+    @abstractmethod
     async def queue_password_reset_email(
         self,
         user_id: UUID,
@@ -57,6 +60,7 @@ class ITaskQueuePort(Protocol):
             Task ID
         """
     
+    @abstractmethod
     async def queue_security_alert(
         self,
         user_id: UUID,
@@ -75,6 +79,7 @@ class ITaskQueuePort(Protocol):
             Task ID
         """
     
+    @abstractmethod
     async def queue_profile_completion_check(self, user_id: UUID) -> str:
         """
         Queue profile completion check.
@@ -85,8 +90,8 @@ class ITaskQueuePort(Protocol):
         Returns:
             Task ID
         """
-        ...
     
+    @abstractmethod
     async def queue_avatar_processing(
         self,
         user_id: UUID,
@@ -103,6 +108,7 @@ class ITaskQueuePort(Protocol):
             Task ID
         """
     
+    @abstractmethod
     async def get_task_status(self, task_id: str) -> dict[str, Any]:
         """
         Get task execution status.
@@ -113,4 +119,3 @@ class ITaskQueuePort(Protocol):
         Returns:
             Task status information
         """
-        ...

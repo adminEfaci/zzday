@@ -1,16 +1,18 @@
 """
 Token Generator Interface
 
-Protocol for token generation and validation operations.
+Port for token generation and validation operations.
 """
 
-from typing import Any, Protocol
+from abc import ABC, abstractmethod
+from typing import Any
 from uuid import UUID
 
 
-class ITokenGenerator(Protocol):
-    """Protocol for token generation and validation."""
+class ITokenGenerator(ABC):
+    """Port for token generation and validation."""
     
+    @abstractmethod
     async def generate_access_token(
         self, 
         user_id: UUID, 
@@ -32,6 +34,7 @@ class ITokenGenerator(Protocol):
             TokenGenerationError: If token generation fails
         """
     
+    @abstractmethod
     async def generate_refresh_token(
         self, 
         user_id: UUID,
@@ -48,6 +51,7 @@ class ITokenGenerator(Protocol):
             Refresh token string
         """
     
+    @abstractmethod
     async def validate_token(
         self, 
         token: str, 
@@ -67,6 +71,7 @@ class ITokenGenerator(Protocol):
             TokenValidationError: If token is invalid or expired
         """
     
+    @abstractmethod
     async def revoke_token(self, token: str) -> None:
         """
         Revoke a specific token.
@@ -77,8 +82,8 @@ class ITokenGenerator(Protocol):
         Raises:
             TokenNotFoundError: If token doesn't exist
         """
-        ...
     
+    @abstractmethod
     async def revoke_user_tokens(
         self, 
         user_id: UUID,
@@ -95,6 +100,7 @@ class ITokenGenerator(Protocol):
             Number of tokens revoked
         """
     
+    @abstractmethod
     async def refresh_token_pair(
         self, 
         refresh_token: str

@@ -234,7 +234,7 @@ class ValueObject(ABC):
         """
         if not isinstance(value, str):
             raise ValidationError(f"{field_name} must be a string")
-        
+
         length = len(value.strip())
         if length < min_length or length > max_length:
             raise ValidationError(
@@ -257,7 +257,7 @@ class ValueObject(ABC):
         import re
         if not isinstance(value, str):
             raise ValidationError(f"{field_name} must be a string")
-        
+
         if not re.match(pattern, value):
             raise ValidationError(f"{field_name} does not match required pattern")
 
@@ -457,17 +457,17 @@ class AggregateRoot(Entity):
     """
 
     def __init__(self, entity_id: UUID | None = None):
-        """
-        Initialize aggregate root.
+            """
+            Initialize aggregate root.
 
-        Args:
-            entity_id: Optional UUID for the entity (auto-generated if not provided)
-        """
-        super().__init__(entity_id)
-        self._events: list[DomainEvent] = []
-        self._version: int = 1
+            Args:
+                entity_id: Optional UUID for the entity (auto-generated if not provided)
+            """
+            super().__init__(entity_id)
+            self._events = []  # type: list['DomainEvent']
+            self._version = 1
 
-    def add_event(self, event: DomainEvent) -> None:
+    def add_event(self, event: 'DomainEvent') -> None:
         """
         Add a domain event to the aggregate.
 
@@ -477,19 +477,14 @@ class AggregateRoot(Entity):
         Raises:
             ValidationError: If event is invalid
         """
+        from app.core.domain.domain_event import DomainEvent  # Import moved here to avoid circular imports
         if not isinstance(event, DomainEvent):
             raise ValidationError("Event must be a DomainEvent instance")
-
-        # Set aggregate metadata on the event if it has metadata
-        if hasattr(event, "metadata") and event.metadata:
-            event.metadata.aggregate_id = self.id
-            event.metadata.aggregate_type = self.__class__.__name__
-            event.metadata.aggregate_version = self._version
 
         self._events.append(event)
         self.mark_modified()
 
-    def clear_events(self) -> list[DomainEvent]:
+    def clear_events(self) -> list['DomainEvent']:
         """
         Clear and return all uncommitted events.
 
@@ -500,7 +495,7 @@ class AggregateRoot(Entity):
         self._events.clear()
         return events
 
-    def get_events(self) -> list[DomainEvent]:
+    def get_events(self) -> list['DomainEvent']:
         """
         Get copy of uncommitted events without clearing them.
 
@@ -544,7 +539,7 @@ class AggregateRoot(Entity):
         """
         return self._version == expected_version
 
-    def apply_event(self, event: DomainEvent) -> None:
+    def apply_event(self, event: 'DomainEvent') -> None:
         """
         Apply an event to update aggregate state.
 
@@ -553,9 +548,9 @@ class AggregateRoot(Entity):
         Args:
             event: Domain event to apply
         """
-        # Default implementation - subclasses should override
+        pass  # Default implementation - subclasses should override
 
-    def replay_events(self, events: list[DomainEvent]) -> None:
+    def replay_events(self, events: list['DomainEvent']) -> None:
         """
         Replay a list of events to rebuild aggregate state.
 
@@ -647,19 +642,19 @@ class DomainService(ABC):
 class DomainEvent(ABC):
     """
     Base domain event class.
-    
+
     Domain events represent something that happened in the domain
     that domain experts care about.
     """
-    
+
     def __init__(self):
         """Initialize domain event."""
         from datetime import UTC, datetime
         from uuid import uuid4
-        
+
         self.event_id = uuid4()
         self.occurred_at = datetime.now(UTC)
-    
+
     @abstractmethod
     def __str__(self) -> str:
         """String representation of the event."""

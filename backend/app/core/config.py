@@ -34,10 +34,24 @@ from datetime import timedelta
 from enum import Enum
 from functools import lru_cache
 from typing import Any
-from ..config.api_docs import APIDocumentationConfig
+
+try:
+    from app.config.api_docs import APIDocumentationConfig
+except ImportError:
+    # Fallback implementation
+    from dataclasses import dataclass
+    
+    @dataclass
+    class APIDocumentationConfig:
+        cache_enabled: bool = True
+        include_examples: bool = True
+        include_security_analysis: bool = False
+        max_path_length: int = 100
+        output_directory: str = "docs/api"
+        generation_timeout: int = 300
 # Import from utils/shared modules for better modularity
 try:
-    from ..enums import (
+    from app.core.enums import (
         CacheBackendType,
         CacheStrategy,
         EncryptionAlgorithm,
@@ -53,61 +67,61 @@ try:
 except ImportError:
     # Fallback local definitions
     from enum import Enum
-
+    
     class Environment(Enum):
         DEVELOPMENT = "development"
         TESTING = "testing"
         STAGING = "staging"
         PRODUCTION = "production"
-
+    
     class LogLevel(Enum):
         DEBUG = 10
         INFO = 20
         WARNING = 30
         ERROR = 40
         CRITICAL = 50
-
+    
     class HashAlgorithm(Enum):
         ARGON2ID = "argon2id"
         BCRYPT = "bcrypt"
         SCRYPT = "scrypt"
-
+    
     class JWTAlgorithm(Enum):
         HS256 = "HS256"
         HS384 = "HS384"
         HS512 = "HS512"
         RS256 = "RS256"
-
+    
     class EncryptionAlgorithm(Enum):
         AES_256_GCM = "aes_256_gcm"
         AES_256_CBC = "aes_256_cbc"
         CHACHA20_POLY1305 = "chacha20_poly1305"
-
+    
     class CacheBackendType(Enum):
         MEMORY = "memory"
         REDIS = "redis"
         MEMCACHED = "memcached"
         HYBRID = "hybrid"
-
+        
         @property
         def is_distributed(self) -> bool:
             return self in {self.REDIS, self.MEMCACHED}
-
+    
     class CacheStrategy(Enum):
         NO_CACHE = "no_cache"
         CACHE_ASIDE = "cache_aside"
         WRITE_THROUGH = "write_through"
         WRITE_BEHIND = "write_behind"
         REFRESH_AHEAD = "refresh_ahead"
-
+        
         @property
         def requires_storage_backend(self) -> bool:
             return self in {self.WRITE_BEHIND, self.REFRESH_AHEAD}
-
+        
         @property
         def provides_strong_consistency(self) -> bool:
             return self in {self.WRITE_THROUGH, self.WRITE_BEHIND}
-
+    
     class EvictionPolicy(Enum):
         LRU = "lru"
         LFU = "lfu"
@@ -115,22 +129,22 @@ except ImportError:
         LIFO = "lifo"
         TTL = "ttl"
         RANDOM = "random"
-
+        
         @property
         def requires_access_tracking(self) -> bool:
             return self in {self.LRU, self.LFU}
-
+    
     class SerializationFormat(Enum):
         JSON = "json"
         PICKLE = "pickle"
         MSGPACK = "msgpack"
         AUTO = "auto"
-
+    
     class PoolType(Enum):
         QUEUE_POOL = "queue_pool"
         NULL_POOL = "null_pool"
         STATIC_POOL = "static_pool"
-
+    
     class Provider(Enum):
         SENDGRID = "sendgrid"
         TWILIO = "twilio"
@@ -139,7 +153,7 @@ except ImportError:
         SES = "ses"
 
 # Only import ValidationError from core to avoid circular dependencies
-from .errors import ConfigurationError
+from app.core.errors import ConfigurationError
 
 # Import policy-related enums
 try:
@@ -147,7 +161,7 @@ try:
 except ImportError:
     # Fallback definitions for policy enums
     from enum import Enum
-
+    
     class MFAMethod(Enum):
         TOTP = "totp"
         SMS = "sms"
@@ -156,13 +170,13 @@ except ImportError:
         BACKUP_CODE = "backup_code"
         API_KEY = "api_key"
         CERTIFICATE = "certificate"
-
+    
     class RiskLevel(Enum):
         LOW = "low"
         MEDIUM = "medium"
         HIGH = "high"
         CRITICAL = "critical"
-
+    
     class UserRole(Enum):
         USER = "user"
         ADMIN = "admin"
@@ -189,7 +203,7 @@ except ImportError:
         if value is None and required:
             raise ConfigurationError(f"{key} is required")
         return str(value)
-
+    
     def validate_integer(value, key, required=False, min_value=None, max_value=None, **kwargs):
         if value is None and not required:
             return None
@@ -201,7 +215,7 @@ except ImportError:
         if max_value is not None and val > max_value:
             raise ConfigurationError(f"{key} must be <= {max_value}")
         return val
-
+    
     def validate_float(value, key, required=False, min_value=None, max_value=None, **kwargs):
         if value is None and not required:
             return None
@@ -213,7 +227,7 @@ except ImportError:
         if max_value is not None and val > max_value:
             raise ConfigurationError(f"{key} must be <= {max_value}")
         return val
-
+    
     def validate_boolean(value, key, required=False):
         if value is None and not required:
             return None
@@ -224,8 +238,8 @@ except ImportError:
         if isinstance(value, str):
             return value.lower() in ('true', '1', 'yes', 'on')
         return bool(value)
-
-
+    
+    
     def validate_url(value, key, required=False, **kwargs):
         if value is None and not required:
             return None
@@ -235,7 +249,7 @@ except ImportError:
         if not value.startswith(('http://', 'https://', 'redis://', 'postgresql://')):
             raise ConfigurationError(f"{key} must be a valid URL")
         return value
-
+    
     def validate_email(value, key, required=False):
         if value is None and not required:
             return None
@@ -245,7 +259,7 @@ except ImportError:
         if '@' not in value or '.' not in value.split('@')[1]:
             raise ConfigurationError(f"{key} must be a valid email")
         return value
-
+    
     def validate_list(value, key, required=False, **kwargs):
         if value is None and not required:
             return None
@@ -435,7 +449,7 @@ class SessionPolicyConfig:
     require_trusted_device_for_admin: bool = True
     session_extension_threshold: float = 0.7
     risk_threshold_for_additional_auth: float = 0.6
-
+    
     # Type-specific timeouts
     timeout_by_type: dict[str, int] = field(default_factory=lambda: {
         "web": 480,      # 8 hours
@@ -460,14 +474,14 @@ class MFAPolicyConfig:
     min_unique_methods: int = 2
     risk_score_threshold: float = 0.7
     adaptive_mfa_enabled: bool = True
-
+    
     # Role-specific requirements
     role_requirements: dict[str, dict[str, Any]] = field(default_factory=lambda: {
         "admin": {"required": True, "allowed_methods": ["totp", "hardware_key", "backup_code"]},
         "super_admin": {"required": True, "allowed_methods": ["hardware_key", "backup_code"]},
         "service": {"required": True, "allowed_methods": ["api_key", "certificate"]}
     })
-
+    
     # Sensitive permissions requiring MFA
     sensitive_permissions: list[str] = field(default_factory=lambda: [
         "delete_user", "grant_permission", "system_admin", "modify_roles",
@@ -484,7 +498,7 @@ class LockoutPolicyConfig:
     max_attempts_per_minute: int = 10
     max_attempts_per_ip_per_hour: int = 20
     ip_block_duration_hours: int = 24
-
+    
     # Progressive lockout thresholds
     progressive_thresholds: list[dict[str, int]] = field(default_factory=lambda: [
         {"lockout_count": 3, "duration_minutes": 60},
@@ -502,7 +516,7 @@ class RiskPolicyConfig:
     require_mfa_above_score: float = 0.5
     block_above_score: float = 0.9
     alert_security_team_above: float = 0.7
-
+    
     # Risk factor weights
     risk_weights: dict[str, float] = field(default_factory=lambda: {
         "new_device": 0.2,
@@ -517,7 +531,7 @@ class RiskPolicyConfig:
         "account_age": 0.1,
         "unusual_behavior": 0.3
     })
-
+    
     # High risk countries (ISO codes)
     high_risk_countries: list[str] = field(default_factory=lambda: [
         'KP', 'IR', 'SY', 'CU', 'VE'
@@ -534,7 +548,7 @@ class CompliancePolicyConfig:
     data_portability_enabled: bool = True
     right_to_deletion_enabled: bool = True
     automated_data_minimization: bool = True
-
+    
     # Data retention periods (in days)
     retention_periods: dict[str, int] = field(default_factory=lambda: {
         "basic_identity": 365 * 7,  # 7 years
@@ -554,7 +568,7 @@ class PolicyConfiguration:
     """Master policy configuration."""
     environment: PolicyEnvironment = PolicyEnvironment.PRODUCTION
     version: str = "1.0.0"
-
+    
     # Individual policy configs
     password: PasswordPolicyConfig = field(default_factory=PasswordPolicyConfig)
     session: SessionPolicyConfig = field(default_factory=SessionPolicyConfig)
@@ -562,7 +576,7 @@ class PolicyConfiguration:
     lockout: LockoutPolicyConfig = field(default_factory=LockoutPolicyConfig)
     risk: RiskPolicyConfig = field(default_factory=RiskPolicyConfig)
     compliance: CompliancePolicyConfig = field(default_factory=CompliancePolicyConfig)
-
+    
     # Global settings
     strict_mode: bool = True
     audit_all_violations: bool = True
@@ -571,16 +585,16 @@ class PolicyConfiguration:
 
 class PolicyConfigManager:
     """Manages policy configuration with environment-specific overrides."""
-
+    
     def __init__(self, environment: PolicyEnvironment = PolicyEnvironment.PRODUCTION):
         self.environment = environment
         self._config = self._load_base_config()
         self._apply_environment_overrides()
-
+    
     def _load_base_config(self) -> PolicyConfiguration:
         """Load base configuration."""
         return PolicyConfiguration(environment=self.environment)
-
+    
     def _apply_environment_overrides(self) -> None:
         """Apply environment-specific configuration overrides."""
         if self.environment == PolicyEnvironment.DEVELOPMENT:
@@ -589,81 +603,80 @@ class PolicyConfigManager:
             self._apply_testing_overrides()
         elif self.environment == PolicyEnvironment.STAGING:
             self._apply_staging_overrides()
-
+    
     def _apply_development_overrides(self) -> None:
         """Apply development environment overrides."""
         # Relaxed password requirements for development
         self._config.password.min_length = 6
         self._config.password.require_special_chars = False
         self._config.password.complexity_score_threshold = 0.3
-
+        
         # Shorter session timeouts for testing
         self._config.session.absolute_timeout_minutes = 60
         self._config.session.idle_timeout_minutes = 15
-
+        
         # Relaxed MFA requirements
         self._config.mfa.grace_period_days = 365
         self._config.mfa.require_for_admin = False
-
+        
         # More lenient lockout policy
         self._config.lockout.max_failed_attempts = 10
         self._config.lockout.progressive_lockout_enabled = False
-
+    
     def _apply_testing_overrides(self) -> None:
         """Apply testing environment overrides."""
         # Fast timeouts for testing
         self._config.session.absolute_timeout_minutes = 5
         self._config.session.idle_timeout_minutes = 2
-
+        
         # Immediate lockout for testing
         self._config.lockout.max_failed_attempts = 3
         self._config.lockout.lockout_duration_minutes = 1
-
+        
         # Strict mode for testing
         self._config.strict_mode = True
         self._config.fail_open_on_policy_error = False
-
+    
     def _apply_staging_overrides(self) -> None:
         """Apply staging environment overrides."""
         # Production-like but with some relaxed settings
         self._config.mfa.grace_period_days = 7
         self._config.risk.alert_security_team_above = 0.8
-
+    
     def get_config(self) -> PolicyConfiguration:
         """Get the current configuration."""
         return self._config
-
+    
     def get_password_config(self) -> PasswordPolicyConfig:
         """Get password policy configuration."""
         return self._config.password
-
+    
     def get_session_config(self) -> SessionPolicyConfig:
         """Get session policy configuration."""
         return self._config.session
-
+    
     def get_mfa_config(self) -> MFAPolicyConfig:
         """Get MFA policy configuration."""
         return self._config.mfa
-
+    
     def get_lockout_config(self) -> LockoutPolicyConfig:
-        """Get lockout policy config
-        uration."""
+        """Get lockout policy configuration."""
         return self._config.lockout
-
+    
     def get_risk_config(self) -> RiskPolicyConfig:
         """Get risk policy configuration."""
         return self._config.risk
-
+    
     def get_compliance_config(self) -> CompliancePolicyConfig:
         """Get compliance policy configuration."""
         return self._config.compliance
-
+    
     def update_config(self, **kwargs) -> None:
         """Update configuration with provided values."""
         for key, value in kwargs.items():
             if hasattr(self._config, key):
                 setattr(self._config, key, value)
-
+    
     def to_dict(self) -> dict[str, Any]:
         """Convert configuration to dictionary."""
         return {
@@ -704,8 +717,8 @@ class SecurityConfig:
     argon2_salt_len: int = field(default=16)
 
     # JWT configuration
-    access_token_secret: str | None = field(default=None)
-    refresh_token_secret: str | None = field(default=None)
+    access_token_secret: str = field(default=None)
+    refresh_token_secret: str = field(default=None)
     access_token_expire_minutes: int = field(default=15)
     refresh_token_expire_days: int = field(default=30)
     jwt_algorithm: JWTAlgorithm = field(default=JWTAlgorithm.HS256)
@@ -1602,277 +1615,277 @@ class Settings:
         )
 
     def _load_security_config(self) -> None:
-            """Load comprehensive security configuration."""
-            self.security = SecurityConfig(
-                # Password hashing settings
-                password_algorithm=self.env_loader.get_enum(
-                    "PASSWORD_ALGORITHM", HashAlgorithm, HashAlgorithm.ARGON2ID
-                ),
-                argon2_time_cost=self.env_loader.get_integer(
-                    "ARGON2_TIME_COST", 2, min_value=1, max_value=10
-                ) or 2,
-                argon2_memory_cost=self.env_loader.get_integer(
-                    "ARGON2_MEMORY_COST", 65536, min_value=8192, max_value=1048576
-                ) or 65536,
-                argon2_parallelism=self.env_loader.get_integer(
-                    "ARGON2_PARALLELISM", 1, min_value=1, max_value=8
-                ) or 1,
-                argon2_hash_len=self.env_loader.get_integer(
-                    "ARGON2_HASH_LEN", 32, min_value=16, max_value=64
-                ) or 32,
-                argon2_salt_len=self.env_loader.get_integer(
-                    "ARGON2_SALT_LEN", 16, min_value=8, max_value=32
-                ) or 16,
-                # JWT settings
-                access_token_secret=self.env_loader.get_string(
-                    "ACCESS_TOKEN_SECRET", required=True, min_length=32
-                ) or "",
-                refresh_token_secret=self.env_loader.get_string(
-                    "REFRESH_TOKEN_SECRET", required=True, min_length=32
-                ) or "",
-                access_token_expire_minutes=self.env_loader.get_integer(
-                    "ACCESS_TOKEN_EXPIRE_MINUTES", 15, min_value=1, max_value=1440
-                ) or 15,
-                refresh_token_expire_days=self.env_loader.get_integer(
-                    "REFRESH_TOKEN_EXPIRE_DAYS", 30, min_value=1, max_value=365
-                ) or 30,
-                jwt_algorithm=self.env_loader.get_enum(
-                    "JWT_ALGORITHM", JWTAlgorithm, JWTAlgorithm.HS256
-                ),
-                jwt_issuer=self.env_loader.get_string("JWT_ISSUER", "ezzday", min_length=1) or "ezzday",
-                jwt_audience=self.env_loader.get_string(
-                    "JWT_AUDIENCE", "ezzday-users", min_length=1
-                ) or "ezzday-users",
-                jwt_clock_skew_seconds=self.env_loader.get_integer(
-                    "JWT_CLOCK_SKEW_SECONDS", 30, min_value=0, max_value=300
-                ) or 30,
-                # Token generation
-                default_token_bytes=self.env_loader.get_integer(
-                    "DEFAULT_TOKEN_BYTES", 32, min_value=16, max_value=64
-                ) or 32,
-                verification_code_length=self.env_loader.get_integer(
-                    "VERIFICATION_CODE_LENGTH", 6, min_value=4, max_value=12
-                ) or 6,
-                verification_code_expire_minutes=self.env_loader.get_integer(
-                    "VERIFICATION_CODE_EXPIRE_MINUTES", 10, min_value=1, max_value=60
-                ) or 10,
-                # Security policies
-                max_password_attempts=self.env_loader.get_integer(
-                    "MAX_PASSWORD_ATTEMPTS", 5, min_value=1, max_value=20
-                ) or 5,
-                password_attempt_window_minutes=self.env_loader.get_integer(
-                    "PASSWORD_ATTEMPT_WINDOW_MINUTES", 15, min_value=1, max_value=1440
-                ) or 15,
-                account_lockout_duration_minutes=self.env_loader.get_integer(
-                    "ACCOUNT_LOCKOUT_DURATION_MINUTES", 30, min_value=1, max_value=10080
-                ) or 30,
-                # Password policies
-                require_strong_passwords=self.env_loader.get_boolean(
-                    "REQUIRE_STRONG_PASSWORDS", True
-                ) or True,
-                min_password_length=self.env_loader.get_integer(
-                    "MIN_PASSWORD_LENGTH", 8, min_value=4, max_value=32
-                ) or 8,
-                max_password_length=self.env_loader.get_integer(
-                    "MAX_PASSWORD_LENGTH", 128, min_value=32, max_value=512
-                ) or 128,
-                password_require_uppercase=self.env_loader.get_boolean(
-                    "PASSWORD_REQUIRE_UPPERCASE", True
-                ) or True,
-                password_require_lowercase=self.env_loader.get_boolean(
-                    "PASSWORD_REQUIRE_LOWERCASE", True
-                ) or True,
-                password_require_numbers=self.env_loader.get_boolean(
-                    "PASSWORD_REQUIRE_NUMBERS", True
-                ) or True,
-                password_require_special_chars=self.env_loader.get_boolean(
-                    "PASSWORD_REQUIRE_SPECIAL_CHARS", True
-                ) or True,
-                password_prevent_common=self.env_loader.get_boolean(
-                    "PASSWORD_PREVENT_COMMON", True
-                ) or True,
-                password_prevent_user_info=self.env_loader.get_boolean(
-                    "PASSWORD_PREVENT_USER_INFO", True
-                ) or True,
-                password_history_count=self.env_loader.get_integer(
-                    "PASSWORD_HISTORY_COUNT", 5, min_value=0, max_value=24
-                ) or 5,
-                password_expiry_days=self.env_loader.get_integer(
-                    "PASSWORD_EXPIRY_DAYS", None, min_value=30, max_value=365
-                ),
-                # Session management
-                session_timeout_hours=self.env_loader.get_integer(
-                    "SESSION_TIMEOUT_HOURS", 8, min_value=1, max_value=168
-                ) or 8,
-                session_refresh_threshold_hours=self.env_loader.get_integer(
-                    "SESSION_REFRESH_THRESHOLD_HOURS", 1, min_value=0, max_value=24
-                ) or 1,
-                max_concurrent_sessions=self.env_loader.get_integer(
-                    "MAX_CONCURRENT_SESSIONS", 5, min_value=1, max_value=50
-                ) or 5,
-                session_cookie_secure=self.env_loader.get_boolean(
-                    "SESSION_COOKIE_SECURE", True
-                ) or True,
-                session_cookie_httponly=self.env_loader.get_boolean(
-                    "SESSION_COOKIE_HTTPONLY", True
-                ) or True,
-                session_cookie_samesite=self.env_loader.get_string(
-                    "SESSION_COOKIE_SAMESITE", "Strict"
-                ) or "Strict",
-                # MFA configuration
-                mfa_enabled_by_default=self.env_loader.get_boolean(
-                    "MFA_ENABLED_BY_DEFAULT", False
-                ) or False,
-                mfa_required_for_admin=self.env_loader.get_boolean(
-                    "MFA_REQUIRED_FOR_ADMIN", True
-                ) or True,
-                mfa_backup_codes_count=self.env_loader.get_integer(
-                    "MFA_BACKUP_CODES_COUNT", 10, min_value=5, max_value=20
-                ) or 10,
-                mfa_totp_window=self.env_loader.get_integer(
-                    "MFA_TOTP_WINDOW", 1, min_value=0, max_value=10
-                ) or 1,
-                mfa_remember_device_days=self.env_loader.get_integer(
-                    "MFA_REMEMBER_DEVICE_DAYS", 30, min_value=1, max_value=365
-                ) or 30,
-                # Encryption
-                encryption_algorithm=self.env_loader.get_enum(
-                    "ENCRYPTION_ALGORITHM",
-                    EncryptionAlgorithm,
-                    EncryptionAlgorithm.AES_256_GCM,
-                ),
-                encryption_key_rotation_days=self.env_loader.get_integer(
-                    "ENCRYPTION_KEY_ROTATION_DAYS", 90, min_value=1, max_value=365
-                ) or 90,
-                # API security
-                api_key_length=self.env_loader.get_integer(
-                    "API_KEY_LENGTH", 32, min_value=16, max_value=128
-                ) or 32,
-                api_key_prefix=self.env_loader.get_string("API_KEY_PREFIX", "ezd_") or "ezd_",
-                api_rate_limit_enabled=self.env_loader.get_boolean(
-                    "API_RATE_LIMIT_ENABLED", True
-                ) or True,
-                # Audit and monitoring
-                audit_login_events=self.env_loader.get_boolean("AUDIT_LOGIN_EVENTS", True) or True,
-                audit_permission_changes=self.env_loader.get_boolean(
-                    "AUDIT_PERMISSION_CHANGES", True
-                ) or True,
-                audit_data_access=self.env_loader.get_boolean("AUDIT_DATA_ACCESS", True) or True,
-                security_event_retention_days=self.env_loader.get_integer(
-                    "SECURITY_EVENT_RETENTION_DAYS", 365, min_value=1, max_value=2555
-                ) or 365,
-                # Security headers
-                enable_security_headers=self.env_loader.get_boolean(
-                    "ENABLE_SECURITY_HEADERS", True
-                ) or True,
-                hsts_max_age_seconds=self.env_loader.get_integer(
-                    "HSTS_MAX_AGE_SECONDS", 31536000, min_value=86400, max_value=63072000
-                ) or 31536000,
-                content_security_policy=self.env_loader.get_string(
-                    "CONTENT_SECURITY_POLICY", None
-                ),
-            )
+        """Load comprehensive security configuration."""
+        self.security = SecurityConfig(
+            # Password hashing settings
+            password_algorithm=self.env_loader.get_enum(
+                "PASSWORD_ALGORITHM", HashAlgorithm, HashAlgorithm.ARGON2ID
+            ),
+            argon2_time_cost=self.env_loader.get_integer(
+                "ARGON2_TIME_COST", 2, min_value=1, max_value=10
+            ),
+            argon2_memory_cost=self.env_loader.get_integer(
+                "ARGON2_MEMORY_COST", 65536, min_value=8192, max_value=1048576
+            ),
+            argon2_parallelism=self.env_loader.get_integer(
+                "ARGON2_PARALLELISM", 1, min_value=1, max_value=8
+            ),
+            argon2_hash_len=self.env_loader.get_integer(
+                "ARGON2_HASH_LEN", 32, min_value=16, max_value=64
+            ),
+            argon2_salt_len=self.env_loader.get_integer(
+                "ARGON2_SALT_LEN", 16, min_value=8, max_value=32
+            ),
+            # JWT settings
+            access_token_secret=self.env_loader.get_string(
+                "ACCESS_TOKEN_SECRET", required=True, min_length=32
+            ),
+            refresh_token_secret=self.env_loader.get_string(
+                "REFRESH_TOKEN_SECRET", required=True, min_length=32
+            ),
+            access_token_expire_minutes=self.env_loader.get_integer(
+                "ACCESS_TOKEN_EXPIRE_MINUTES", 15, min_value=1, max_value=1440
+            ),
+            refresh_token_expire_days=self.env_loader.get_integer(
+                "REFRESH_TOKEN_EXPIRE_DAYS", 30, min_value=1, max_value=365
+            ),
+            jwt_algorithm=self.env_loader.get_enum(
+                "JWT_ALGORITHM", JWTAlgorithm, JWTAlgorithm.HS256
+            ),
+            jwt_issuer=self.env_loader.get_string("JWT_ISSUER", "ezzday", min_length=1),
+            jwt_audience=self.env_loader.get_string(
+                "JWT_AUDIENCE", "ezzday-users", min_length=1
+            ),
+            jwt_clock_skew_seconds=self.env_loader.get_integer(
+                "JWT_CLOCK_SKEW_SECONDS", 30, min_value=0, max_value=300
+            ),
+            # Token generation
+            default_token_bytes=self.env_loader.get_integer(
+                "DEFAULT_TOKEN_BYTES", 32, min_value=16, max_value=64
+            ),
+            verification_code_length=self.env_loader.get_integer(
+                "VERIFICATION_CODE_LENGTH", 6, min_value=4, max_value=12
+            ),
+            verification_code_expire_minutes=self.env_loader.get_integer(
+                "VERIFICATION_CODE_EXPIRE_MINUTES", 10, min_value=1, max_value=60
+            ),
+            # Security policies
+            max_password_attempts=self.env_loader.get_integer(
+                "MAX_PASSWORD_ATTEMPTS", 5, min_value=1, max_value=20
+            ),
+            password_attempt_window_minutes=self.env_loader.get_integer(
+                "PASSWORD_ATTEMPT_WINDOW_MINUTES", 15, min_value=1, max_value=1440
+            ),
+            account_lockout_duration_minutes=self.env_loader.get_integer(
+                "ACCOUNT_LOCKOUT_DURATION_MINUTES", 30, min_value=1, max_value=10080
+            ),
+            # Password policies
+            require_strong_passwords=self.env_loader.get_boolean(
+                "REQUIRE_STRONG_PASSWORDS", True
+            ),
+            min_password_length=self.env_loader.get_integer(
+                "MIN_PASSWORD_LENGTH", 8, min_value=4, max_value=32
+            ),
+            max_password_length=self.env_loader.get_integer(
+                "MAX_PASSWORD_LENGTH", 128, min_value=32, max_value=512
+            ),
+            password_require_uppercase=self.env_loader.get_boolean(
+                "PASSWORD_REQUIRE_UPPERCASE", True
+            ),
+            password_require_lowercase=self.env_loader.get_boolean(
+                "PASSWORD_REQUIRE_LOWERCASE", True
+            ),
+            password_require_numbers=self.env_loader.get_boolean(
+                "PASSWORD_REQUIRE_NUMBERS", True
+            ),
+            password_require_special_chars=self.env_loader.get_boolean(
+                "PASSWORD_REQUIRE_SPECIAL_CHARS", True
+            ),
+            password_prevent_common=self.env_loader.get_boolean(
+                "PASSWORD_PREVENT_COMMON", True
+            ),
+            password_prevent_user_info=self.env_loader.get_boolean(
+                "PASSWORD_PREVENT_USER_INFO", True
+            ),
+            password_history_count=self.env_loader.get_integer(
+                "PASSWORD_HISTORY_COUNT", 5, min_value=0, max_value=24
+            ),
+            password_expiry_days=self.env_loader.get_integer(
+                "PASSWORD_EXPIRY_DAYS", None, min_value=30, max_value=365
+            ),
+            # Session management
+            session_timeout_hours=self.env_loader.get_integer(
+                "SESSION_TIMEOUT_HOURS", 8, min_value=1, max_value=168
+            ),
+            session_refresh_threshold_hours=self.env_loader.get_integer(
+                "SESSION_REFRESH_THRESHOLD_HOURS", 1, min_value=0, max_value=24
+            ),
+            max_concurrent_sessions=self.env_loader.get_integer(
+                "MAX_CONCURRENT_SESSIONS", 5, min_value=1, max_value=50
+            ),
+            session_cookie_secure=self.env_loader.get_boolean(
+                "SESSION_COOKIE_SECURE", True
+            ),
+            session_cookie_httponly=self.env_loader.get_boolean(
+                "SESSION_COOKIE_HTTPONLY", True
+            ),
+            session_cookie_samesite=self.env_loader.get_string(
+                "SESSION_COOKIE_SAMESITE", "Strict"
+            ),
+            # MFA configuration
+            mfa_enabled_by_default=self.env_loader.get_boolean(
+                "MFA_ENABLED_BY_DEFAULT", False
+            ),
+            mfa_required_for_admin=self.env_loader.get_boolean(
+                "MFA_REQUIRED_FOR_ADMIN", True
+            ),
+            mfa_backup_codes_count=self.env_loader.get_integer(
+                "MFA_BACKUP_CODES_COUNT", 10, min_value=5, max_value=20
+            ),
+            mfa_totp_window=self.env_loader.get_integer(
+                "MFA_TOTP_WINDOW", 1, min_value=0, max_value=10
+            ),
+            mfa_remember_device_days=self.env_loader.get_integer(
+                "MFA_REMEMBER_DEVICE_DAYS", 30, min_value=1, max_value=365
+            ),
+            # Encryption
+            encryption_algorithm=self.env_loader.get_enum(
+                "ENCRYPTION_ALGORITHM",
+                EncryptionAlgorithm,
+                EncryptionAlgorithm.AES_256_GCM,
+            ),
+            encryption_key_rotation_days=self.env_loader.get_integer(
+                "ENCRYPTION_KEY_ROTATION_DAYS", 90, min_value=1, max_value=365
+            ),
+            # API security
+            api_key_length=self.env_loader.get_integer(
+                "API_KEY_LENGTH", 32, min_value=16, max_value=128
+            ),
+            api_key_prefix=self.env_loader.get_string("API_KEY_PREFIX", "ezd_"),
+            api_rate_limit_enabled=self.env_loader.get_boolean(
+                "API_RATE_LIMIT_ENABLED", True
+            ),
+            # Audit and monitoring
+            audit_login_events=self.env_loader.get_boolean("AUDIT_LOGIN_EVENTS", True),
+            audit_permission_changes=self.env_loader.get_boolean(
+                "AUDIT_PERMISSION_CHANGES", True
+            ),
+            audit_data_access=self.env_loader.get_boolean("AUDIT_DATA_ACCESS", True),
+            security_event_retention_days=self.env_loader.get_integer(
+                "SECURITY_EVENT_RETENTION_DAYS", 365, min_value=1, max_value=2555
+            ),
+            # Security headers
+            enable_security_headers=self.env_loader.get_boolean(
+                "ENABLE_SECURITY_HEADERS", True
+            ),
+            hsts_max_age_seconds=self.env_loader.get_integer(
+                "HSTS_MAX_AGE_SECONDS", 31536000, min_value=86400, max_value=63072000
+            ),
+            content_security_policy=self.env_loader.get_string(
+                "CONTENT_SECURITY_POLICY", None
+            ),
+        )
 
     def _load_database_config(self) -> None:
-            """Load comprehensive database configuration."""
-            self.database = DatabaseConfig(
-                url=self.env_loader.get_string("DATABASE_URL", required=True) or "",
-                environment=self.environment,
-                pool_type=self.env_loader.get_enum(
-                    "DATABASE_POOL_TYPE", PoolType, PoolType.QUEUE_POOL
-                ) or PoolType.QUEUE_POOL,
-                pool_size=self.env_loader.get_integer(
-                    "DATABASE_POOL_SIZE", 20, min_value=1
-                ) or 20,
-                max_overflow=self.env_loader.get_integer(
-                    "DATABASE_MAX_OVERFLOW", 40, min_value=0
-                ) or 40,
-                pool_timeout=self.env_loader.get_integer(
-                    "DATABASE_POOL_TIMEOUT", 30, min_value=1
-                ) or 30,
-                pool_recycle=self.env_loader.get_integer(
-                    "DATABASE_POOL_RECYCLE", 3600, min_value=300
-                ) or 3600,
-                pool_pre_ping=self.env_loader.get_boolean("DATABASE_POOL_PRE_PING", True) or True,
-                connect_timeout=self.env_loader.get_integer(
-                    "DATABASE_CONNECT_TIMEOUT", 10, min_value=1
-                ) or 10,
-                command_timeout=self.env_loader.get_integer(
-                    "DATABASE_COMMAND_TIMEOUT", 60, min_value=1
-                ) or 60,
-                query_timeout=self.env_loader.get_integer(
-                    "DATABASE_QUERY_TIMEOUT", 30, min_value=1
-                ) or 30,
-                echo=self.env_loader.get_boolean("DATABASE_ECHO", False) or False,
-                echo_pool=self.env_loader.get_boolean("DATABASE_ECHO_POOL", False) or False,
-                enable_logging=self.env_loader.get_boolean("DATABASE_ENABLE_LOGGING", True) or True,
-                health_check_interval=self.env_loader.get_integer(
-                    "DATABASE_HEALTH_CHECK_INTERVAL", 60, min_value=10
-                ) or 60,
-                max_health_check_failures=self.env_loader.get_integer(
-                    "DATABASE_MAX_HEALTH_CHECK_FAILURES", 3, min_value=1
-                ) or 3,
-                health_check_timeout=self.env_loader.get_integer(
-                    "DATABASE_HEALTH_CHECK_TIMEOUT", 5, min_value=1
-                ) or 5,
-                max_retries=self.env_loader.get_integer(
-                    "DATABASE_MAX_RETRIES", 3, min_value=0
-                ) or 3,
-                retry_delay=self.env_loader.get_float(
-                    "DATABASE_RETRY_DELAY", 1.0, min_value=0.1
-                ) or 1.0,
-                exponential_backoff=self.env_loader.get_boolean(
-                    "DATABASE_EXPONENTIAL_BACKOFF", True
-                ) or True,
-            )
+        """Load comprehensive database configuration."""
+        self.database = DatabaseConfig(
+            url=self.env_loader.get_string("DATABASE_URL", required=True),
+            environment=self.environment,
+            pool_type=self.env_loader.get_enum(
+                "DATABASE_POOL_TYPE", PoolType, PoolType.QUEUE_POOL
+            ),
+            pool_size=self.env_loader.get_integer(
+                "DATABASE_POOL_SIZE", 20, min_value=1
+            ),
+            max_overflow=self.env_loader.get_integer(
+                "DATABASE_MAX_OVERFLOW", 40, min_value=0
+            ),
+            pool_timeout=self.env_loader.get_integer(
+                "DATABASE_POOL_TIMEOUT", 30, min_value=1
+            ),
+            pool_recycle=self.env_loader.get_integer(
+                "DATABASE_POOL_RECYCLE", 3600, min_value=300
+            ),
+            pool_pre_ping=self.env_loader.get_boolean("DATABASE_POOL_PRE_PING", True),
+            connect_timeout=self.env_loader.get_integer(
+                "DATABASE_CONNECT_TIMEOUT", 10, min_value=1
+            ),
+            command_timeout=self.env_loader.get_integer(
+                "DATABASE_COMMAND_TIMEOUT", 60, min_value=1
+            ),
+            query_timeout=self.env_loader.get_integer(
+                "DATABASE_QUERY_TIMEOUT", 30, min_value=1
+            ),
+            echo=self.env_loader.get_boolean("DATABASE_ECHO", False),
+            echo_pool=self.env_loader.get_boolean("DATABASE_ECHO_POOL", False),
+            enable_logging=self.env_loader.get_boolean("DATABASE_ENABLE_LOGGING", True),
+            health_check_interval=self.env_loader.get_integer(
+                "DATABASE_HEALTH_CHECK_INTERVAL", 60, min_value=10
+            ),
+            max_health_check_failures=self.env_loader.get_integer(
+                "DATABASE_MAX_HEALTH_CHECK_FAILURES", 3, min_value=1
+            ),
+            health_check_timeout=self.env_loader.get_integer(
+                "DATABASE_HEALTH_CHECK_TIMEOUT", 5, min_value=1
+            ),
+            max_retries=self.env_loader.get_integer(
+                "DATABASE_MAX_RETRIES", 3, min_value=0
+            ),
+            retry_delay=self.env_loader.get_float(
+                "DATABASE_RETRY_DELAY", 1.0, min_value=0.1
+            ),
+            exponential_backoff=self.env_loader.get_boolean(
+                "DATABASE_EXPONENTIAL_BACKOFF", True
+            ),
+        )
 
     def _load_cache_config(self) -> None:
-            """Load comprehensive cache configuration."""
-            self.cache = CacheConfig(
-                # Backend configuration
-                backend_type=self.env_loader.get_enum(
-                    "CACHE_BACKEND_TYPE", CacheBackendType, CacheBackendType.MEMORY
-                ) or CacheBackendType.MEMORY,
-                fallback_backend=self.env_loader.get_enum(
-                    "CACHE_FALLBACK_BACKEND", CacheBackendType, None
-                ),
-                cache_strategy=self.env_loader.get_enum(
-                    "CACHE_STRATEGY", CacheStrategy, CacheStrategy.CACHE_ASIDE
-                ) or CacheStrategy.CACHE_ASIDE,
-                # Redis configuration
-                redis_url=self.env_loader.get_string("REDIS_URL"),
-                redis_password=self.env_loader.get_string("REDIS_PASSWORD"),
-                redis_db=self.env_loader.get_integer("REDIS_DB", 0, min_value=0) or 0,
-                redis_pool_size=self.env_loader.get_integer(
-                    "REDIS_POOL_SIZE", 10, min_value=1
-                ) or 10,
-                redis_timeout=self.env_loader.get_integer("REDIS_TIMEOUT", 5, min_value=1) or 5,
-                # Memcached configuration
-                memcached_servers=self.env_loader.get_list("MEMCACHED_SERVERS", []) or [],
-                memcached_timeout=self.env_loader.get_integer(
-                    "MEMCACHED_TIMEOUT", 5, min_value=1
-                ) or 5,
-                # Memory cache configuration
-                memory_max_size=self.env_loader.get_integer(
-                    "CACHE_MEMORY_MAX_SIZE", 100 * 1024 * 1024, min_value=1024 * 1024
-                ) or (100 * 1024 * 1024),
-                memory_cleanup_interval=self.env_loader.get_integer(
-                    "CACHE_MEMORY_CLEANUP_INTERVAL", 300, min_value=10
-                ) or 300,
-                # Common settings
-                key_prefix=self.env_loader.get_string(
-                    "CACHE_KEY_PREFIX", "ezzday", min_length=1
-                ) or "ezzday",
-                namespace_separator=self.env_loader.get_string(
-                    "CACHE_NAMESPACE_SEPARATOR", ":", min_length=1
-                ) or ":",
-                enable_health_checks=self.env_loader.get_boolean(
-                    "CACHE_ENABLE_HEALTH_CHECKS", True
-                ) or True,
-                health_check_interval=self.env_loader.get_integer(
-                    "CACHE_HEALTH_CHECK_INTERVAL", 60, min_value=10
-                ) or 60,
-            )
+        """Load comprehensive cache configuration."""
+        self.cache = CacheConfig(
+            # Backend configuration
+            backend_type=self.env_loader.get_enum(
+                "CACHE_BACKEND_TYPE", CacheBackendType, CacheBackendType.MEMORY
+            ),
+            fallback_backend=self.env_loader.get_enum(
+                "CACHE_FALLBACK_BACKEND", CacheBackendType, None
+            ),
+            cache_strategy=self.env_loader.get_enum(
+                "CACHE_STRATEGY", CacheStrategy, CacheStrategy.CACHE_ASIDE
+            ),
+            # Redis configuration
+            redis_url=self.env_loader.get_string("REDIS_URL"),
+            redis_password=self.env_loader.get_string("REDIS_PASSWORD"),
+            redis_db=self.env_loader.get_integer("REDIS_DB", 0, min_value=0),
+            redis_pool_size=self.env_loader.get_integer(
+                "REDIS_POOL_SIZE", 10, min_value=1
+            ),
+            redis_timeout=self.env_loader.get_integer("REDIS_TIMEOUT", 5, min_value=1),
+            # Memcached configuration
+            memcached_servers=self.env_loader.get_list("MEMCACHED_SERVERS", []),
+            memcached_timeout=self.env_loader.get_integer(
+                "MEMCACHED_TIMEOUT", 5, min_value=1
+            ),
+            # Memory cache configuration
+            memory_max_size=self.env_loader.get_integer(
+                "CACHE_MEMORY_MAX_SIZE", 100 * 1024 * 1024, min_value=1024 * 1024
+            ),
+            memory_cleanup_interval=self.env_loader.get_integer(
+                "CACHE_MEMORY_CLEANUP_INTERVAL", 300, min_value=10
+            ),
+            # Common settings
+            key_prefix=self.env_loader.get_string(
+                "CACHE_KEY_PREFIX", "ezzday", min_length=1
+            ),
+            namespace_separator=self.env_loader.get_string(
+                "CACHE_NAMESPACE_SEPARATOR", ":", min_length=1
+            ),
+            enable_health_checks=self.env_loader.get_boolean(
+                "CACHE_ENABLE_HEALTH_CHECKS", True
+            ),
+            health_check_interval=self.env_loader.get_integer(
+                "CACHE_HEALTH_CHECK_INTERVAL", 60, min_value=10
+            ),
+        )
 
     def _load_service_config(self) -> None:
         """Load external service configuration."""
@@ -1961,89 +1974,89 @@ class Settings:
         self.allowed_hosts = self.env_loader.get_list("ALLOWED_HOSTS", ["*"])
 
     def _load_metrics_config(self) -> None:
-            """Load metrics and monitoring configuration."""
-            self.metrics = MetricsConfig(
-                environment=self.environment,
-                enable_monitoring=self.env_loader.get_boolean(
-                    "METRICS_ENABLE_MONITORING", True
-                ) or True,
-                enable_prometheus=self.env_loader.get_boolean(
-                    "METRICS_ENABLE_PROMETHEUS", True
-                ) or True,
-                enable_health_checks=self.env_loader.get_boolean(
-                    "METRICS_ENABLE_HEALTH_CHECKS", True
-                ) or True,
-                enable_performance_tracking=self.env_loader.get_boolean(
-                    "METRICS_ENABLE_PERFORMANCE_TRACKING", True
-                ) or True,
-                # Collection settings
-                collection_interval=self.env_loader.get_integer(
-                    "METRICS_COLLECTION_INTERVAL", 60, min_value=1
-                ) or 60,
-                retention_period=self.env_loader.get_integer(
-                    "METRICS_RETENTION_PERIOD", 3600, min_value=60
-                ) or 3600,
-                max_metric_history=self.env_loader.get_integer(
-                    "METRICS_MAX_HISTORY", 1000, min_value=10
-                ) or 1000,
-                batch_size=self.env_loader.get_integer(
-                    "METRICS_BATCH_SIZE", 100, min_value=1
-                ) or 100,
-                # Prometheus settings
-                prometheus_port=self.env_loader.get_integer(
-                    "METRICS_PROMETHEUS_PORT", 8001, min_value=1024, max_value=65535
-                ) or 8001,
-                prometheus_host=self.env_loader.get_string(
-                    "METRICS_PROMETHEUS_HOST", "127.0.0.1"
-                ) or "127.0.0.1",
-                prometheus_endpoint=self.env_loader.get_string(
-                    "METRICS_PROMETHEUS_ENDPOINT", "/metrics"
-                ) or "/metrics",
-                enable_multiprocess_mode=self.env_loader.get_boolean(
-                    "METRICS_ENABLE_MULTIPROCESS_MODE", False
-                ) or False,
-                # Performance settings
-                enable_statistical_analysis=self.env_loader.get_boolean(
-                    "METRICS_ENABLE_STATISTICAL_ANALYSIS", True
-                ) or True,
-                enable_trend_detection=self.env_loader.get_boolean(
-                    "METRICS_ENABLE_TREND_DETECTION", True
-                ) or True,
-                enable_anomaly_detection=self.env_loader.get_boolean(
-                    "METRICS_ENABLE_ANOMALY_DETECTION", False
-                ) or False,
-                # Health monitoring settings
-                health_check_interval=self.env_loader.get_integer(
-                    "METRICS_HEALTH_CHECK_INTERVAL", 30, min_value=5
-                ) or 30,
-                health_check_timeout=self.env_loader.get_integer(
-                    "METRICS_HEALTH_CHECK_TIMEOUT", 5, min_value=1
-                ) or 5,
-                max_health_failures=self.env_loader.get_integer(
-                    "METRICS_MAX_HEALTH_FAILURES", 3, min_value=1
-                ) or 3,
-                # Security settings
-                enable_metric_filtering=self.env_loader.get_boolean(
-                    "METRICS_ENABLE_FILTERING", True
-                ) or True,
-                mask_sensitive_labels=self.env_loader.get_boolean(
-                    "METRICS_MASK_SENSITIVE_LABELS", True
-                ) or True,
-                allowed_label_patterns=self.env_loader.get_list(
-                    "METRICS_ALLOWED_LABEL_PATTERNS", ["*"]
-                ) or ["*"],
-                blocked_label_patterns=self.env_loader.get_list(
-                    "METRICS_BLOCKED_LABEL_PATTERNS", []
-                ) or [],
-                # Storage settings
-                enable_persistent_storage=self.env_loader.get_boolean(
-                    "METRICS_ENABLE_PERSISTENT_STORAGE", False
-                ) or False,
-                storage_path=self.env_loader.get_string("METRICS_STORAGE_PATH"),
-                compression_enabled=self.env_loader.get_boolean(
-                    "METRICS_COMPRESSION_ENABLED", True
-                ) or True,
-            )
+        """Load metrics and monitoring configuration."""
+        self.metrics = MetricsConfig(
+            environment=self.environment,
+            enable_monitoring=self.env_loader.get_boolean(
+                "METRICS_ENABLE_MONITORING", True
+            ),
+            enable_prometheus=self.env_loader.get_boolean(
+                "METRICS_ENABLE_PROMETHEUS", True
+            ),
+            enable_health_checks=self.env_loader.get_boolean(
+                "METRICS_ENABLE_HEALTH_CHECKS", True
+            ),
+            enable_performance_tracking=self.env_loader.get_boolean(
+                "METRICS_ENABLE_PERFORMANCE_TRACKING", True
+            ),
+            # Collection settings
+            collection_interval=self.env_loader.get_integer(
+                "METRICS_COLLECTION_INTERVAL", 60, min_value=1
+            ),
+            retention_period=self.env_loader.get_integer(
+                "METRICS_RETENTION_PERIOD", 3600, min_value=60
+            ),
+            max_metric_history=self.env_loader.get_integer(
+                "METRICS_MAX_HISTORY", 1000, min_value=10
+            ),
+            batch_size=self.env_loader.get_integer(
+                "METRICS_BATCH_SIZE", 100, min_value=1
+            ),
+            # Prometheus settings
+            prometheus_port=self.env_loader.get_integer(
+                "METRICS_PROMETHEUS_PORT", 8001, min_value=1024, max_value=65535
+            ),
+            prometheus_host=self.env_loader.get_string(
+                "METRICS_PROMETHEUS_HOST", "127.0.0.1"
+            ),
+            prometheus_endpoint=self.env_loader.get_string(
+                "METRICS_PROMETHEUS_ENDPOINT", "/metrics"
+            ),
+            enable_multiprocess_mode=self.env_loader.get_boolean(
+                "METRICS_ENABLE_MULTIPROCESS_MODE", False
+            ),
+            # Performance settings
+            enable_statistical_analysis=self.env_loader.get_boolean(
+                "METRICS_ENABLE_STATISTICAL_ANALYSIS", True
+            ),
+            enable_trend_detection=self.env_loader.get_boolean(
+                "METRICS_ENABLE_TREND_DETECTION", True
+            ),
+            enable_anomaly_detection=self.env_loader.get_boolean(
+                "METRICS_ENABLE_ANOMALY_DETECTION", False
+            ),
+            # Health monitoring settings
+            health_check_interval=self.env_loader.get_integer(
+                "METRICS_HEALTH_CHECK_INTERVAL", 30, min_value=5
+            ),
+            health_check_timeout=self.env_loader.get_integer(
+                "METRICS_HEALTH_CHECK_TIMEOUT", 5, min_value=1
+            ),
+            max_health_failures=self.env_loader.get_integer(
+                "METRICS_MAX_HEALTH_FAILURES", 3, min_value=1
+            ),
+            # Security settings
+            enable_metric_filtering=self.env_loader.get_boolean(
+                "METRICS_ENABLE_FILTERING", True
+            ),
+            mask_sensitive_labels=self.env_loader.get_boolean(
+                "METRICS_MASK_SENSITIVE_LABELS", True
+            ),
+            allowed_label_patterns=self.env_loader.get_list(
+                "METRICS_ALLOWED_LABEL_PATTERNS", ["*"]
+            ),
+            blocked_label_patterns=self.env_loader.get_list(
+                "METRICS_BLOCKED_LABEL_PATTERNS", []
+            ),
+            # Storage settings
+            enable_persistent_storage=self.env_loader.get_boolean(
+                "METRICS_ENABLE_PERSISTENT_STORAGE", False
+            ),
+            storage_path=self.env_loader.get_string("METRICS_STORAGE_PATH"),
+            compression_enabled=self.env_loader.get_boolean(
+                "METRICS_COMPRESSION_ENABLED", True
+            ),
+        )
 
     def _load_feature_flags(self) -> None:
         """Load feature flags configuration."""
@@ -2058,260 +2071,260 @@ class Settings:
         )
 
     def _load_api_docs_config(self) -> None:
-            """Load API documentation configuration."""
-            self.api_docs = APIDocumentationConfig(
-                cache_enabled=self.env_loader.get_boolean("API_DOCS_CACHE_ENABLED", True) or True,
-                include_examples=self.env_loader.get_boolean(
-                    "API_DOCS_INCLUDE_EXAMPLES", True
-                ) or True,
-                include_security_analysis=self.env_loader.get_boolean(
-                    "API_DOCS_SECURITY_ANALYSIS", self.environment == Environment.PRODUCTION
-                ) or (self.environment == Environment.PRODUCTION),
-                max_path_length=self.env_loader.get_integer(
-                    "API_DOCS_MAX_PATH_LENGTH", 100, min_value=10
-                ) or 100,
-                output_directory=self.env_loader.get_string(
-                    "API_DOCS_OUTPUT_DIR", "docs/api"
-                ) or "docs/api",
-                generation_timeout=self.env_loader.get_integer(
-                    "API_DOCS_TIMEOUT", 300, min_value=30
-                ) or 300,
-            )
+        """Load API documentation configuration."""
+        self.api_docs = APIDocumentationConfig(
+            cache_enabled=self.env_loader.get_boolean("API_DOCS_CACHE_ENABLED", True),
+            include_examples=self.env_loader.get_boolean(
+                "API_DOCS_INCLUDE_EXAMPLES", True
+            ),
+            include_security_analysis=self.env_loader.get_boolean(
+                "API_DOCS_SECURITY_ANALYSIS", self.environment == Environment.PRODUCTION
+            ),
+            max_path_length=self.env_loader.get_integer(
+                "API_DOCS_MAX_PATH_LENGTH", 100, min_value=10
+            ),
+            output_directory=self.env_loader.get_string(
+                "API_DOCS_OUTPUT_DIR", "docs/api"
+            ),
+            generation_timeout=self.env_loader.get_integer(
+                "API_DOCS_TIMEOUT", 300, min_value=30
+            ),
+        )
 
     def _load_policy_config(self) -> None:
-            """Load policy configuration."""
-            # Map environment to policy environment
-            policy_env_mapping = {
-                Environment.DEVELOPMENT: PolicyEnvironment.DEVELOPMENT,
-                Environment.TESTING: PolicyEnvironment.TESTING,
-                Environment.STAGING: PolicyEnvironment.STAGING,
-                Environment.PRODUCTION: PolicyEnvironment.PRODUCTION,
-            }
-
-            policy_environment = policy_env_mapping.get(self.environment, PolicyEnvironment.PRODUCTION)
-            self.policy_manager = PolicyConfigManager(policy_environment)
-
-            # Load individual policy configurations with environment overrides
-            self.password_policy = self._load_password_policy_config()
-            self.session_policy = self._load_session_policy_config()
-            self.mfa_policy = self._load_mfa_policy_config()
-            self.lockout_policy = self._load_lockout_policy_config()
-            self.risk_policy = self._load_risk_policy_config()
-            self.compliance_policy = self._load_compliance_policy_config()
+        """Load policy configuration."""
+        # Map environment to policy environment
+        policy_env_mapping = {
+            Environment.DEVELOPMENT: PolicyEnvironment.DEVELOPMENT,
+            Environment.TESTING: PolicyEnvironment.TESTING,
+            Environment.STAGING: PolicyEnvironment.STAGING,
+            Environment.PRODUCTION: PolicyEnvironment.PRODUCTION,
+        }
+        
+        policy_environment = policy_env_mapping.get(self.environment, PolicyEnvironment.PRODUCTION)
+        self.policy_manager = PolicyConfigManager(policy_environment)
+        
+        # Load individual policy configurations with environment overrides
+        self.password_policy = self._load_password_policy_config()
+        self.session_policy = self._load_session_policy_config()
+        self.mfa_policy = self._load_mfa_policy_config()
+        self.lockout_policy = self._load_lockout_policy_config()
+        self.risk_policy = self._load_risk_policy_config()
+        self.compliance_policy = self._load_compliance_policy_config()
 
     def _load_password_policy_config(self) -> PasswordPolicyConfig:
-            """Load password policy configuration from environment."""
-            base_config = self.policy_manager.get_password_config()
-
-            return PasswordPolicyConfig(
-                min_length=self.env_loader.get_integer(
-                    "PASSWORD_MIN_LENGTH", base_config.min_length, min_value=4, max_value=32
-                ) or base_config.min_length,
-                max_length=self.env_loader.get_integer(
-                    "PASSWORD_MAX_LENGTH", base_config.max_length, min_value=32, max_value=512
-                ) or base_config.max_length,
-                require_uppercase=self.env_loader.get_boolean(
-                    "PASSWORD_REQUIRE_UPPERCASE", base_config.require_uppercase
-                ) or base_config.require_uppercase,
-                require_lowercase=self.env_loader.get_boolean(
-                    "PASSWORD_REQUIRE_LOWERCASE", base_config.require_lowercase
-                ) or base_config.require_lowercase,
-                require_digits=self.env_loader.get_boolean(
-                    "PASSWORD_REQUIRE_DIGITS", base_config.require_digits
-                ) or base_config.require_digits,
-                require_special_chars=self.env_loader.get_boolean(
-                    "PASSWORD_REQUIRE_SPECIAL_CHARS", base_config.require_special_chars
-                ) or base_config.require_special_chars,
-                special_chars=self.env_loader.get_string(
-                    "PASSWORD_SPECIAL_CHARS", base_config.special_chars
-                ) or base_config.special_chars,
-                history_limit=self.env_loader.get_integer(
-                    "PASSWORD_HISTORY_LIMIT", base_config.history_limit, min_value=0, max_value=50
-                ) or base_config.history_limit,
-                min_age_hours=self.env_loader.get_integer(
-                    "PASSWORD_MIN_AGE_HOURS", base_config.min_age_hours, min_value=0
-                ) or base_config.min_age_hours,
-                max_age_days=self.env_loader.get_integer(
-                    "PASSWORD_MAX_AGE_DAYS", base_config.max_age_days, min_value=1, max_value=365
-                ) or base_config.max_age_days,
-                complexity_score_threshold=self.env_loader.get_float(
-                    "PASSWORD_COMPLEXITY_THRESHOLD", base_config.complexity_score_threshold,
-                    min_value=0.0, max_value=1.0
-                ) or base_config.complexity_score_threshold,
-                min_unique_chars=self.env_loader.get_integer(
-                    "PASSWORD_MIN_UNIQUE_CHARS", base_config.min_unique_chars, min_value=1
-                ) or base_config.min_unique_chars,
-                max_repeated_chars=self.env_loader.get_integer(
-                    "PASSWORD_MAX_REPEATED_CHARS", base_config.max_repeated_chars, min_value=1
-                ) or base_config.max_repeated_chars,
-                forbidden_patterns=self.env_loader.get_list(
-                    "PASSWORD_FORBIDDEN_PATTERNS", base_config.forbidden_patterns
-                ) or base_config.forbidden_patterns,
-                require_non_sequential=self.env_loader.get_boolean(
-                    "PASSWORD_REQUIRE_NON_SEQUENTIAL", base_config.require_non_sequential
-                ) or base_config.require_non_sequential,
-            )
+        """Load password policy configuration from environment."""
+        base_config = self.policy_manager.get_password_config()
+        
+        return PasswordPolicyConfig(
+            min_length=self.env_loader.get_integer(
+                "PASSWORD_MIN_LENGTH", base_config.min_length, min_value=4, max_value=32
+            ),
+            max_length=self.env_loader.get_integer(
+                "PASSWORD_MAX_LENGTH", base_config.max_length, min_value=32, max_value=512
+            ),
+            require_uppercase=self.env_loader.get_boolean(
+                "PASSWORD_REQUIRE_UPPERCASE", base_config.require_uppercase
+            ),
+            require_lowercase=self.env_loader.get_boolean(
+                "PASSWORD_REQUIRE_LOWERCASE", base_config.require_lowercase
+            ),
+            require_digits=self.env_loader.get_boolean(
+                "PASSWORD_REQUIRE_DIGITS", base_config.require_digits
+            ),
+            require_special_chars=self.env_loader.get_boolean(
+                "PASSWORD_REQUIRE_SPECIAL_CHARS", base_config.require_special_chars
+            ),
+            special_chars=self.env_loader.get_string(
+                "PASSWORD_SPECIAL_CHARS", base_config.special_chars
+            ),
+            history_limit=self.env_loader.get_integer(
+                "PASSWORD_HISTORY_LIMIT", base_config.history_limit, min_value=0, max_value=50
+            ),
+            min_age_hours=self.env_loader.get_integer(
+                "PASSWORD_MIN_AGE_HOURS", base_config.min_age_hours, min_value=0
+            ),
+            max_age_days=self.env_loader.get_integer(
+                "PASSWORD_MAX_AGE_DAYS", base_config.max_age_days, min_value=1, max_value=365
+            ),
+            complexity_score_threshold=self.env_loader.get_float(
+                "PASSWORD_COMPLEXITY_THRESHOLD", base_config.complexity_score_threshold, 
+                min_value=0.0, max_value=1.0
+            ),
+            min_unique_chars=self.env_loader.get_integer(
+                "PASSWORD_MIN_UNIQUE_CHARS", base_config.min_unique_chars, min_value=1
+            ),
+            max_repeated_chars=self.env_loader.get_integer(
+                "PASSWORD_MAX_REPEATED_CHARS", base_config.max_repeated_chars, min_value=1
+            ),
+            forbidden_patterns=self.env_loader.get_list(
+                "PASSWORD_FORBIDDEN_PATTERNS", base_config.forbidden_patterns
+            ),
+            require_non_sequential=self.env_loader.get_boolean(
+                "PASSWORD_REQUIRE_NON_SEQUENTIAL", base_config.require_non_sequential
+            ),
+        )
 
     def _load_session_policy_config(self) -> SessionPolicyConfig:
-            """Load session policy configuration from environment."""
-            base_config = self.policy_manager.get_session_config()
-
-            return SessionPolicyConfig(
-                absolute_timeout_minutes=self.env_loader.get_integer(
-                    "SESSION_ABSOLUTE_TIMEOUT_MINUTES", base_config.absolute_timeout_minutes, min_value=1
-                ) or base_config.absolute_timeout_minutes,
-                idle_timeout_minutes=self.env_loader.get_integer(
-                    "SESSION_IDLE_TIMEOUT_MINUTES", base_config.idle_timeout_minutes, min_value=1
-                ) or base_config.idle_timeout_minutes,
-                max_concurrent_sessions=self.env_loader.get_integer(
-                    "SESSION_MAX_CONCURRENT", base_config.max_concurrent_sessions, min_value=1
-                ) or base_config.max_concurrent_sessions,
-                max_sessions_per_device=self.env_loader.get_integer(
-                    "SESSION_MAX_PER_DEVICE", base_config.max_sessions_per_device, min_value=1
-                ) or base_config.max_sessions_per_device,
-                max_sessions_per_ip=self.env_loader.get_integer(
-                    "SESSION_MAX_PER_IP", base_config.max_sessions_per_ip, min_value=1
-                ) or base_config.max_sessions_per_ip,
-                require_trusted_device_for_admin=self.env_loader.get_boolean(
-                    "SESSION_REQUIRE_TRUSTED_DEVICE_ADMIN", base_config.require_trusted_device_for_admin
-                ) or base_config.require_trusted_device_for_admin,
-                session_extension_threshold=self.env_loader.get_float(
-                    "SESSION_EXTENSION_THRESHOLD", base_config.session_extension_threshold,
-                    min_value=0.0, max_value=1.0
-                ) or base_config.session_extension_threshold,
-                risk_threshold_for_additional_auth=self.env_loader.get_float(
-                    "SESSION_RISK_THRESHOLD_ADDITIONAL_AUTH", base_config.risk_threshold_for_additional_auth,
-                    min_value=0.0, max_value=1.0
-                ) or base_config.risk_threshold_for_additional_auth,
-                timeout_by_type=base_config.timeout_by_type,  # Use defaults for now
-            )
+        """Load session policy configuration from environment."""
+        base_config = self.policy_manager.get_session_config()
+        
+        return SessionPolicyConfig(
+            absolute_timeout_minutes=self.env_loader.get_integer(
+                "SESSION_ABSOLUTE_TIMEOUT_MINUTES", base_config.absolute_timeout_minutes, min_value=1
+            ),
+            idle_timeout_minutes=self.env_loader.get_integer(
+                "SESSION_IDLE_TIMEOUT_MINUTES", base_config.idle_timeout_minutes, min_value=1
+            ),
+            max_concurrent_sessions=self.env_loader.get_integer(
+                "SESSION_MAX_CONCURRENT", base_config.max_concurrent_sessions, min_value=1
+            ),
+            max_sessions_per_device=self.env_loader.get_integer(
+                "SESSION_MAX_PER_DEVICE", base_config.max_sessions_per_device, min_value=1
+            ),
+            max_sessions_per_ip=self.env_loader.get_integer(
+                "SESSION_MAX_PER_IP", base_config.max_sessions_per_ip, min_value=1
+            ),
+            require_trusted_device_for_admin=self.env_loader.get_boolean(
+                "SESSION_REQUIRE_TRUSTED_DEVICE_ADMIN", base_config.require_trusted_device_for_admin
+            ),
+            session_extension_threshold=self.env_loader.get_float(
+                "SESSION_EXTENSION_THRESHOLD", base_config.session_extension_threshold,
+                min_value=0.0, max_value=1.0
+            ),
+            risk_threshold_for_additional_auth=self.env_loader.get_float(
+                "SESSION_RISK_THRESHOLD_ADDITIONAL_AUTH", base_config.risk_threshold_for_additional_auth,
+                min_value=0.0, max_value=1.0
+            ),
+            timeout_by_type=base_config.timeout_by_type,  # Use defaults for now
+        )
 
     def _load_mfa_policy_config(self) -> MFAPolicyConfig:
-            """Load MFA policy configuration from environment."""
-            base_config = self.policy_manager.get_mfa_config()
-
-            return MFAPolicyConfig(
-                require_for_admin=self.env_loader.get_boolean(
-                    "MFA_REQUIRE_FOR_ADMIN", base_config.require_for_admin
-                ) or base_config.require_for_admin,
-                require_for_high_risk=self.env_loader.get_boolean(
-                    "MFA_REQUIRE_FOR_HIGH_RISK", base_config.require_for_high_risk
-                ) or base_config.require_for_high_risk,
-                require_for_service_accounts=self.env_loader.get_boolean(
-                    "MFA_REQUIRE_FOR_SERVICE_ACCOUNTS", base_config.require_for_service_accounts
-                ) or base_config.require_for_service_accounts,
-                enforce_for_all=self.env_loader.get_boolean(
-                    "MFA_ENFORCE_FOR_ALL", base_config.enforce_for_all
-                ) or base_config.enforce_for_all,
-                grace_period_days=self.env_loader.get_integer(
-                    "MFA_GRACE_PERIOD_DAYS", base_config.grace_period_days, min_value=0
-                ) or base_config.grace_period_days,
-                min_active_devices=self.env_loader.get_integer(
-                    "MFA_MIN_ACTIVE_DEVICES", base_config.min_active_devices, min_value=1
-                ) or base_config.min_active_devices,
-                require_backup_method=self.env_loader.get_boolean(
-                    "MFA_REQUIRE_BACKUP_METHOD", base_config.require_backup_method
-                ) or base_config.require_backup_method,
-                require_method_diversity=self.env_loader.get_boolean(
-                    "MFA_REQUIRE_METHOD_DIVERSITY", base_config.require_method_diversity
-                ) or base_config.require_method_diversity,
-                min_unique_methods=self.env_loader.get_integer(
-                    "MFA_MIN_UNIQUE_METHODS", base_config.min_unique_methods, min_value=1
-                ) or base_config.min_unique_methods,
-                risk_score_threshold=self.env_loader.get_float(
-                    "MFA_RISK_SCORE_THRESHOLD", base_config.risk_score_threshold,
-                    min_value=0.0, max_value=1.0
-                ) or base_config.risk_score_threshold,
-                adaptive_mfa_enabled=self.env_loader.get_boolean(
-                    "MFA_ADAPTIVE_ENABLED", base_config.adaptive_mfa_enabled
-                ) or base_config.adaptive_mfa_enabled,
-                role_requirements=base_config.role_requirements,  # Use defaults for now
-                sensitive_permissions=base_config.sensitive_permissions,  # Use defaults for now
-            )
+        """Load MFA policy configuration from environment."""
+        base_config = self.policy_manager.get_mfa_config()
+        
+        return MFAPolicyConfig(
+            require_for_admin=self.env_loader.get_boolean(
+                "MFA_REQUIRE_FOR_ADMIN", base_config.require_for_admin
+            ),
+            require_for_high_risk=self.env_loader.get_boolean(
+                "MFA_REQUIRE_FOR_HIGH_RISK", base_config.require_for_high_risk
+            ),
+            require_for_service_accounts=self.env_loader.get_boolean(
+                "MFA_REQUIRE_FOR_SERVICE_ACCOUNTS", base_config.require_for_service_accounts
+            ),
+            enforce_for_all=self.env_loader.get_boolean(
+                "MFA_ENFORCE_FOR_ALL", base_config.enforce_for_all
+            ),
+            grace_period_days=self.env_loader.get_integer(
+                "MFA_GRACE_PERIOD_DAYS", base_config.grace_period_days, min_value=0
+            ),
+            min_active_devices=self.env_loader.get_integer(
+                "MFA_MIN_ACTIVE_DEVICES", base_config.min_active_devices, min_value=1
+            ),
+            require_backup_method=self.env_loader.get_boolean(
+                "MFA_REQUIRE_BACKUP_METHOD", base_config.require_backup_method
+            ),
+            require_method_diversity=self.env_loader.get_boolean(
+                "MFA_REQUIRE_METHOD_DIVERSITY", base_config.require_method_diversity
+            ),
+            min_unique_methods=self.env_loader.get_integer(
+                "MFA_MIN_UNIQUE_METHODS", base_config.min_unique_methods, min_value=1
+            ),
+            risk_score_threshold=self.env_loader.get_float(
+                "MFA_RISK_SCORE_THRESHOLD", base_config.risk_score_threshold,
+                min_value=0.0, max_value=1.0
+            ),
+            adaptive_mfa_enabled=self.env_loader.get_boolean(
+                "MFA_ADAPTIVE_ENABLED", base_config.adaptive_mfa_enabled
+            ),
+            role_requirements=base_config.role_requirements,  # Use defaults for now
+            sensitive_permissions=base_config.sensitive_permissions,  # Use defaults for now
+        )
 
     def _load_lockout_policy_config(self) -> LockoutPolicyConfig:
-            """Load lockout policy configuration from environment."""
-            base_config = self.policy_manager.get_lockout_config()
-
-            return LockoutPolicyConfig(
-                max_failed_attempts=self.env_loader.get_integer(
-                    "LOCKOUT_MAX_FAILED_ATTEMPTS", base_config.max_failed_attempts, min_value=1
-                ) or base_config.max_failed_attempts,
-                lockout_duration_minutes=self.env_loader.get_integer(
-                    "LOCKOUT_DURATION_MINUTES", base_config.lockout_duration_minutes, min_value=1
-                ) or base_config.lockout_duration_minutes,
-                progressive_lockout_enabled=self.env_loader.get_boolean(
-                    "LOCKOUT_PROGRESSIVE_ENABLED", base_config.progressive_lockout_enabled
-                ) or base_config.progressive_lockout_enabled,
-                max_attempts_per_minute=self.env_loader.get_integer(
-                    "LOCKOUT_MAX_ATTEMPTS_PER_MINUTE", base_config.max_attempts_per_minute, min_value=1
-                ) or base_config.max_attempts_per_minute,
-                max_attempts_per_ip_per_hour=self.env_loader.get_integer(
-                    "LOCKOUT_MAX_ATTEMPTS_PER_IP_PER_HOUR", base_config.max_attempts_per_ip_per_hour, min_value=1
-                ) or base_config.max_attempts_per_ip_per_hour,
-                ip_block_duration_hours=self.env_loader.get_integer(
-                    "LOCKOUT_IP_BLOCK_DURATION_HOURS", base_config.ip_block_duration_hours, min_value=1
-                ) or base_config.ip_block_duration_hours,
-                progressive_thresholds=base_config.progressive_thresholds,  # Use defaults for now
-            )
+        """Load lockout policy configuration from environment."""
+        base_config = self.policy_manager.get_lockout_config()
+        
+        return LockoutPolicyConfig(
+            max_failed_attempts=self.env_loader.get_integer(
+                "LOCKOUT_MAX_FAILED_ATTEMPTS", base_config.max_failed_attempts, min_value=1
+            ),
+            lockout_duration_minutes=self.env_loader.get_integer(
+                "LOCKOUT_DURATION_MINUTES", base_config.lockout_duration_minutes, min_value=1
+            ),
+            progressive_lockout_enabled=self.env_loader.get_boolean(
+                "LOCKOUT_PROGRESSIVE_ENABLED", base_config.progressive_lockout_enabled
+            ),
+            max_attempts_per_minute=self.env_loader.get_integer(
+                "LOCKOUT_MAX_ATTEMPTS_PER_MINUTE", base_config.max_attempts_per_minute, min_value=1
+            ),
+            max_attempts_per_ip_per_hour=self.env_loader.get_integer(
+                "LOCKOUT_MAX_ATTEMPTS_PER_IP_PER_HOUR", base_config.max_attempts_per_ip_per_hour, min_value=1
+            ),
+            ip_block_duration_hours=self.env_loader.get_integer(
+                "LOCKOUT_IP_BLOCK_DURATION_HOURS", base_config.ip_block_duration_hours, min_value=1
+            ),
+            progressive_thresholds=base_config.progressive_thresholds,  # Use defaults for now
+        )
 
     def _load_risk_policy_config(self) -> RiskPolicyConfig:
-            """Load risk policy configuration from environment."""
-            base_config = self.policy_manager.get_risk_config()
-
-            return RiskPolicyConfig(
-                low_risk_threshold=self.env_loader.get_float(
-                    "RISK_LOW_THRESHOLD", base_config.low_risk_threshold, min_value=0.0, max_value=1.0
-                ) or base_config.low_risk_threshold,
-                medium_risk_threshold=self.env_loader.get_float(
-                    "RISK_MEDIUM_THRESHOLD", base_config.medium_risk_threshold, min_value=0.0, max_value=1.0
-                ) or base_config.medium_risk_threshold,
-                high_risk_threshold=self.env_loader.get_float(
-                    "RISK_HIGH_THRESHOLD", base_config.high_risk_threshold, min_value=0.0, max_value=1.0
-                ) or base_config.high_risk_threshold,
-                require_mfa_above_score=self.env_loader.get_float(
-                    "RISK_REQUIRE_MFA_ABOVE_SCORE", base_config.require_mfa_above_score, min_value=0.0, max_value=1.0
-                ) or base_config.require_mfa_above_score,
-                block_above_score=self.env_loader.get_float(
-                    "RISK_BLOCK_ABOVE_SCORE", base_config.block_above_score, min_value=0.0, max_value=1.0
-                ) or base_config.block_above_score,
-                alert_security_team_above=self.env_loader.get_float(
-                    "RISK_ALERT_SECURITY_TEAM_ABOVE", base_config.alert_security_team_above, min_value=0.0, max_value=1.0
-                ) or base_config.alert_security_team_above,
-                risk_weights=base_config.risk_weights,  # Use defaults for now
-                high_risk_countries=self.env_loader.get_list(
-                    "RISK_HIGH_RISK_COUNTRIES", base_config.high_risk_countries
-                ) or base_config.high_risk_countries,
-            )
+        """Load risk policy configuration from environment."""
+        base_config = self.policy_manager.get_risk_config()
+        
+        return RiskPolicyConfig(
+            low_risk_threshold=self.env_loader.get_float(
+                "RISK_LOW_THRESHOLD", base_config.low_risk_threshold, min_value=0.0, max_value=1.0
+            ),
+            medium_risk_threshold=self.env_loader.get_float(
+                "RISK_MEDIUM_THRESHOLD", base_config.medium_risk_threshold, min_value=0.0, max_value=1.0
+            ),
+            high_risk_threshold=self.env_loader.get_float(
+                "RISK_HIGH_THRESHOLD", base_config.high_risk_threshold, min_value=0.0, max_value=1.0
+            ),
+            require_mfa_above_score=self.env_loader.get_float(
+                "RISK_REQUIRE_MFA_ABOVE_SCORE", base_config.require_mfa_above_score, min_value=0.0, max_value=1.0
+            ),
+            block_above_score=self.env_loader.get_float(
+                "RISK_BLOCK_ABOVE_SCORE", base_config.block_above_score, min_value=0.0, max_value=1.0
+            ),
+            alert_security_team_above=self.env_loader.get_float(
+                "RISK_ALERT_SECURITY_TEAM_ABOVE", base_config.alert_security_team_above, min_value=0.0, max_value=1.0
+            ),
+            risk_weights=base_config.risk_weights,  # Use defaults for now
+            high_risk_countries=self.env_loader.get_list(
+                "RISK_HIGH_RISK_COUNTRIES", base_config.high_risk_countries
+            ),
+        )
 
     def _load_compliance_policy_config(self) -> CompliancePolicyConfig:
-            """Load compliance policy configuration from environment."""
-            base_config = self.policy_manager.get_compliance_config()
-
-            return CompliancePolicyConfig(
-                minimum_age=self.env_loader.get_integer(
-                    "COMPLIANCE_MINIMUM_AGE", base_config.minimum_age, min_value=1, max_value=21
-                ) or base_config.minimum_age,
-                parental_consent_age=self.env_loader.get_integer(
-                    "COMPLIANCE_PARENTAL_CONSENT_AGE", base_config.parental_consent_age, min_value=1, max_value=21
-                ) or base_config.parental_consent_age,
-                require_explicit_consent=self.env_loader.get_boolean(
-                    "COMPLIANCE_REQUIRE_EXPLICIT_CONSENT", base_config.require_explicit_consent
-                ) or base_config.require_explicit_consent,
-                allow_consent_withdrawal=self.env_loader.get_boolean(
-                    "COMPLIANCE_ALLOW_CONSENT_WITHDRAWAL", base_config.allow_consent_withdrawal
-                ) or base_config.allow_consent_withdrawal,
-                data_portability_enabled=self.env_loader.get_boolean(
-                    "COMPLIANCE_DATA_PORTABILITY_ENABLED", base_config.data_portability_enabled
-                ) or base_config.data_portability_enabled,
-                right_to_deletion_enabled=self.env_loader.get_boolean(
-                    "COMPLIANCE_RIGHT_TO_DELETION_ENABLED", base_config.right_to_deletion_enabled
-                ) or base_config.right_to_deletion_enabled,
-                automated_data_minimization=self.env_loader.get_boolean(
-                    "COMPLIANCE_AUTOMATED_DATA_MINIMIZATION", base_config.automated_data_minimization
-                ) or base_config.automated_data_minimization,
-                retention_periods=base_config.retention_periods,  # Use defaults for now
-            )
+        """Load compliance policy configuration from environment."""
+        base_config = self.policy_manager.get_compliance_config()
+        
+        return CompliancePolicyConfig(
+            minimum_age=self.env_loader.get_integer(
+                "COMPLIANCE_MINIMUM_AGE", base_config.minimum_age, min_value=1, max_value=21
+            ),
+            parental_consent_age=self.env_loader.get_integer(
+                "COMPLIANCE_PARENTAL_CONSENT_AGE", base_config.parental_consent_age, min_value=1, max_value=21
+            ),
+            require_explicit_consent=self.env_loader.get_boolean(
+                "COMPLIANCE_REQUIRE_EXPLICIT_CONSENT", base_config.require_explicit_consent
+            ),
+            allow_consent_withdrawal=self.env_loader.get_boolean(
+                "COMPLIANCE_ALLOW_CONSENT_WITHDRAWAL", base_config.allow_consent_withdrawal
+            ),
+            data_portability_enabled=self.env_loader.get_boolean(
+                "COMPLIANCE_DATA_PORTABILITY_ENABLED", base_config.data_portability_enabled
+            ),
+            right_to_deletion_enabled=self.env_loader.get_boolean(
+                "COMPLIANCE_RIGHT_TO_DELETION_ENABLED", base_config.right_to_deletion_enabled
+            ),
+            automated_data_minimization=self.env_loader.get_boolean(
+                "COMPLIANCE_AUTOMATED_DATA_MINIMIZATION", base_config.automated_data_minimization
+            ),
+            retention_periods=base_config.retention_periods,  # Use defaults for now
+        )
 
     def _validate_configuration(self) -> None:
         """Validate complete configuration consistency."""
@@ -2373,64 +2386,64 @@ class Settings:
             )
 
     def get_cache_policy(self) -> CachePolicy:
-            """
-            Get cache policy configuration from environment variables.
+        """
+        Get cache policy configuration from environment variables.
 
-            Returns:
-                CachePolicy: Cache policy configuration
-            """
-            return CachePolicy(
-                # Basic settings
-                default_ttl=timedelta(
-                    minutes=self.env_loader.get_integer(
-                        "CACHE_DEFAULT_TTL_MINUTES", 15, min_value=1
-                    ) or 15
-                ),
-                max_key_length=self.env_loader.get_integer(
-                    "CACHE_MAX_KEY_LENGTH", 250, min_value=1
-                ) or 250,
-                max_value_size=self.env_loader.get_integer(
-                    "CACHE_MAX_VALUE_SIZE", 1024 * 1024, min_value=1024
-                ) or (1024 * 1024),
-                # Serialization
-                serialization_format=self.env_loader.get_enum(
-                    "CACHE_SERIALIZATION_FORMAT",
-                    SerializationFormat,
-                    SerializationFormat.AUTO,
-                ) or SerializationFormat.AUTO,
-                compress_threshold=self.env_loader.get_integer(
-                    "CACHE_COMPRESS_THRESHOLD", 1024, min_value=0
-                ) or 1024,
-                # Eviction and capacity
-                eviction_policy=self.env_loader.get_enum(
-                    "CACHE_EVICTION_POLICY", EvictionPolicy, EvictionPolicy.LRU
-                ) or EvictionPolicy.LRU,
-                max_entries=self.env_loader.get_integer(
-                    "CACHE_MAX_ENTRIES", 10000, min_value=1
-                ) or 10000,
-                memory_limit=self.env_loader.get_integer(
-                    "CACHE_MEMORY_LIMIT", None, min_value=1024 * 1024
-                ),
-                # Performance settings
-                enable_compression=self.env_loader.get_boolean(
-                    "CACHE_ENABLE_COMPRESSION", True
-                ) or True,
-                enable_encryption=self.env_loader.get_boolean(
-                    "CACHE_ENABLE_ENCRYPTION", False
-                ) or False,
-                batch_size=self.env_loader.get_integer(
-                    "CACHE_BATCH_SIZE", 100, min_value=1
-                ) or 100,
-                connection_timeout=self.env_loader.get_integer(
-                    "CACHE_CONNECTION_TIMEOUT", 5, min_value=1
-                ) or 5,
-                # Monitoring
-                track_statistics=self.env_loader.get_boolean(
-                    "CACHE_TRACK_STATISTICS", True
-                ) or True,
-                enable_metrics=self.env_loader.get_boolean("CACHE_ENABLE_METRICS", True) or True,
-                log_cache_events=self.env_loader.get_boolean("CACHE_LOG_EVENTS", False) or False,
-            )
+        Returns:
+            CachePolicy: Cache policy configuration
+        """
+        return CachePolicy(
+            # Basic settings
+            default_ttl=timedelta(
+                minutes=self.env_loader.get_integer(
+                    "CACHE_DEFAULT_TTL_MINUTES", 15, min_value=1
+                )
+            ),
+            max_key_length=self.env_loader.get_integer(
+                "CACHE_MAX_KEY_LENGTH", 250, min_value=1
+            ),
+            max_value_size=self.env_loader.get_integer(
+                "CACHE_MAX_VALUE_SIZE", 1024 * 1024, min_value=1024
+            ),
+            # Serialization
+            serialization_format=self.env_loader.get_enum(
+                "CACHE_SERIALIZATION_FORMAT",
+                SerializationFormat,
+                SerializationFormat.AUTO,
+            ),
+            compress_threshold=self.env_loader.get_integer(
+                "CACHE_COMPRESS_THRESHOLD", 1024, min_value=0
+            ),
+            # Eviction and capacity
+            eviction_policy=self.env_loader.get_enum(
+                "CACHE_EVICTION_POLICY", EvictionPolicy, EvictionPolicy.LRU
+            ),
+            max_entries=self.env_loader.get_integer(
+                "CACHE_MAX_ENTRIES", 10000, min_value=1
+            ),
+            memory_limit=self.env_loader.get_integer(
+                "CACHE_MEMORY_LIMIT", None, min_value=1024 * 1024
+            ),
+            # Performance settings
+            enable_compression=self.env_loader.get_boolean(
+                "CACHE_ENABLE_COMPRESSION", True
+            ),
+            enable_encryption=self.env_loader.get_boolean(
+                "CACHE_ENABLE_ENCRYPTION", False
+            ),
+            batch_size=self.env_loader.get_integer(
+                "CACHE_BATCH_SIZE", 100, min_value=1
+            ),
+            connection_timeout=self.env_loader.get_integer(
+                "CACHE_CONNECTION_TIMEOUT", 5, min_value=1
+            ),
+            # Monitoring
+            track_statistics=self.env_loader.get_boolean(
+                "CACHE_TRACK_STATISTICS", True
+            ),
+            enable_metrics=self.env_loader.get_boolean("CACHE_ENABLE_METRICS", True),
+            log_cache_events=self.env_loader.get_boolean("CACHE_LOG_EVENTS", False),
+        )
 
     def get_celery_config(self) -> dict[str, Any]:
         """
@@ -2460,71 +2473,71 @@ class Settings:
         return self.policy_manager.get_config()
 
     def to_dict(self, include_secrets: bool = False) -> dict[str, Any]:
-            """
-            Convert settings to dictionary.
+        """
+        Convert settings to dictionary.
 
-            Args:
-                include_secrets: Whether to include secret values
+        Args:
+            include_secrets: Whether to include secret values
 
-            Returns:
-                dict[str, Any]: Settings dictionary
-            """
-            data = {
-                "app_name": self.app_name,
-                "app_version": self.app_version,
-                "environment": self.environment.value,
-                "debug": self.debug,
-                "log_level": self.log_level.value,
-                # Database (without credentials)
-                "database_pool_size": self.database.pool_size,
-                "database_max_overflow": self.database.max_overflow,
-                "database_pool_timeout": self.database.pool_timeout,
-                "database_pool_type": self.database.pool_type.value,
-                # Cache
-                "cache_backend_type": self.cache.backend_type.value,
-                "cache_strategy": self.cache.cache_strategy.value,
-                "cache_key_prefix": self.cache.key_prefix,
-                "cache_is_enabled": self.cache.is_caching_enabled,
-                # Metrics
-                "metrics_enabled": self.metrics.enable_monitoring,
-                "prometheus_enabled": self.metrics.enable_prometheus,
-                "health_checks_enabled": self.metrics.enable_health_checks,
-                # Security
-                "password_algorithm": self.security.password_algorithm.value,
-                "jwt_algorithm": self.security.jwt_algorithm.value,
-                "mfa_enabled_by_default": self.security.mfa_enabled_by_default,
-                "require_strong_passwords": self.security.require_strong_passwords,
-                "enable_security_headers": self.security.enable_security_headers,
-                # Services
-                "email_provider": self.email_provider.value if self.email_provider else None,
-                "sms_provider": self.sms_provider.value if self.sms_provider else None,
-                "storage_provider": self.storage_provider.value if self.storage_provider else None,
-                # Monitoring
-                "jaeger_enabled": self.jaeger_enabled,
-                "rate_limit_enabled": self.rate_limit_enabled,
-                # Features
-                "feature_mfa_enabled": self.feature_mfa_enabled,
-                "feature_social_login": self.feature_social_login,
-                "feature_audit_logging": self.feature_audit_logging,
-                # Policy configuration
-                "policy_environment": self.policy_manager.environment.value,
-                "policy_strict_mode": self.policy_manager.get_config().strict_mode,
-                "password_policy_min_length": self.password_policy.min_length,
-                "mfa_policy_require_for_admin": self.mfa_policy.require_for_admin,
-                "session_policy_timeout": self.session_policy.absolute_timeout_minutes,
-            }
+        Returns:
+            dict[str, Any]: Settings dictionary
+        """
+        data = {
+            "app_name": self.app_name,
+            "app_version": self.app_version,
+            "environment": self.environment.value,
+            "debug": self.debug,
+            "log_level": self.log_level.value,
+            # Database (without credentials)
+            "database_pool_size": self.database.pool_size,
+            "database_max_overflow": self.database.max_overflow,
+            "database_pool_timeout": self.database.pool_timeout,
+            "database_pool_type": self.database.pool_type.value,
+            # Cache
+            "cache_backend_type": self.cache.backend_type.value,
+            "cache_strategy": self.cache.cache_strategy.value,
+            "cache_key_prefix": self.cache.key_prefix,
+            "cache_is_enabled": self.cache.is_caching_enabled,
+            # Metrics
+            "metrics_enabled": self.metrics.enable_monitoring,
+            "prometheus_enabled": self.metrics.enable_prometheus,
+            "health_checks_enabled": self.metrics.enable_health_checks,
+            # Security
+            "password_algorithm": self.security.password_algorithm.value,
+            "jwt_algorithm": self.security.jwt_algorithm.value,
+            "mfa_enabled_by_default": self.security.mfa_enabled_by_default,
+            "require_strong_passwords": self.security.require_strong_passwords,
+            "enable_security_headers": self.security.enable_security_headers,
+            # Services
+            "email_provider": self.email_provider.value,
+            "sms_provider": self.sms_provider.value,
+            "storage_provider": self.storage_provider.value,
+            # Monitoring
+            "jaeger_enabled": self.jaeger_enabled,
+            "rate_limit_enabled": self.rate_limit_enabled,
+            # Features
+            "feature_mfa_enabled": self.feature_mfa_enabled,
+            "feature_social_login": self.feature_social_login,
+            "feature_audit_logging": self.feature_audit_logging,
+            # Policy configuration
+            "policy_environment": self.policy_manager.environment.value,
+            "policy_strict_mode": self.policy_manager.get_config().strict_mode,
+            "password_policy_min_length": self.password_policy.min_length,
+            "mfa_policy_require_for_admin": self.mfa_policy.require_for_admin,
+            "session_policy_timeout": self.session_policy.absolute_timeout_minutes,
+        }
 
-            if include_secrets:
-                data.update(
-                    {
-                        "database_url": self.database.url,
-                        "redis_url": self.cache.redis_url,
-                        "access_token_secret": self.security.access_token_secret,
-                        "refresh_token_secret": self.security.refresh_token_secret,
-                    }
-                )
+        if include_secrets:
+            data.update(
+                {
+                    "database_url": self.database.url,
+                    "redis_url": self.cache.redis_url,
+                    "access_token_secret": self.security.access_token_secret,
+                    "refresh_token_secret": self.security.refresh_token_secret,
+                }
+            )
 
-            return data
+        return data
 
 
 # =====================================================================================

@@ -1,17 +1,19 @@
 """
 Password Hasher Interface
 
-Protocol for password hashing operations in the identity domain.
+Port for password hashing operations in the identity domain.
 """
 
-from typing import Any, Protocol
+from abc import ABC, abstractmethod
+from typing import Any
 
 from ....value_objects.password_hash import PasswordHash
 
 
-class IPasswordHasher(Protocol):
-    """Protocol for password hashing operations."""
+class IPasswordHasher(ABC):
+    """Port for password hashing operations."""
     
+    @abstractmethod
     async def hash_password(
         self, 
         password: str, 
@@ -31,6 +33,7 @@ class IPasswordHasher(Protocol):
             ValueError: If password doesn't meet minimum requirements
         """
     
+    @abstractmethod
     async def verify_password(
         self, 
         password: str, 
@@ -47,6 +50,7 @@ class IPasswordHasher(Protocol):
             True if password matches, False otherwise
         """
     
+    @abstractmethod
     async def needs_rehash(self, password_hash: PasswordHash) -> bool:
         """
         Check if password hash needs to be updated.
@@ -57,8 +61,8 @@ class IPasswordHasher(Protocol):
         Returns:
             True if rehashing is recommended
         """
-        ...
     
+    @abstractmethod
     async def validate_password_strength(
         self, 
         password: str, 

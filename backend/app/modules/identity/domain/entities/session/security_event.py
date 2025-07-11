@@ -11,7 +11,8 @@ from uuid import UUID, uuid4
 
 from app.core.domain.base import Entity
 
-from ...enums import RiskLevel, SecurityEventType, SecurityEventStatus
+from ...enums import RiskLevel, SecurityEventType
+from ...enums_security import SecurityEventStatus
 from ...value_objects import Geolocation, IpAddress
 
 

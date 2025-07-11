@@ -11,8 +11,8 @@ from typing import Any
 from uuid import UUID
 
 from ...aggregates.user import User
-from ...interfaces.repositories.role_repository import IRoleRepository
-from ...interfaces.repositories.user_repository import IUserRepository
+from ...interfaces.repositories.security.role_repository import IRoleRepository
+from ...interfaces.repositories.user.user_repository import IUserRepository
 from ...interfaces.services.security.authorization_service import IAuthorizationService
 
 

@@ -12,7 +12,7 @@ from uuid import UUID
 
 from ...enums import UserStatus
 from ...errors import InsufficientPrivilegesError, ValidationError
-from ...interfaces.repositories.user_repository import IUserRepository
+from ...interfaces.repositories.user.user_repository import IUserRepository
 from ...interfaces.services.security.administrative_service import (
     IAdministrativeService,
 )

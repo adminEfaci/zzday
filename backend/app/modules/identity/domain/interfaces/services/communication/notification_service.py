@@ -1,15 +1,17 @@
 """
 Notification Service Interface
 
-Protocol for sending notifications via email, SMS, and push notifications.
+Port for sending notifications via email, SMS, and push notifications.
 """
 
-from typing import Any, Protocol
+from abc import ABC, abstractmethod
+from typing import Any
 
 
-class INotificationService(Protocol):
-    """Protocol for notification operations."""
+class INotificationService(ABC):
+    """Port for notification operations."""
     
+    @abstractmethod
     async def send_email(
         self,
         to: str,
@@ -32,6 +34,7 @@ class INotificationService(Protocol):
             Message ID for tracking
         """
     
+    @abstractmethod
     async def send_sms(
         self,
         phone: str,
@@ -50,6 +53,7 @@ class INotificationService(Protocol):
             Message ID
         """
     
+    @abstractmethod
     async def send_push_notification(
         self,
         device_tokens: str | list[str],
@@ -70,6 +74,7 @@ class INotificationService(Protocol):
             Dict with delivery results
         """
     
+    @abstractmethod
     async def send_bulk_email(
         self,
         recipients: list[dict[str, Any]],
@@ -88,6 +93,7 @@ class INotificationService(Protocol):
             Batch ID
         """
     
+    @abstractmethod
     async def get_delivery_status(self, message_id: str) -> dict[str, Any]:
         """
         Get message delivery status.
@@ -98,8 +104,8 @@ class INotificationService(Protocol):
         Returns:
             Delivery status information
         """
-        ...
     
+    @abstractmethod
     async def handle_delivery_webhook(
         self,
         provider: str,
@@ -117,9 +123,10 @@ class INotificationService(Protocol):
         """
 
 
-class ISMSService(Protocol):
-    """Protocol for SMS-specific operations."""
+class ISMSService(ABC):
+    """Port for SMS-specific operations."""
     
+    @abstractmethod
     async def send_sms(
         self,
         to: str,
@@ -136,14 +143,15 @@ class ISMSService(Protocol):
             Send result with message ID
         """
     
+    @abstractmethod
     async def is_available(self) -> bool:
         """Check if SMS service is available."""
-        ...
 
 
-class IEmailService(Protocol):
-    """Protocol for email-specific operations."""
+class IEmailService(ABC):
+    """Port for email-specific operations."""
     
+    @abstractmethod
     async def send_email(
         self,
         to: str,
@@ -164,6 +172,6 @@ class IEmailService(Protocol):
             Send result with message ID
         """
     
+    @abstractmethod
     async def is_available(self) -> bool:
         """Check if email service is available."""
-        ...

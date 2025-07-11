@@ -7,9 +7,11 @@ All other fields use primitives (str, int, enum) for simplicity and maintainabil
 
 from .address import Address
 from .api_key_hash import APIKeyHash
+from .audit_entry import AuditEntry
 from .authorization_context import AuthorizationContext
 from .backup_code import BackupCode
 from .base import ValueObject
+from .compliance_record import ComplianceRecord
 from .date_of_birth import DateOfBirth
 from .device_fingerprint import DeviceFingerprint
 from .device_name import DeviceName
@@ -19,6 +21,9 @@ from .group_name import GroupName
 from .ip_address import IpAddress
 from .mfa_secret import MFASecret
 from .password_hash import PasswordHash
+from .password_strength import PasswordStrength
+from .password_validation_result import PasswordValidationResult
+from .permission_result import PermissionResult
 from .person_name import PersonName
 from .phone_number import PhoneNumber
 from .postal_code import PostalCode
@@ -32,8 +37,10 @@ __all__ = [
     "SIN",
     "APIKeyHash",
     "Address",
+    "AuditEntry",
     "AuthorizationContext",
     "BackupCode",
+    "ComplianceRecord",
     "DateOfBirth",
     "DeviceFingerprint",
     "DeviceName",
@@ -43,6 +50,9 @@ __all__ = [
     "IpAddress",
     "MFASecret",
     "PasswordHash",
+    "PasswordStrength",
+    "PasswordValidationResult",
+    "PermissionResult",
     "PersonName",
     "PhoneNumber",
     "PostalCode",

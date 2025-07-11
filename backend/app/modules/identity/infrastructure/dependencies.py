@@ -285,14 +285,6 @@ async def configure_identity_dependencies(container: Container) -> None:
             name="security_event_repository",
             description="Security event repository implementation"
         ))
-        
-    except ImportError:
-        await container.register(RegistrationRequest(
-            interface=type('ISecurityEventRepository', (), {}),
-            implementation=lambda: None,
-            lifetime=ServiceLifetime.SCOPED,
-            name="security_event_repository_placeholder"
-        ))
 
     # NOTE: Application services should be registered in the application layer
     # This infrastructure module should only register infrastructure concerns
@@ -300,6 +292,28 @@ async def configure_identity_dependencies(container: Container) -> None:
 
     # NOTE: Application services should be registered in the application layer
     # This infrastructure module should only register infrastructure concerns
+    # Application services are registered through the application dependency module
+
+    try:
+        # Password services
+        from app.modules.identity.domain.interfaces.services import IPasswordService
+        from app.modules.identity.infrastructure.services.password_service import PasswordService
+        
+        await container.register(RegistrationRequest(
+            interface=IPasswordService,
+            implementation=PasswordService,
+            lifetime=ServiceLifetime.SINGLETON,
+            name="password_service",
+            description="Password hashing and validation service"
+        ))
+        
+    except ImportError:
+        await container.register(RegistrationRequest(
+            interface=type('IPasswordService', (), {}),
+            implementation=lambda: None,
+            lifetime=ServiceLifetime.SINGLETON,
+            name="password_service_placeholder"
+        ))
 
     try:
         # Token services
@@ -321,5 +335,3 @@ async def configure_identity_dependencies(container: Container) -> None:
             lifetime=ServiceLifetime.SINGLETON,
             name="token_service_placeholder"
         ))
-        
-    logger.info("Identity module dependencies registered successfully")

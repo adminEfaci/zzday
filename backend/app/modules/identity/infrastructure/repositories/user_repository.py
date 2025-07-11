@@ -8,7 +8,7 @@ from typing import Any
 from uuid import UUID
 
 from sqlmodel import Session, select, and_, or_, col, func
-from app.core.infrastructure.repository import SQLRepository
+from app.core.infrastructure.repository import BaseRepository
 from app.modules.identity.domain.aggregates.user import User
 from app.modules.identity.domain.interfaces.repositories.user_repository import IUserRepository
 from app.modules.identity.domain.specifications.user_specs import UserSpecification
@@ -18,7 +18,7 @@ from app.modules.identity.domain.value_objects.username import Username
 from app.modules.identity.domain.value_objects.phone_number import PhoneNumber
 
 
-class SQLUserRepository(SQLRepository[User, UserModel], IUserRepository):
+class SQLUserRepository(BaseRepository[User, UserModel], IUserRepository):
     """SQLModel implementation of user repository."""
     
     def __init__(self, session: Session):

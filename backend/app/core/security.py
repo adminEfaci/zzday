@@ -272,7 +272,7 @@ class PasswordService:
             "has_numbers": r"\d",
             "has_special": r"[!@#$%^&*()_+\-=\[\]{}|;:,.<>?]",
         }
-
+        
         char_analysis = {
             key: bool(re.search(pattern, password))
             for key, pattern in char_patterns.items()
@@ -553,59 +553,59 @@ class TokenService:
         )
 
     def _decode_token(
-            self, token: str, secret: str, expected_type: str | None = None
-        ) -> dict[str, Any]:
-            """
-            Decode and validate JWT token.
+        self, token: str, secret: str, expected_type: str | None = None
+    ) -> dict[str, Any]:
+        """
+        Decode and validate JWT token.
 
-            Args:
-                token: JWT token to decode
-                secret: Secret key for validation
-                expected_type: Expected token type
+        Args:
+            token: JWT token to decode
+            secret: Secret key for validation
+            expected_type: Expected token type
 
-            Returns:
-                dict[str, Any]: Token payload
+        Returns:
+            dict[str, Any]: Token payload
 
-            Raises:
-                UnauthorizedError: If token is invalid
-            """
-            try:
-                payload = jwt.decode(
-                    token,
-                    secret,
-                    algorithms=[self.config.jwt_algorithm.value],
-                    audience=self.config.jwt_audience,
-                    issuer=self.config.jwt_issuer,
-                    options={
-                        "require_exp": True,
-                        "require_iat": True,
-                        "verify_exp": True,
-                        "verify_aud": True,
-                        "verify_iss": True,
-                        "leeway": self.config.jwt_clock_skew_seconds,
-                    },
-                )
+        Raises:
+            UnauthorizedError: If token is invalid
+        """
+        try:
+            payload = jwt.decode(
+                token,
+                secret,
+                algorithms=[self.config.jwt_algorithm.value],
+                audience=self.config.jwt_audience,
+                issuer=self.config.jwt_issuer,
+                options={
+                    "require_exp": True,
+                    "require_iat": True,
+                    "verify_exp": True,
+                    "verify_aud": True,
+                    "verify_iss": True,
+                },
+                leeway=self.config.jwt_clock_skew_seconds,
+            )
 
-                # Validate token type if specified
-                if expected_type and payload.get("type") != expected_type:
-                    self._raise_token_type_mismatch()
+            # Validate token type if specified
+            if expected_type and payload.get("type") != expected_type:
+                self._raise_token_type_mismatch()
 
-                self._tokens_validated += 1
+            self._tokens_validated += 1
 
-            except JWTError as e:
-                self._validation_errors += 1
-                logger.warning(
-                    "JWT token validation failed", error=str(e), error_type=type(e).__name__
-                )
-                raise UnauthorizedError("Invalid token") from e
-            except Exception as e:
-                self._validation_errors += 1
-                logger.exception(
-                    "Token validation error", error=str(e), error_type=type(e).__name__
-                )
-                raise UnauthorizedError("Token validation failed") from e
-            else:
-                return payload
+        except JWTError as e:
+            self._validation_errors += 1
+            logger.warning(
+                "JWT token validation failed", error=str(e), error_type=type(e).__name__
+            )
+            raise UnauthorizedError("Invalid token") from e
+        except Exception as e:
+            self._validation_errors += 1
+            logger.exception(
+                "Token validation error", error=str(e), error_type=type(e).__name__
+            )
+            raise UnauthorizedError("Token validation failed") from e
+        else:
+            return payload
 
     def is_token_expired(self, payload: dict[str, Any]) -> bool:
         """
@@ -625,25 +625,22 @@ class TokenService:
         return now >= int(exp)
 
     def generate_secure_token(self, nbytes: int | None = None) -> str:
-            """
-            Generate cryptographically secure random token.
+        """
+        Generate cryptographically secure random token.
 
-            Args:
-                nbytes: Number of bytes for token (default from config)
+        Args:
+            nbytes: Number of bytes for token (default from config)
 
-            Returns:
-                str: URL-safe base64 encoded token
+        Returns:
+            str: URL-safe base64 encoded token
+        """
+        if nbytes is None:
+            nbytes = self.config.default_token_bytes
 
-            Raises:
-                ValidationError: If nbytes is less than 16 bytes
-            """
-            if nbytes is None:
-                nbytes = self.config.default_token_bytes
+        if nbytes < 16:
+            raise ValidationError("Token must be at least 16 bytes")
 
-            if not isinstance(nbytes, int) or nbytes < 16:
-                raise ValidationError("Token must be at least 16 bytes")
-
-            return secrets.token_urlsafe(nbytes)
+        return secrets.token_urlsafe(nbytes)
 
     def generate_verification_code(self, length: int | None = None) -> str:
         """
@@ -654,17 +651,15 @@ class TokenService:
 
         Returns:
             str: Numeric verification code
-
-        Raises:
-            ValidationError: If length is invalid
         """
-        code_length = length if length is not None else self.config.verification_code_length
+        if length is None:
+            length = self.config.verification_code_length
 
-        if not isinstance(code_length, int) or code_length < 4 or code_length > 10:
+        if length < 4 or length > 10:
             raise ValidationError("Verification code length must be between 4 and 10")
 
         digits = "0123456789"
-        return "".join(secrets.choice(digits) for _ in range(code_length))
+        return "".join(secrets.choice(digits) for _ in range(length))
 
     def generate_api_key(self, prefix: str | None = None) -> str:
         """
@@ -1354,96 +1349,6 @@ def create_security_service(config: SecurityConfig) -> SecurityService:
 
 
 # =====================================================================================
-# BACKWARD COMPATIBILITY FUNCTIONS
-# =====================================================================================
-
-# Global security service instance for convenience functions
-_default_security_service: SecurityService | None = None
-
-
-def _get_default_security_service() -> SecurityService:
-    """Get or create default security service instance."""
-    global _default_security_service
-    if _default_security_service is None:
-        from app.core.config import settings
-        _default_security_service = SecurityService(settings.security)
-    return _default_security_service
-
-
-# Convenience functions for backward compatibility
-def hash_password(password: str) -> str:
-    """Hash password using default security service."""
-    return _get_default_security_service().hash_password(password)
-
-
-def verify_password(password: str, hashed: str) -> bool:
-    """Verify password using default security service."""
-    return _get_default_security_service().verify_password(password, hashed)
-
-
-def create_access_token(
-    subject: str,
-    expires_delta: timedelta | None = None,
-    additional_claims: dict[str, Any] | None = None,
-) -> str:
-    """Create access token using default security service."""
-    return _get_default_security_service().create_access_token(
-        subject, expires_delta, additional_claims
-    )
-
-
-def create_refresh_token(
-    subject: str,
-    expires_delta: timedelta | None = None,
-    additional_claims: dict[str, Any] | None = None,
-) -> str:
-    """Create refresh token using default security service."""
-    return _get_default_security_service().create_refresh_token(
-        subject, expires_delta, additional_claims
-    )
-
-
-def decode_token(token: str) -> dict[str, Any]:
-    """Decode access token using default security service."""
-    return _get_default_security_service().decode_access_token(token)
-
-
-def is_token_expired(payload: dict[str, Any]) -> bool:
-    """Check if token is expired using default security service."""
-    return _get_default_security_service().token_service.is_token_expired(payload)
-
-
-def generate_token(nbytes: int | None = None) -> str:
-    """Generate secure token using default security service."""
-    return _get_default_security_service().generate_secure_token(nbytes)
-
-
-def generate_secure_key(nbytes: int | None = None) -> str:
-    """Generate secure key using default security service."""
-    return _get_default_security_service().generate_secure_token(nbytes)
-
-
-def generate_secret_key(nbytes: int | None = None) -> str:
-    """Generate secret key using default security service."""
-    return _get_default_security_service().generate_secure_token(nbytes)
-
-
-def generate_verification_code(length: int | None = None) -> str:
-    """Generate verification code using default security service."""
-    return _get_default_security_service().generate_verification_code(length)
-
-
-def mask_email(email: str) -> str:
-    """Mask email using default security service."""
-    return _get_default_security_service().mask_email(email)
-
-
-def mask_phone(phone: str) -> str:
-    """Mask phone using default security service."""
-    return _get_default_security_service().mask_phone(phone)
-
-
-# =====================================================================================
 # EXPORTS
 # =====================================================================================
 
@@ -1458,17 +1363,4 @@ __all__ = [
     "TokenService",
     # Factory function
     "create_security_service",
-    # Backward compatibility functions
-    "create_access_token",
-    "create_refresh_token",
-    "decode_token",
-    "generate_secret_key",
-    "generate_secure_key",
-    "generate_token",
-    "generate_verification_code",
-    "hash_password",
-    "is_token_expired",
-    "mask_email",
-    "mask_phone",
-    "verify_password",
 ]

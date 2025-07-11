@@ -1,291 +1,320 @@
 """
 Security Domain Service
 
-System-wide security operations and policy enforcement.
+Pure domain service for security monitoring and threat detection.
 """
 
-from datetime import UTC, datetime, timedelta
+from dataclasses import dataclass
+from enum import Enum
 from typing import Any
 from uuid import UUID
 
-from ...enums import SecurityEventType, RiskLevel, AccountType
-from ...value_objects import IpAddress
+from ...errors import ValidationError
+from ...interfaces.repositories.user.user_repository import IUserRepository
+from ...interfaces.services.security.security_service import ISecurityService
+from ...value_objects.ip_address import IpAddress
 
 
-class SecurityService:
-    """Domain service for system-wide security operations."""
+class ThreatLevel(Enum):
+    """Threat severity levels."""
+    LOW = "low"
+    MEDIUM = "medium"
+    HIGH = "high"
+    CRITICAL = "critical"
+
+
+@dataclass(frozen=True)
+class SecurityThreat:
+    """Domain value object for security threats."""
+    threat_type: str
+    severity: str
+    description: str
+    mitigation: str
     
-    @staticmethod
-    def assess_system_risk(events: list[dict[str, Any]]) -> RiskLevel:
-        """Assess overall system risk based on recent events."""
-        if not events:
-            return RiskLevel.LOW
-        
-        risk_score = 0.0
-        total_events = len(events)
-        
-        # Analyze event types and frequencies
-        event_weights = {
-            SecurityEventType.BRUTE_FORCE_ATTACK: 0.8,
-            SecurityEventType.CREDENTIAL_STUFFING: 0.7,
-            SecurityEventType.ACCOUNT_TAKEOVER: 0.9,
-            SecurityEventType.SUSPICIOUS_LOGIN: 0.5,
-            SecurityEventType.MULTIPLE_FAILED_LOGINS: 0.4,
-            SecurityEventType.UNUSUAL_ACTIVITY: 0.3,
-        }
-        
-        # Count events by type
-        event_counts = {}
-        for event in events:
-            event_type = event.get('type')
-            if event_type:
-                event_counts[event_type] = event_counts.get(event_type, 0) + 1
-        
-        # Calculate weighted risk
-        for event_type, count in event_counts.items():
-            weight = event_weights.get(event_type, 0.2)
-            frequency_multiplier = min(count / total_events, 1.0)
-            risk_score += weight * frequency_multiplier
-        
-        # Assess based on score
-        if risk_score >= 0.7:
-            return RiskLevel.CRITICAL
-        elif risk_score >= 0.5:
-            return RiskLevel.HIGH
-        elif risk_score >= 0.3:
-            return RiskLevel.MEDIUM
-        else:
-            return RiskLevel.LOW
+    def is_critical(self) -> bool:
+        """Check if threat is critical."""
+        return self.severity == "critical"
+
+
+@dataclass(frozen=True)
+class AnomalyDetection:
+    """Domain value object for anomaly detection."""
+    anomaly_type: str
+    severity: str
+    description: str
+    confidence: float
+    data: dict[str, Any]
     
-    @staticmethod
-    def should_block_ip(ip_address: str, events: list[dict[str, Any]]) -> bool:
-        """Determine if an IP address should be blocked."""
-        ip_events = [e for e in events if e.get('ip_address') == ip_address]
-        
-        if not ip_events:
-            return False
-        
-        # Count events in different time windows
-        now = datetime.now(UTC)
-        events_1h = []
-        events_24h = []
-        
-        for event in ip_events:
-            event_time = event.get('timestamp')
-            if isinstance(event_time, str):
-                event_time = datetime.fromisoformat(event_time)
-            
-            if event_time and (now - event_time) <= timedelta(hours=1):
-                events_1h.append(event)
-            if event_time and (now - event_time) <= timedelta(hours=24):
-                events_24h.append(event)
-        
-        # Block criteria
-        if len(events_1h) >= 50:  # Too many events in 1 hour
-            return True
-        
-        if len(events_24h) >= 200:  # Too many events in 24 hours
-            return True
-        
-        # Check for attack patterns
-        attack_types = {
-            SecurityEventType.BRUTE_FORCE_ATTACK,
-            SecurityEventType.CREDENTIAL_STUFFING,
-            SecurityEventType.ACCOUNT_TAKEOVER
-        }
-        
-        attack_events = [e for e in events_1h if e.get('type') in attack_types]
-        if len(attack_events) >= 10:  # Multiple attack events
-            return True
-        
-        return False
+    def is_high_confidence(self) -> bool:
+        """Check if detection has high confidence."""
+        return self.confidence > 0.8
+
+
+class SecurityService(ISecurityService):
+    """Pure domain service for security business logic.
     
-    @staticmethod
-    def calculate_ip_reputation(ip_address: str, historical_data: dict[str, Any]) -> float:
-        """Calculate reputation score for an IP address (0.0 = bad, 1.0 = good)."""
-        try:
-            ip_obj = IpAddress(ip_address)
-        except ValueError:
-            return 0.0  # Invalid IP
-        
-        reputation = 0.5  # Neutral starting point
-        
-        # Penalize known bad indicators
-        if ip_obj.is_tor:
-            reputation -= 0.4
-        elif ip_obj.is_vpn:
-            reputation -= 0.2
-        elif ip_obj.is_datacenter:
-            reputation -= 0.1
-        
-        # Check historical behavior
-        if historical_data:
-            successful_logins = historical_data.get('successful_logins', 0)
-            failed_logins = historical_data.get('failed_logins', 0)
-            attack_events = historical_data.get('attack_events', 0)
-            
-            total_events = successful_logins + failed_logins + attack_events
-            
-            if total_events > 0:
-                success_rate = successful_logins / total_events
-                attack_rate = attack_events / total_events
-                
-                # Adjust based on behavior
-                reputation += (success_rate - 0.5) * 0.3  # Reward good behavior
-                reputation -= attack_rate * 0.5  # Penalize attacks
-        
-        # Geographic reputation
-        trusted_countries = {'US', 'CA', 'GB', 'AU', 'NZ', 'DE', 'FR', 'JP', 'KR', 'SG'}
-        if ip_obj.country in trusted_countries:
-            reputation += 0.1
-        
-        return max(0.0, min(1.0, reputation))
+    Coordinates security monitoring using domain rules.
+    No infrastructure concerns - only security logic.
+    """
     
-    @staticmethod
-    def enforce_password_policy(password: str, account_type: AccountType) -> tuple[bool, list[str]]:
-        """Enforce password policy based on account type."""
-        errors = []
-        
-        # Base requirements
-        min_length = 8
-        if account_type == AccountType.ADMIN:
-            min_length = 12  # Stricter for admins
-        elif account_type == AccountType.SERVICE:
-            min_length = 16  # Even stricter for service accounts
-        
-        if len(password) < min_length:
-            errors.append(f"Password must be at least {min_length} characters")
-        
-        if len(password) > 128:
-            errors.append("Password must not exceed 128 characters")
-        
-        # Character requirements
-        has_upper = any(c.isupper() for c in password)
-        has_lower = any(c.islower() for c in password)
-        has_digit = any(c.isdigit() for c in password)
-        has_special = any(c in "!@#$%^&*()_+-=[]{}|;:,.<>?" for c in password)
-        
-        if not has_upper:
-            errors.append("Password must contain uppercase letters")
-        if not has_lower:
-            errors.append("Password must contain lowercase letters")
-        if not has_digit:
-            errors.append("Password must contain numbers")
-        if not has_special:
-            errors.append("Password must contain special characters")
-        
-        # Additional requirements for admin/service accounts
-        if account_type in [AccountType.ADMIN, AccountType.SERVICE]:
-            # Require at least 2 of each character type
-            if sum([has_upper, has_lower, has_digit, has_special]) < 4:
-                errors.append("Password must contain all character types")
-            
-            # Check for common patterns
-            if any(pattern in password.lower() for pattern in ['password', 'admin', 'service']):
-                errors.append("Password cannot contain common words")
-        
-        return len(errors) == 0, errors
+    def __init__(
+        self,
+        user_repository: IUserRepository
+    ) -> None:
+        self._user_repository = user_repository
+        self._threat_patterns = self._initialize_threat_patterns()
     
-    @staticmethod
-    def calculate_session_timeout(account_type: AccountType, risk_level: RiskLevel) -> timedelta:
-        """Calculate appropriate session timeout based on account type and risk."""
-        base_timeouts = {
-            AccountType.ADMIN: timedelta(hours=2),
-            AccountType.SERVICE: timedelta(hours=24),
-            AccountType.REGULAR: timedelta(hours=8),
-            AccountType.GUEST: timedelta(hours=1),
-        }
-        
-        base_timeout = base_timeouts.get(account_type, timedelta(hours=4))
-        
-        # Adjust based on risk level
-        risk_multipliers = {
-            RiskLevel.LOW: 1.0,
-            RiskLevel.MEDIUM: 0.7,
-            RiskLevel.HIGH: 0.5,
-            RiskLevel.CRITICAL: 0.25,
-        }
-        
-        multiplier = risk_multipliers.get(risk_level, 0.5)
-        return timedelta(seconds=int(base_timeout.total_seconds() * multiplier))
-    
-    @staticmethod
-    def should_require_step_up_auth(
-        account_type: AccountType,
-        operation: str,
-        risk_level: RiskLevel
-    ) -> bool:
-        """Determine if step-up authentication is required for an operation."""
-        # High-privilege operations always require step-up
-        sensitive_operations = {
-            'user_management',
-            'role_assignment',
-            'permission_grant',
-            'system_configuration',
-            'security_settings',
-            'audit_log_access'
-        }
-        
-        if operation in sensitive_operations:
-            return True
-        
-        # Admin operations with elevated risk
-        if account_type == AccountType.ADMIN and risk_level in [RiskLevel.HIGH, RiskLevel.CRITICAL]:
-            return True
-        
-        # Critical risk always requires step-up
-        if risk_level == RiskLevel.CRITICAL:
-            return True
-        
-        return False
-    
-    @staticmethod
-    def generate_security_recommendations(
-        system_events: list[dict[str, Any]],
-        user_behavior: dict[str, Any]
+    async def detect_anomalies(
+        self, 
+        user_id: UUID, 
+        activity_data: dict[str, Any]
     ) -> list[dict[str, Any]]:
-        """Generate security recommendations based on system state."""
-        recommendations = []
+        """Detect anomalous behavior using domain rules."""
         
-        # Analyze attack patterns
-        attack_events = [
-            e for e in system_events 
-            if e.get('type') in [
-                SecurityEventType.BRUTE_FORCE_ATTACK,
-                SecurityEventType.CREDENTIAL_STUFFING,
-                SecurityEventType.ACCOUNT_TAKEOVER
-            ]
+        # Get user aggregate
+        user = await self._user_repository.get_by_id(user_id)
+        if not user:
+            return []
+        
+        anomalies = []
+        
+        # Use aggregate methods for anomaly detection
+        login_anomaly = user.detect_login_frequency_anomaly(
+            activity_data.get("login_frequency", 0)
+        )
+        if login_anomaly:
+            anomalies.append({
+                "type": "unusual_login_frequency",
+                "severity": login_anomaly.severity,
+                "description": login_anomaly.description,
+                "confidence": login_anomaly.confidence,
+                "data": login_anomaly.evidence
+            })
+        
+        # Location anomaly detection
+        location_anomaly = user.detect_location_anomaly(
+            activity_data.get("location")
+        )
+        if location_anomaly:
+            anomalies.append({
+                "type": "unusual_location",
+                "severity": location_anomaly.severity,
+                "description": location_anomaly.description,
+                "confidence": location_anomaly.confidence,
+                "data": location_anomaly.evidence
+            })
+        
+        # Time-based anomaly detection
+        time_anomaly = user.detect_time_anomaly(
+            activity_data.get("login_hour")
+        )
+        if time_anomaly:
+            anomalies.append({
+                "type": "unusual_time",
+                "severity": time_anomaly.severity,
+                "description": time_anomaly.description,
+                "confidence": time_anomaly.confidence,
+                "data": time_anomaly.evidence
+            })
+        
+        # Device anomaly detection
+        device_anomaly = user.detect_device_anomaly(
+            activity_data.get("device_fingerprint")
+        )
+        if device_anomaly:
+            anomalies.append({
+                "type": "unknown_device",
+                "severity": device_anomaly.severity,
+                "description": device_anomaly.description,
+                "confidence": device_anomaly.confidence,
+                "data": device_anomaly.evidence
+            })
+        
+        return anomalies
+    
+    async def check_ip_reputation(self, ip_address: IpAddress) -> dict[str, Any]:
+        """Check IP reputation using domain logic."""
+        
+        reputation_score = 1.0  # Start with clean reputation
+        is_blocklisted = False
+        threat_categories = []
+        
+        # Use domain logic for IP reputation assessment
+        if ip_address.is_tor():
+            reputation_score -= 0.4
+            threat_categories.append("tor_exit_node")
+        
+        if ip_address.is_vpn():
+            reputation_score -= 0.2
+            threat_categories.append("vpn_service")
+        
+        if ip_address.is_datacenter():
+            reputation_score -= 0.3
+            threat_categories.append("datacenter_ip")
+        
+        if ip_address.is_known_malicious():
+            is_blocklisted = True
+            reputation_score = 0.0
+            threat_categories.append("known_malicious")
+        
+        # Normalize score
+        reputation_score = max(0.0, min(1.0, reputation_score))
+        
+        return {
+            "reputation_score": reputation_score,
+            "is_blocklisted": is_blocklisted,
+            "threat_categories": threat_categories,
+            "last_seen_malicious": ip_address.last_seen_malicious()
+        }
+    
+    async def scan_for_threats(self, data: dict[str, Any]) -> list[dict[str, Any]]:
+        """Scan data for security threats using domain patterns."""
+        
+        threats = []
+        
+        # SQL injection detection
+        if self._detect_sql_injection(data):
+            threats.append({
+                "type": "sql_injection",
+                "severity": "high",
+                "description": "Potential SQL injection detected",
+                "mitigation": "Sanitize and validate all input parameters"
+            })
+        
+        # XSS detection
+        if self._detect_xss(data):
+            threats.append({
+                "type": "xss_attempt",
+                "severity": "medium", 
+                "description": "Potential XSS payload detected",
+                "mitigation": "Encode output and validate input"
+            })
+        
+        # Command injection detection
+        if self._detect_command_injection(data):
+            threats.append({
+                "type": "command_injection",
+                "severity": "critical",
+                "description": "Potential command injection detected",
+                "mitigation": "Use parameterized commands and input validation"
+            })
+        
+        # Sensitive data exposure detection
+        if self._detect_sensitive_data_exposure(data):
+            threats.append({
+                "type": "sensitive_data_exposure",
+                "severity": "medium",
+                "description": "Potential sensitive data in request",
+                "mitigation": "Ensure proper data handling and encryption"
+            })
+        
+        return threats
+    
+    async def report_security_incident(
+        self,
+        incident_type: str,
+        details: dict[str, Any]
+    ) -> str:
+        """Create security incident using domain logic."""
+        
+        # Generate incident ID using domain logic
+        from app.core.security import generate_token
+        incident_id = generate_token(16)
+        
+        # Validate incident using domain rules
+        if not self._is_valid_incident_type(incident_type):
+            raise ValidationError(f"Invalid incident type: {incident_type}")
+        
+        # Calculate severity using domain logic
+        self._calculate_incident_severity(incident_type, details)
+        
+        # Domain incident creation (Application Service handles persistence)
+        return incident_id
+    
+    # Pure domain helper methods
+    
+    def _detect_sql_injection(self, data: dict[str, Any]) -> bool:
+        """Detect SQL injection patterns using domain rules."""
+        sql_patterns = ["' OR '1'='1", "UNION SELECT", "DROP TABLE", "INSERT INTO"]
+        
+        for value in data.values():
+            if isinstance(value, str):
+                for pattern in sql_patterns:
+                    if pattern.lower() in value.lower():
+                        return True
+        return False
+    
+    def _detect_xss(self, data: dict[str, Any]) -> bool:
+        """Detect XSS patterns using domain rules."""
+        xss_patterns = ["<script>", "javascript:", "onload=", "onerror="]
+        
+        for value in data.values():
+            if isinstance(value, str):
+                for pattern in xss_patterns:
+                    if pattern.lower() in value.lower():
+                        return True
+        return False
+    
+    def _detect_command_injection(self, data: dict[str, Any]) -> bool:
+        """Detect command injection patterns using domain rules."""
+        cmd_patterns = ["; rm -rf", "&& rm", "| cat", "`whoami`"]
+        
+        for value in data.values():
+            if isinstance(value, str):
+                for pattern in cmd_patterns:
+                    if pattern in value:
+                        return True
+        return False
+    
+    def _detect_sensitive_data_exposure(self, data: dict[str, Any]) -> bool:
+        """Detect sensitive data patterns using domain rules."""
+        import re
+        
+        # Credit card pattern
+        cc_pattern = r'\b(?:\d{4}[-\s]?){3}\d{4}\b'
+        # SSN pattern  
+        ssn_pattern = r'\b\d{3}-\d{2}-\d{4}\b'
+        
+        for value in data.values():
+            if isinstance(value, str):
+                if re.search(cc_pattern, value) or re.search(ssn_pattern, value):
+                    return True
+        return False
+    
+    def _is_valid_incident_type(self, incident_type: str) -> bool:
+        """Validate incident type using domain rules."""
+        valid_types = [
+            "data_breach", "unauthorized_access", "malware_detected",
+            "phishing_attempt", "ddos_attack", "insider_threat"
         ]
+        return incident_type in valid_types
+    
+    def _calculate_incident_severity(self, incident_type: str, details: dict[str, Any]) -> str:
+        """Calculate incident severity using domain rules."""
+        high_severity_types = ["data_breach", "unauthorized_access", "malware_detected"]
         
-        if len(attack_events) > 10:
-            recommendations.append({
-                'type': 'security_alert',
-                'priority': 'high',
-                'title': 'Multiple Attack Attempts Detected',
-                'description': f'Detected {len(attack_events)} attack events recently',
-                'action': 'Review and consider implementing additional security measures'
-            })
+        if incident_type in high_severity_types:
+            return "high"
         
-        # Check for weak authentication patterns
-        weak_auth_count = user_behavior.get('users_without_mfa', 0)
-        if weak_auth_count > 0:
-            recommendations.append({
-                'type': 'authentication',
-                'priority': 'medium',
-                'title': 'Users Without MFA',
-                'description': f'{weak_auth_count} users do not have MFA enabled',
-                'action': 'Encourage or enforce MFA adoption'
-            })
+        # Check for additional severity factors
+        if details.get("user_count", 0) > 100:
+            return "high"
         
-        # Check for old passwords
-        old_passwords = user_behavior.get('users_with_old_passwords', 0)
-        if old_passwords > 0:
-            recommendations.append({
-                'type': 'password_policy',
-                'priority': 'medium',
-                'title': 'Outdated Passwords',
-                'description': f'{old_passwords} users have passwords older than 90 days',
-                'action': 'Enforce password rotation policy'
-            })
-        
-        return recommendations
+        return "medium"
+    
+    def _initialize_threat_patterns(self) -> dict[str, Any]:
+        """Initialize threat detection patterns."""
+        return {
+            "brute_force": {
+                "threshold": 5,
+                "window_minutes": 15
+            },
+            "credential_stuffing": {
+                "threshold": 10, 
+                "window_minutes": 5
+            },
+            "suspicious_location": {
+                "distance_threshold_km": 1000,
+                "time_threshold_hours": 2
+            }
+        }

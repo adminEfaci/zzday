@@ -1,10 +1,11 @@
 # domains/identity/domain/contracts/audit_actor_contract.py
 
-from typing import Any, Protocol
+from abc import ABC, abstractmethod
+from typing import Any
 from uuid import UUID
 
 
-class AuditActorContract(Protocol):
+class AuditActorContract(ABC):
     """
     Contract interface for audit actor operations.
 
@@ -12,6 +13,7 @@ class AuditActorContract(Protocol):
     an action without coupling to internal identity models.
     """
 
+    @abstractmethod
     def resolve_actor(self, actor_id: UUID) -> dict[str, Any] | None:
         """
         Resolve an actor (user) by ID and return public info for audit log.
@@ -31,8 +33,8 @@ class AuditActorContract(Protocol):
                 }
                 Returns None if actor not found.
         """
-        ...
 
+    @abstractmethod
     def resolve_system_actor(self, system_id: str) -> dict[str, Any] | None:
         """
         Resolve a system actor for automated actions.
@@ -49,8 +51,8 @@ class AuditActorContract(Protocol):
                     "version": str
                 }
         """
-        ...
 
+    @abstractmethod
     def get_actor_context(self, actor_id: UUID, session_id: UUID | None = None) -> dict[str, Any] | None:
         """
         Get contextual information about an actor for audit purposes.
@@ -75,8 +77,8 @@ class AuditActorContract(Protocol):
                     "mfa_verified": bool
                 }
         """
-        ...
 
+    @abstractmethod
     def get_actor_permissions_at_time(self, actor_id: UUID, timestamp: Any | None = None) -> list[str]:
         """
         Get actor's permissions at a specific point in time for audit trails.
@@ -88,8 +90,8 @@ class AuditActorContract(Protocol):
         Returns:
             List[str]: List of permissions the actor had at that time
         """
-        ...
 
+    @abstractmethod
     def is_privileged_actor(self, actor_id: UUID) -> bool:
         """
         Check if actor has privileged access (admin, system admin, etc.).
@@ -100,8 +102,8 @@ class AuditActorContract(Protocol):
         Returns:
             bool: True if actor has privileged permissions
         """
-        ...
 
+    @abstractmethod
     def get_actor_hierarchy(self, actor_id: UUID) -> dict[str, Any] | None:
         """
         Get organizational hierarchy information for the actor.
@@ -120,8 +122,8 @@ class AuditActorContract(Protocol):
                     "cost_center": str
                 }
         """
-        ...
 
+    @abstractmethod
     def get_impersonation_context(self, actor_id: UUID) -> dict[str, Any] | None:
         """
         Get impersonation context if actor is acting on behalf of another user.
@@ -142,4 +144,3 @@ class AuditActorContract(Protocol):
                 }
                 Returns None if not currently impersonating.
         """
-        ...

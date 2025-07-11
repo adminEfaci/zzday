@@ -1,16 +1,18 @@
 """
 Event Publisher Port Interface
 
-Protocol for publishing domain events to the event bus.
+Port for publishing domain events to the event bus.
 """
 
-from typing import Any, Protocol
+from abc import ABC, abstractmethod
+from typing import Any
 from uuid import UUID
 
 
-class IEventPublisherPort(Protocol):
-    """Protocol for domain event publishing."""
+class IEventPublisherPort(ABC):
+    """Port for domain event publishing."""
     
+    @abstractmethod
     async def publish_user_registered(self, user_data: dict[str, Any]) -> None:
         """
         Publish user registered event.
@@ -18,8 +20,8 @@ class IEventPublisherPort(Protocol):
         Args:
             user_data: User registration data
         """
-        ...
     
+    @abstractmethod
     async def publish_user_activated(self, user_data: dict[str, Any]) -> None:
         """
         Publish user activated event.
@@ -27,8 +29,8 @@ class IEventPublisherPort(Protocol):
         Args:
             user_data: User activation data
         """
-        ...
     
+    @abstractmethod
     async def publish_user_deactivated(self, user_data: dict[str, Any]) -> None:
         """
         Publish user deactivated event.
@@ -36,8 +38,8 @@ class IEventPublisherPort(Protocol):
         Args:
             user_data: User deactivation data
         """
-        ...
     
+    @abstractmethod
     async def publish_profile_completed(self, user_data: dict[str, Any]) -> None:
         """
         Publish profile completed event.
@@ -45,8 +47,8 @@ class IEventPublisherPort(Protocol):
         Args:
             user_data: Profile completion data
         """
-        ...
     
+    @abstractmethod
     async def publish_security_alert(
         self,
         user_id: UUID,
@@ -60,6 +62,7 @@ class IEventPublisherPort(Protocol):
             alert_data: Alert details
         """
     
+    @abstractmethod
     async def publish_password_changed(
         self,
         user_id: UUID,

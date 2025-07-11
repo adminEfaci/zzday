@@ -1,10 +1,11 @@
 """
 Geolocation Service Interface
 
-Protocol for IP-based geolocation and location analysis operations.
+Port for IP-based geolocation and location analysis operations.
 """
 
-from typing import TYPE_CHECKING, Any, Protocol
+from abc import ABC, abstractmethod
+from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
 from ....value_objects.ip_address import IpAddress
@@ -14,9 +15,10 @@ if TYPE_CHECKING:
     from ....value_objects.location_risk_assessment import LocationRiskAssessment
 
 
-class IGeolocationService(Protocol):
-    """Protocol for geolocation services."""
+class IGeolocationService(ABC):
+    """Port for geolocation services."""
     
+    @abstractmethod
     async def get_location_info(self, ip_address: IpAddress) -> "LocationInfo":
         """
         Get location information for IP address.
@@ -27,8 +29,8 @@ class IGeolocationService(Protocol):
         Returns:
             LocationInfo value object containing geographic and security data
         """
-        ...
     
+    @abstractmethod
     async def is_suspicious_location(
         self, 
         user_id: UUID, 
@@ -45,6 +47,7 @@ class IGeolocationService(Protocol):
             LocationRiskAssessment value object containing risk analysis
         """
     
+    @abstractmethod
     async def update_known_locations(
         self,
         user_id: UUID,

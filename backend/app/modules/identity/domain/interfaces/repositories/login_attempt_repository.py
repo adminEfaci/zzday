@@ -3,6 +3,7 @@
 Domain contract for login attempt tracking that must be implemented by the infrastructure layer.
 """
 
+from abc import abstractmethod
 from datetime import datetime
 from typing import Protocol
 from uuid import UUID
@@ -13,6 +14,7 @@ from app.modules.identity.domain.enums import LoginFailureReason
 class ILoginAttemptRepository(Protocol):
     """Repository interface for login attempt tracking."""
     
+    @abstractmethod
     async def create(
         self, 
         email: str,
@@ -37,6 +39,7 @@ class ILoginAttemptRepository(Protocol):
         """
         ...
     
+    @abstractmethod
     async def count_failed_attempts(
         self, 
         email: str,
@@ -53,6 +56,7 @@ class ILoginAttemptRepository(Protocol):
         """
         ...
     
+    @abstractmethod
     async def count_failed_attempts_by_ip(
         self, 
         ip_address: str,
@@ -69,6 +73,7 @@ class ILoginAttemptRepository(Protocol):
         """
         ...
     
+    @abstractmethod
     async def find_recent_attempts(
         self, 
         email: str,
@@ -85,6 +90,7 @@ class ILoginAttemptRepository(Protocol):
         """
         ...
     
+    @abstractmethod
     async def find_successful_logins(
         self, 
         user_id: UUID,
@@ -101,6 +107,7 @@ class ILoginAttemptRepository(Protocol):
         """
         ...
     
+    @abstractmethod
     async def cleanup_old_attempts(self, older_than: datetime) -> int:
         """Remove old login attempts.
         

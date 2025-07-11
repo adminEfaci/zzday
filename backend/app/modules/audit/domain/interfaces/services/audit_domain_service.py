@@ -4,9 +4,10 @@ This module defines the main domain service interface for audit operations
 that span multiple aggregates or require external dependencies.
 """
 
+from abc import ABC, abstractmethod
 from collections.abc import Callable
 from datetime import datetime
-from typing import Any, AsyncContextManager, Protocol
+from typing import Any, AsyncContextManager
 from uuid import UUID
 
 from app.modules.audit.domain.entities.audit_filter import AuditFilter
@@ -39,17 +40,14 @@ class AuditOperationResult:
         self.timestamp = datetime.utcnow()
     
     def is_success(self) -> bool:
-        ...
         return self.success
     
     def get_data(self) -> Any:
-        ...
         if not self.success:
             raise self.error or RuntimeError("Operation failed")
         return self.data
     
     def get_error_details(self) -> dict[str, Any]:
-        ...
         return {
             "error_type": type(self.error).__name__ if self.error else None,
             "error_message": str(self.error) if self.error else None,
@@ -79,7 +77,6 @@ class AuditBatchOperation:
         self.errors: list[dict[str, Any]] = []
     
     def get_progress(self) -> dict[str, Any]:
-        ...
         return {
             "operation_id": str(self.operation_id),
             "operation_type": self.operation_type,
@@ -94,7 +91,7 @@ class AuditBatchOperation:
         }
 
 
-class IAuditDomainService(Protocol):
+class IAuditDomainService(ABC):
     """
     Production-ready domain service interface for complex audit operations.
     
@@ -103,6 +100,7 @@ class IAuditDomainService(Protocol):
     supports high-throughput scenarios with batch processing.
     """
 
+    @abstractmethod
     async def create_audit_trail(
         self,
         user_id: UUID | None,
@@ -135,6 +133,7 @@ class IAuditDomainService(Protocol):
             AuditOperationResult with entry or error details
         """
 
+    @abstractmethod
     async def create_audit_trail_batch(
         self,
         entries: list[dict[str, Any]],
@@ -155,6 +154,7 @@ class IAuditDomainService(Protocol):
             Batch operation with progress tracking
         """
 
+    @abstractmethod
     async def start_audit_session(
         self,
         user_id: UUID | None,
@@ -179,6 +179,7 @@ class IAuditDomainService(Protocol):
             AuditOperationResult with session or error details
         """
 
+    @abstractmethod
     async def end_audit_session(
         self,
         session_id: UUID,
@@ -197,6 +198,7 @@ class IAuditDomainService(Protocol):
             AuditOperationResult with session or error details
         """
 
+    @abstractmethod
     async def generate_audit_report(
         self,
         report_type: str,
@@ -223,6 +225,7 @@ class IAuditDomainService(Protocol):
             AuditOperationResult with report or error details
         """
 
+    @abstractmethod
     async def archive_audit_data(
         self,
         time_range: TimeRange,
@@ -245,6 +248,7 @@ class IAuditDomainService(Protocol):
             AuditOperationResult with archive details or error
         """
 
+    @abstractmethod
     async def validate_audit_integrity(
         self,
         audit_log_id: UUID,
@@ -263,6 +267,7 @@ class IAuditDomainService(Protocol):
             AuditOperationResult with validation results
         """
 
+    @abstractmethod
     async def detect_audit_anomalies(
         self,
         time_range: TimeRange,
@@ -283,6 +288,7 @@ class IAuditDomainService(Protocol):
             AuditOperationResult with anomaly detection results
         """
 
+    @abstractmethod
     async def get_audit_health_metrics(
         self,
         include_performance: bool = True,
@@ -301,6 +307,7 @@ class IAuditDomainService(Protocol):
             AuditOperationResult with health metrics
         """
 
+    @abstractmethod
     async def cleanup_expired_data(
         self,
         dry_run: bool = True,
@@ -319,6 +326,7 @@ class IAuditDomainService(Protocol):
             AuditOperationResult with cleanup statistics
         """
 
+    @abstractmethod
     async def emergency_audit_disable(
         self,
         reason: str,
@@ -337,6 +345,7 @@ class IAuditDomainService(Protocol):
             AuditOperationResult with disable confirmation
         """
 
+    @abstractmethod
     async def emergency_audit_enable(
         self,
         enabled_by: UUID,
@@ -353,6 +362,7 @@ class IAuditDomainService(Protocol):
             AuditOperationResult with enable confirmation
         """
 
+    @abstractmethod
     def get_operation_context(
         self,
         operation_name: str,

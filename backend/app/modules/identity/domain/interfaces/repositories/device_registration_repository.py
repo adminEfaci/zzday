@@ -3,6 +3,7 @@
 Domain contract for device registration data access that must be implemented by the infrastructure layer.
 """
 
+from abc import abstractmethod
 from typing import Protocol
 from uuid import UUID
 
@@ -12,6 +13,7 @@ from app.modules.identity.domain.enums import DevicePlatform, DeviceType
 class IDeviceRegistrationRepository(Protocol):
     """Repository interface for device registration management."""
     
+    @abstractmethod
     async def create(
         self, 
         user_id: UUID,
@@ -38,6 +40,7 @@ class IDeviceRegistrationRepository(Protocol):
         """
         ...
     
+    @abstractmethod
     async def find_by_id(self, device_id: UUID) -> dict | None:
         """Find device registration by ID.
         
@@ -49,6 +52,7 @@ class IDeviceRegistrationRepository(Protocol):
         """
         ...
     
+    @abstractmethod
     async def find_by_user(self, user_id: UUID) -> list[dict]:
         """Find all registered devices for user.
         
@@ -60,6 +64,7 @@ class IDeviceRegistrationRepository(Protocol):
         """
         ...
     
+    @abstractmethod
     async def find_by_fingerprint(
         self, 
         device_fingerprint: str
@@ -74,6 +79,7 @@ class IDeviceRegistrationRepository(Protocol):
         """
         ...
     
+    @abstractmethod
     async def trust_device(self, device_id: UUID) -> bool:
         """Mark device as trusted.
         
@@ -85,6 +91,7 @@ class IDeviceRegistrationRepository(Protocol):
         """
         ...
     
+    @abstractmethod
     async def revoke_trust(self, device_id: UUID) -> bool:
         """Revoke trust from device.
         
@@ -96,6 +103,7 @@ class IDeviceRegistrationRepository(Protocol):
         """
         ...
     
+    @abstractmethod
     async def update_last_seen(
         self, 
         device_id: UUID,
@@ -114,6 +122,7 @@ class IDeviceRegistrationRepository(Protocol):
         """
         ...
     
+    @abstractmethod
     async def delete_device(self, device_id: UUID) -> bool:
         """Delete device registration.
         

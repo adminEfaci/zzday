@@ -1,16 +1,18 @@
 """
 Device Management Service Interface
 
-Protocol for device registration, trust management, and tracking.
+Port for device registration, trust management, and tracking.
 """
 
-from typing import Any, Protocol
+from abc import ABC, abstractmethod
+from typing import Any
 from uuid import UUID
 
 
-class IDeviceService(Protocol):
-    """Protocol for device management operations."""
+class IDeviceService(ABC):
+    """Port for device management operations."""
     
+    @abstractmethod
     async def register_device(
         self,
         user_id: UUID,
@@ -27,6 +29,7 @@ class IDeviceService(Protocol):
             Device ID
         """
     
+    @abstractmethod
     async def trust_device(
         self,
         device_id: UUID,
@@ -40,6 +43,7 @@ class IDeviceService(Protocol):
             trust_duration: Trust duration in days (None for permanent)
         """
     
+    @abstractmethod
     async def is_device_trusted(self, device_id: UUID) -> bool:
         """
         Check if device is trusted.
@@ -50,8 +54,8 @@ class IDeviceService(Protocol):
         Returns:
             True if device is trusted
         """
-        ...
     
+    @abstractmethod
     async def revoke_device_trust(self, device_id: UUID) -> bool:
         """
         Revoke device trust.
@@ -62,8 +66,8 @@ class IDeviceService(Protocol):
         Returns:
             True if revoked successfully
         """
-        ...
     
+    @abstractmethod
     async def get_user_devices(self, user_id: UUID) -> list[dict[str, Any]]:
         """
         Get all user devices.
@@ -74,8 +78,8 @@ class IDeviceService(Protocol):
         Returns:
             List of device information
         """
-        ...
     
+    @abstractmethod
     async def update_device_info(
         self,
         device_id: UUID,

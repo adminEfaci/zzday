@@ -1,20 +1,22 @@
 """
 Compliance Service Interface
 
-Protocol for identity-specific compliance operations including GDPR, data retention, and consent management.
+Port for identity-specific compliance operations including GDPR, data retention, and consent management.
 """
 
+from abc import ABC, abstractmethod
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, Protocol
+from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
 if TYPE_CHECKING:
     from ...value_objects.data_export import DataExport
 
 
-class IComplianceService(Protocol):
-    """Protocol for identity-specific compliance operations."""
+class IComplianceService(ABC):
+    """Port for identity-specific compliance operations."""
     
+    @abstractmethod
     async def validate_data_collection_consent(
         self,
         user_id: UUID,
@@ -31,6 +33,7 @@ class IComplianceService(Protocol):
             Tuple of (has_consent, missing_consents)
         """
     
+    @abstractmethod
     async def check_user_data_retention(
         self,
         user_id: UUID,
@@ -47,6 +50,7 @@ class IComplianceService(Protocol):
             Tuple of (should_retain, expiry_date)
         """
     
+    @abstractmethod
     async def anonymize_user_data(
         self,
         user_id: UUID,
@@ -63,6 +67,7 @@ class IComplianceService(Protocol):
             Summary of anonymized data
         """
     
+    @abstractmethod
     async def generate_user_data_export(
         self,
         user_id: UUID,
@@ -79,6 +84,7 @@ class IComplianceService(Protocol):
             DataExport value object containing export metadata
         """
     
+    @abstractmethod
     async def validate_user_consent_changes(
         self,
         user_id: UUID,
@@ -95,6 +101,7 @@ class IComplianceService(Protocol):
             True if changes are valid
         """
     
+    @abstractmethod
     async def log_compliance_event(
         self,
         user_id: UUID,

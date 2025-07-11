@@ -13,7 +13,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, selectinload
 
 from app.core.errors import ConflictError, NotFoundError
-from app.core.infrastructure.repositories import BaseRepository
+from app.core.infrastructure.repository import BaseRepository
 from app.modules.integration.domain.aggregates import Integration
 from app.modules.integration.domain.enums import ConnectionStatus, IntegrationType
 from app.modules.integration.domain.value_objects import ApiEndpoint, RateLimitConfig

@@ -1,10 +1,11 @@
 """
 File Storage Port Interface
 
-Protocol for file storage operations, particularly user avatars.
+Port for file storage operations, particularly user avatars.
 """
 
-from typing import TYPE_CHECKING, BinaryIO, Protocol
+from abc import ABC, abstractmethod
+from typing import TYPE_CHECKING, BinaryIO
 from uuid import UUID
 
 if TYPE_CHECKING:
@@ -12,9 +13,10 @@ if TYPE_CHECKING:
     from ...value_objects.thumbnail_set import ThumbnailSet
 
 
-class IFileStoragePort(Protocol):
-    """Protocol for file storage operations."""
+class IFileStoragePort(ABC):
+    """Port for file storage operations."""
     
+    @abstractmethod
     async def store_avatar(
         self,
         user_id: UUID,
@@ -33,6 +35,7 @@ class IFileStoragePort(Protocol):
             AvatarStorage value object containing storage metadata
         """
     
+    @abstractmethod
     async def delete_avatar(self, user_id: UUID) -> bool:
         """
         Delete user avatar.
@@ -43,8 +46,8 @@ class IFileStoragePort(Protocol):
         Returns:
             True if deleted successfully
         """
-        ...
     
+    @abstractmethod
     async def generate_avatar_url(
         self,
         user_id: UUID,
@@ -61,6 +64,7 @@ class IFileStoragePort(Protocol):
             Avatar URL
         """
     
+    @abstractmethod
     async def process_avatar_thumbnails(
         self,
         user_id: UUID,

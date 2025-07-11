@@ -3,6 +3,7 @@
 Domain contract for notification setting data access that must be implemented by the infrastructure layer.
 """
 
+from abc import abstractmethod
 from typing import Protocol
 from uuid import UUID
 
@@ -10,6 +11,7 @@ from uuid import UUID
 class INotificationSettingRepository(Protocol):
     """Repository interface for notification setting management."""
     
+    @abstractmethod
     async def create(
         self, 
         user_id: UUID,
@@ -34,6 +36,7 @@ class INotificationSettingRepository(Protocol):
         """
         ...
     
+    @abstractmethod
     async def find_by_user(self, user_id: UUID) -> list[dict]:
         """Find all notification settings for user.
         
@@ -45,6 +48,7 @@ class INotificationSettingRepository(Protocol):
         """
         ...
     
+    @abstractmethod
     async def find_by_type(
         self, 
         user_id: UUID, 
@@ -61,6 +65,7 @@ class INotificationSettingRepository(Protocol):
         """
         ...
     
+    @abstractmethod
     async def find_by_channel(
         self, 
         user_id: UUID, 
@@ -77,6 +82,7 @@ class INotificationSettingRepository(Protocol):
         """
         ...
     
+    @abstractmethod
     async def is_enabled(
         self, 
         user_id: UUID,
@@ -95,6 +101,7 @@ class INotificationSettingRepository(Protocol):
         """
         ...
     
+    @abstractmethod
     async def update_setting(
         self, 
         setting_id: UUID,
@@ -115,6 +122,7 @@ class INotificationSettingRepository(Protocol):
         """
         ...
     
+    @abstractmethod
     async def bulk_update(
         self, 
         user_id: UUID,
@@ -131,6 +139,7 @@ class INotificationSettingRepository(Protocol):
         """
         ...
     
+    @abstractmethod
     async def enable_all(self, user_id: UUID, channel: str | None = None) -> int:
         """Enable all notifications for user.
         
@@ -143,6 +152,7 @@ class INotificationSettingRepository(Protocol):
         """
         ...
     
+    @abstractmethod
     async def disable_all(self, user_id: UUID, channel: str | None = None) -> int:
         """Disable all notifications for user.
         

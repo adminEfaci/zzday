@@ -3,16 +3,18 @@
 Domain contract for emergency contact data access that must be implemented by the infrastructure layer.
 """
 
+from abc import abstractmethod
 from typing import TYPE_CHECKING, Protocol
 from uuid import UUID
 
 if TYPE_CHECKING:
-    from app.modules.identity.domain.entities.user.emergency_contact import EmergencyContact
+    from app.modules.identity.domain.entities.admin.emergency_contact import EmergencyContact
 
 
 class IEmergencyContactRepository(Protocol):
     """Repository interface for emergency contact management."""
     
+    @abstractmethod
     async def create(
         self, 
         user_id: UUID,
@@ -39,6 +41,7 @@ class IEmergencyContactRepository(Protocol):
         """
         ...
     
+    @abstractmethod
     async def find_by_id(self, contact_id: UUID) -> dict | None:
         """Find emergency contact by ID.
         
@@ -50,6 +53,7 @@ class IEmergencyContactRepository(Protocol):
         """
         ...
     
+    @abstractmethod
     async def find_by_user(self, user_id: UUID) -> list[dict]:
         """Find all emergency contacts for user.
         
@@ -61,6 +65,7 @@ class IEmergencyContactRepository(Protocol):
         """
         ...
     
+    @abstractmethod
     async def find_primary_contact(self, user_id: UUID) -> dict | None:
         """Find primary emergency contact for user.
         
@@ -72,6 +77,7 @@ class IEmergencyContactRepository(Protocol):
         """
         ...
     
+    @abstractmethod
     async def update(
         self, 
         contact_id: UUID,
@@ -96,6 +102,7 @@ class IEmergencyContactRepository(Protocol):
         """
         ...
     
+    @abstractmethod
     async def verify_contact(self, contact_id: UUID) -> bool:
         """Mark emergency contact as verified.
         
@@ -107,6 +114,7 @@ class IEmergencyContactRepository(Protocol):
         """
         ...
     
+    @abstractmethod
     async def set_primary(self, contact_id: UUID) -> bool:
         """Set contact as primary (unsets other primary contacts).
         
@@ -118,6 +126,7 @@ class IEmergencyContactRepository(Protocol):
         """
         ...
     
+    @abstractmethod
     async def save(self, contact: 'EmergencyContact') -> None:
         """Save emergency contact entity (create or update).
         
@@ -126,6 +135,7 @@ class IEmergencyContactRepository(Protocol):
         """
         ...
     
+    @abstractmethod
     async def delete(self, contact_id: UUID) -> bool:
         """Delete emergency contact.
         

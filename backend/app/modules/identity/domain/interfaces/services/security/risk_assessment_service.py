@@ -1,10 +1,11 @@
 """
 Risk Assessment Service Interface
 
-Protocol for risk assessment and fraud detection operations.
+Port for risk assessment and fraud detection operations.
 """
 
-from typing import TYPE_CHECKING, Any, Protocol
+from abc import ABC, abstractmethod
+from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
 from ....value_objects.ip_address import IpAddress
@@ -13,9 +14,10 @@ if TYPE_CHECKING:
     from ....value_objects.risk_assessment import RiskAssessment
 
 
-class IRiskAssessmentService(Protocol):
-    """Protocol for risk assessment operations."""
+class IRiskAssessmentService(ABC):
+    """Port for risk assessment operations."""
     
+    @abstractmethod
     async def assess_login_risk(
         self, 
         user_id: UUID,
@@ -35,8 +37,8 @@ class IRiskAssessmentService(Protocol):
         Returns:
             RiskAssessment value object containing level, score, and factors
         """
-        ...
     
+    @abstractmethod
     async def assess_transaction_risk(
         self,
         user_id: UUID,
@@ -54,8 +56,8 @@ class IRiskAssessmentService(Protocol):
         Returns:
             RiskAssessment value object containing level, score, and factors
         """
-        ...
     
+    @abstractmethod
     async def update_risk_profile(
         self,
         user_id: UUID,
@@ -70,8 +72,8 @@ class IRiskAssessmentService(Protocol):
             factors: Risk factors to update
             event_type: Type of event triggering update
         """
-        ...
     
+    @abstractmethod
     async def get_risk_recommendations(
         self,
         user_id: UUID,
@@ -87,8 +89,8 @@ class IRiskAssessmentService(Protocol):
         Returns:
             List of recommendations with priorities
         """
-        ...
     
+    @abstractmethod
     async def calculate_adaptive_thresholds(
         self,
         user_id: UUID
@@ -102,4 +104,3 @@ class IRiskAssessmentService(Protocol):
         Returns:
             Dict of threshold values by risk type
         """
-        ...

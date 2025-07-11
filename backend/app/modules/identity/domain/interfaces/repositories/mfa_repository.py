@@ -3,16 +3,18 @@
 Domain contract for MFA device data access that must be implemented by the infrastructure layer.
 """
 
+from abc import abstractmethod
 from typing import TYPE_CHECKING, Protocol
 from uuid import UUID
 
 if TYPE_CHECKING:
-    from app.modules.identity.domain.aggregates.mfa_device import MfaDevice
+    from app.modules.identity.domain.entities.admin.mfa_device import MFADevice
 
 
 class IMFARepository(Protocol):
     """Repository interface for MFA device management."""
     
+    @abstractmethod
     async def save(self, device: 'MFADevice') -> None:
         """Save MFA device entity (create or update).
         
@@ -21,6 +23,7 @@ class IMFARepository(Protocol):
         """
         ...
     
+    @abstractmethod
     async def find_by_id(self, device_id: UUID) -> 'MFADevice' | None:
         """Find MFA device by ID.
         
@@ -32,6 +35,7 @@ class IMFARepository(Protocol):
         """
         ...
     
+    @abstractmethod
     async def find_by_user(self, user_id: UUID) -> list['MFADevice']:
         """Find all MFA devices for user.
         
@@ -43,6 +47,7 @@ class IMFARepository(Protocol):
         """
         ...
     
+    @abstractmethod
     async def find_verified_by_user(self, user_id: UUID) -> list['MFADevice']:
         """Find verified MFA devices for user.
         
@@ -54,6 +59,7 @@ class IMFARepository(Protocol):
         """
         ...
     
+    @abstractmethod
     async def delete(self, device_id: UUID) -> bool:
         """Delete MFA device.
         
@@ -65,6 +71,7 @@ class IMFARepository(Protocol):
         """
         ...
     
+    @abstractmethod
     async def exists(self, device_id: UUID) -> bool:
         """Check if MFA device exists.
         
@@ -76,6 +83,7 @@ class IMFARepository(Protocol):
         """
         ...
     
+    @abstractmethod
     async def find_primary_device(self, user_id: UUID) -> 'MFADevice' | None:
         """Find primary MFA device for user.
         
@@ -87,6 +95,7 @@ class IMFARepository(Protocol):
         """
         ...
     
+    @abstractmethod
     async def count_devices_by_user(self, user_id: UUID) -> int:
         """Count MFA devices for user.
         
@@ -98,6 +107,7 @@ class IMFARepository(Protocol):
         """
         ...
     
+    @abstractmethod
     async def find_by_method(self, user_id: UUID, method: str) -> list['MFADevice']:
         """Find MFA devices by method type.
         

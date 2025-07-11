@@ -1,20 +1,22 @@
 """
 Audit Service Interface
 
-Protocol for audit logging and activity tracking operations.
+Port for audit logging and activity tracking operations.
 """
 
+from abc import ABC, abstractmethod
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, Protocol
+from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
 if TYPE_CHECKING:
     from ...value_objects.audit_export import AuditExport
 
 
-class IAuditService(Protocol):
-    """Protocol for audit operations."""
+class IAuditService(ABC):
+    """Port for audit operations."""
     
+    @abstractmethod
     async def log_event(
         self,
         user_id: UUID | None,
@@ -45,6 +47,7 @@ class IAuditService(Protocol):
             Audit log entry ID
         """
     
+    @abstractmethod
     async def create_audit_trail(
         self,
         entity_type: str,
@@ -65,6 +68,7 @@ class IAuditService(Protocol):
             Audit trail ID
         """
     
+    @abstractmethod
     async def query_audit_logs(
         self,
         filters: dict[str, Any],
@@ -83,6 +87,7 @@ class IAuditService(Protocol):
             Paginated audit logs
         """
     
+    @abstractmethod
     async def get_user_activity_summary(
         self,
         user_id: UUID,
@@ -101,6 +106,7 @@ class IAuditService(Protocol):
             Activity summary statistics
         """
     
+    @abstractmethod
     async def export_audit_logs(
         self,
         filters: dict[str, Any],

@@ -1,124 +1,111 @@
 """
-Activity Service Interface
+User Activity Service Interface
 
-Interface for user activity tracking and monitoring.
+Port for tracking and analyzing user activity.
 """
 
 from abc import ABC, abstractmethod
-from typing import Protocol, Dict, Any, List, Optional
 from datetime import datetime
+from typing import Any
 from uuid import UUID
 
 
-class IActivityService(Protocol):
-    """
-    Interface for tracking and monitoring user activities.
-    
-    This service handles logging, retrieval, and analysis of user activities
-    within the identity system for audit and monitoring purposes.
-    """
+class IActivityService(ABC):
+    """Port for user activity tracking operations."""
     
     @abstractmethod
     async def log_activity(
         self,
         user_id: UUID,
         activity_type: str,
-        description: str,
-        metadata: Optional[Dict[str, Any]] = None,
-        ip_address: Optional[str] = None,
-        user_agent: Optional[str] = None
-    ) -> None:
+        details: dict[str, Any],
+        ip_address: str | None = None,
+        user_agent: str | None = None
+    ) -> str:
         """
-        Log a user activity event.
+        Log user activity.
         
         Args:
-            user_id: ID of the user performing the activity
-            activity_type: Type/category of the activity
-            description: Human-readable description of the activity
-            metadata: Additional activity metadata
-            ip_address: IP address of the user
-            user_agent: User agent string from the request
+            user_id: User identifier
+            activity_type: Type of activity
+            details: Activity details
+            ip_address: Client IP address
+            user_agent: Client user agent
+            
+        Returns:
+            Activity log ID
         """
-        ...
     
     @abstractmethod
     async def get_user_activity(
         self,
         user_id: UUID,
-        limit: int = 50,
-        offset: int = 0,
-        activity_type: Optional[str] = None,
-        start_date: Optional[datetime] = None,
-        end_date: Optional[datetime] = None
-    ) -> List[Dict[str, Any]]:
+        activity_types: list[str] | None = None,
+        start_date: datetime | None = None,
+        end_date: datetime | None = None,
+        limit: int = 100
+    ) -> list[dict[str, Any]]:
         """
         Get user activity history.
         
         Args:
-            user_id: ID of the user
-            limit: Maximum number of activities to return
-            offset: Number of activities to skip
-            activity_type: Filter by activity type
-            start_date: Filter activities after this date
-            end_date: Filter activities before this date
+            user_id: User identifier
+            activity_types: Filter by activity types
+            start_date: Filter from date
+            end_date: Filter to date
+            limit: Maximum results
             
         Returns:
             List of activity records
         """
-        ...
+    
+    @abstractmethod
+    async def analyze_activity_patterns(
+        self,
+        user_id: UUID,
+        days: int = 30
+    ) -> dict[str, Any]:
+        """
+        Analyze user activity patterns.
+        
+        Args:
+            user_id: User identifier
+            days: Number of days to analyze
+            
+        Returns:
+            Activity pattern analysis
+        """
+    
+    @abstractmethod
+    async def detect_suspicious_activity(
+        self,
+        user_id: UUID,
+        activity_data: dict[str, Any]
+    ) -> list[dict[str, Any]]:
+        """
+        Detect suspicious activity patterns.
+        
+        Args:
+            user_id: User identifier
+            activity_data: Recent activity data
+            
+        Returns:
+            List of suspicious activity indicators
+        """
     
     @abstractmethod
     async def get_activity_summary(
         self,
         user_id: UUID,
-        days: int = 30
-    ) -> Dict[str, Any]:
+        period: str = "week"
+    ) -> dict[str, Any]:
         """
-        Get activity summary for a user over specified days.
+        Get activity summary for period.
         
         Args:
-            user_id: ID of the user
-            days: Number of days to include in summary
+            user_id: User identifier
+            period: Summary period (day/week/month)
             
         Returns:
-            Activity summary statistics
+            Activity summary data
         """
-        ...
-    
-    @abstractmethod
-    async def get_suspicious_activities(
-        self,
-        user_id: Optional[UUID] = None,
-        limit: int = 50,
-        severity_threshold: str = "medium"
-    ) -> List[Dict[str, Any]]:
-        """
-        Get activities flagged as suspicious.
-        
-        Args:
-            user_id: Optional user ID to filter by
-            limit: Maximum number of activities to return
-            severity_threshold: Minimum severity level
-            
-        Returns:
-            List of suspicious activity records
-        """
-        ...
-    
-    @abstractmethod
-    async def delete_user_activities(
-        self,
-        user_id: UUID,
-        older_than_days: Optional[int] = None
-    ) -> int:
-        """
-        Delete user activities for privacy compliance.
-        
-        Args:
-            user_id: ID of the user
-            older_than_days: Delete activities older than this many days
-            
-        Returns:
-            Number of activities deleted
-        """
-        ...

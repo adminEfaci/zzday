@@ -1,69 +1,69 @@
 """
 Identity Domain Service Interfaces
 
-This module contains all service interface definitions (protocols)
-for the identity domain services.
+All service interfaces (ports) for the identity domain following hexagonal architecture.
+These interfaces define contracts that must be implemented by infrastructure adapters.
 """
 
-# Authentication Services
-from .authentication import *
+# Authentication interfaces
+from .authentication import (
+    IBiometricService,
+    IMFAService,
+    IPasswordHasher,
+    ITokenGenerator,
+)
 
-# Communication Services  
-from .communication import *
+# Communication interfaces
+from .communication import INotificationService
 
-# Compliance Services
-from .compliance import *
+# Compliance interfaces
+from .compliance import IComplianceService
 
-# Infrastructure Services
-from .infrastructure import *
+# Infrastructure interfaces
+from .infrastructure import (
+    ICachePort,
+    IConfigurationPort,
+    IEventPublisherPort,
+    IFileStoragePort,
+    ITaskQueuePort,
+)
 
-# MFA Services
-from .mfa import IMFAService
+# Monitoring interfaces
+from .monitoring import IAnalyticsPort, IAuditService, IRateLimitPort
 
-# Monitoring Services
-from .monitoring import *
-
-# Security Services
-from .security import *
-
-# Token Services
-from .token import IAccessTokenService
+# Security interfaces
+from .security import (
+    IDeviceService,
+    IGeolocationService,
+    IRiskAssessmentService,
+    ISecurityService,
+    IThreatIntelligenceService,
+)
 
 __all__ = [
-    # Authentication Services
-    'IBiometricService',
-    'IPasswordHasher',
-    'IPasswordService',
-    'ITokenGenerator',
-    
-    # Communication Services
-    'INotificationService',
-    
-    # Compliance Services
-    'IComplianceService',
-    
-    # Infrastructure Services
-    'ICachePort',
-    'IConfigurationPort',
-    'IEventPublisherPort',
-    'IFileStoragePort',
-    'ITaskQueuePort',
-    
-    # MFA Services
-    'IMFAService',
-    
-    # Monitoring Services
     'IAnalyticsPort',
+    # Monitoring
     'IAuditService',
-    'IRateLimitPort',
-    
-    # Security Services
+    'IBiometricService',
+    'ICachePort',
+    # Compliance
+    'IComplianceService',
+    'IConfigurationPort',
     'IDeviceService',
+    'IEventPublisherPort',
+    # Infrastructure
+    'IFileStoragePort',
     'IGeolocationService',
+    'IMFAService',
+    # Communication
+    'INotificationService',
+    # Authentication
+    'IPasswordHasher',
+    'IRateLimitPort',
+    # Security
     'IRiskAssessmentService',
     'ISecurityService',
+    'ITaskQueuePort',
     'IThreatIntelligenceService',
-    
-    # Token Services
-    'IAccessTokenService',
+    'ITokenGenerator'
 ]

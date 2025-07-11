@@ -9,7 +9,7 @@ from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID, uuid4
 
-from ...shared.base_entity import ExpirableEntity
+from ..shared.base_entity import ExpirableEntity
 from .group_enums import GroupMemberRole, GroupMembershipType
 
 

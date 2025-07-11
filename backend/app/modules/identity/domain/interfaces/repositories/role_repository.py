@@ -3,6 +3,7 @@
 Domain contract for role data access that must be implemented by the infrastructure layer.
 """
 
+from abc import abstractmethod
 from typing import TYPE_CHECKING, Protocol
 from uuid import UUID
 
@@ -13,6 +14,7 @@ if TYPE_CHECKING:
 class IRoleRepository(Protocol):
     """Repository interface for role management."""
     
+    @abstractmethod
     async def save(self, role: 'Role') -> None:
         """Save role entity (create or update).
         
@@ -21,6 +23,7 @@ class IRoleRepository(Protocol):
         """
         ...
     
+    @abstractmethod
     async def find_by_id(self, role_id: UUID) -> 'Role' | None:
         """Find role by ID.
         
@@ -32,6 +35,7 @@ class IRoleRepository(Protocol):
         """
         ...
     
+    @abstractmethod
     async def find_by_name(self, name: str) -> 'Role' | None:
         """Find role by name.
         
@@ -43,6 +47,7 @@ class IRoleRepository(Protocol):
         """
         ...
     
+    @abstractmethod
     async def find_all(self, include_inactive: bool = False) -> list['Role']:
         """Find all roles.
         
@@ -54,6 +59,7 @@ class IRoleRepository(Protocol):
         """
         ...
     
+    @abstractmethod
     async def find_by_user(self, user_id: UUID) -> list['Role']:
         """Find roles assigned to user.
         
@@ -65,6 +71,7 @@ class IRoleRepository(Protocol):
         """
         ...
     
+    @abstractmethod
     async def assign_to_user(self, role_id: UUID, user_id: UUID) -> bool:
         """Assign role to user.
         
@@ -77,6 +84,7 @@ class IRoleRepository(Protocol):
         """
         ...
     
+    @abstractmethod
     async def unassign_from_user(self, role_id: UUID, user_id: UUID) -> bool:
         """Unassign role from user.
         
@@ -89,6 +97,7 @@ class IRoleRepository(Protocol):
         """
         ...
     
+    @abstractmethod
     async def add_permission(self, role_id: UUID, permission_id: UUID) -> bool:
         """Add permission to role.
         
@@ -101,6 +110,7 @@ class IRoleRepository(Protocol):
         """
         ...
     
+    @abstractmethod
     async def remove_permission(self, role_id: UUID, permission_id: UUID) -> bool:
         """Remove permission from role.
         
@@ -113,6 +123,7 @@ class IRoleRepository(Protocol):
         """
         ...
     
+    @abstractmethod
     async def exists(self, role_id: UUID) -> bool:
         """Check if role exists.
         
@@ -124,6 +135,7 @@ class IRoleRepository(Protocol):
         """
         ...
     
+    @abstractmethod
     async def exists_by_name(self, name: str) -> bool:
         """Check if role exists by name.
         
@@ -135,6 +147,7 @@ class IRoleRepository(Protocol):
         """
         ...
     
+    @abstractmethod
     async def find_system_roles(self) -> list['Role']:
         """Find all system roles.
         
@@ -143,6 +156,7 @@ class IRoleRepository(Protocol):
         """
         ...
     
+    @abstractmethod
     async def find_by_level_range(self, min_level: int, max_level: int) -> list['Role']:
         """Find roles within a level range.
         
@@ -155,6 +169,7 @@ class IRoleRepository(Protocol):
         """
         ...
     
+    @abstractmethod
     async def delete(self, role_id: UUID) -> bool:
         """Delete role.
         

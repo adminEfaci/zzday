@@ -9,13 +9,13 @@ from typing import Any
 from uuid import UUID
 
 from sqlmodel import Session, select, and_, or_, col, func
-from app.core.infrastructure.repository import SQLRepository
+from app.core.infrastructure.repository import BaseRepository
 from app.modules.identity.domain.entities.admin.access_token import AccessToken, TokenStatus
 from app.modules.identity.domain.interfaces.repositories.access_token_repository import IAccessTokenRepository
 from app.modules.identity.infrastructure.models.access_token_model import AccessTokenModel
 
 
-class SQLAccessTokenRepository(SQLRepository[AccessToken, AccessTokenModel], IAccessTokenRepository):
+class SQLAccessTokenRepository(BaseRepository[AccessToken, AccessTokenModel], IAccessTokenRepository):
     """SQLModel implementation of access token repository."""
     
     def __init__(self, session: Session):

@@ -12,7 +12,7 @@ from uuid import UUID, uuid4
 # No value object imports needed - using primitives
 from ..enums import DevicePlatform, DeviceType
 from ..events import DeviceRegistered, DeviceTrusted, DeviceUntrusted
-from ..entities.shared.base_entity import IdentityEntity, SecurityValidationMixin
+from .shared.base_entity import IdentityEntity, SecurityValidationMixin
 
 
 @dataclass

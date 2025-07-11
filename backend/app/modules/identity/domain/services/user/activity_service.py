@@ -17,7 +17,10 @@ from app.utils.text import normalize_whitespace
 from app.utils.validation import validate_uuid
 
 from ...interfaces.contracts.audit_contract import IAuditContract
-from ...interfaces.repositories.user_repository import IUserRepository
+from ...interfaces.repositories.monitoring.activity_repository import (
+    IActivityRepository,
+)
+from ...interfaces.repositories.user.user_repository import IUserRepository
 from ...interfaces.services.infrastructure.cache_port import ICachePort
 from ...interfaces.services.infrastructure.configuration_port import IConfigurationPort
 from ...interfaces.services.monitoring.activity_service import IActivityService

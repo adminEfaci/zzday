@@ -24,21 +24,21 @@ Usage Examples:
     # Basic in-memory bus
     bus = InMemoryEventBus()
     await bus.start()
-    
+
     # Subscribe to events
     async def handle_user_created(event):
         print(f"User {event.user_id} created")
-    
+
     bus.subscribe(UserCreatedEvent, handle_user_created)
-    
+
     # Publish events
     event = UserCreatedEvent(user_id="123", email="user@example.com")
     await bus.publish(event)
-    
+
     # Distributed bus with Redis
     bus = DistributedEventBus("redis://localhost:6379/0")
     await bus.start()
-    
+
     # Hybrid bus with automatic fallback
     bus = HybridEventBus(
         redis_url="redis://localhost:6379/0",
@@ -90,51 +90,51 @@ try:
 except ImportError:
     # Fallback implementations
     from enum import Enum
-    
+
     class EventPriority(Enum):
         LOW = "low"
         NORMAL = "normal"
         HIGH = "high"
         CRITICAL = "critical"
-    
+
     class EventProcessingMode(Enum):
         IN_MEMORY = "in_memory"
         DISTRIBUTED = "distributed"
         HYBRID = "hybrid"
-    
+
     class RetryPolicy:
         def __init__(self, max_retries=3, initial_delay=1.0, backoff_multiplier=2.0, max_delay=300.0):
             self.max_retries = max_retries
             self.initial_delay = initial_delay
             self.backoff_multiplier = backoff_multiplier
             self.max_delay = max_delay
-        
+
         @classmethod
         def no_retry(cls):
             return cls(max_retries=0)
-    
+
     class EventRegistration:
         def __init__(self, event_type, handlers=None, retry_policy=None):
             self.event_type = event_type
             self.handlers = handlers or []
             self.retry_policy = retry_policy or RetryPolicy.no_retry()
-    
+
     class MockRegistry:
         def __init__(self):
             self._registrations = {}
-        
+
         def get_registration(self, event_type):
             return self._registrations.get(event_type)
-        
+
         def get_priority(self, event_type):
             return EventPriority.NORMAL
-        
+
         def get_processing_mode(self, event_type):
             return EventProcessingMode.IN_MEMORY
-    
+
     def get_registry():
         return MockRegistry()
-    
+
     def get_event_class(event_type):
         return None
 try:
@@ -142,14 +142,14 @@ try:
 except ImportError:
     # Fallback correlation tracking
     import contextvars
-    
+
     _correlation_id: contextvars.ContextVar[str | None] = contextvars.ContextVar(
         'correlation_id', default=None
     )
-    
+
     def get_correlation_id() -> str | None:
         return _correlation_id.get()
-    
+
     def set_correlation_id(correlation_id: str) -> None:
         _correlation_id.set(correlation_id)
 from app.core.events.types import DomainEvent
@@ -164,19 +164,19 @@ except ImportError:
             return self
         def inc(self):
             pass
-    
+
     class MockGauge:
         def labels(self, **kwargs):
             return self
         def set(self, value):
             pass
-    
+
     class MockMetrics:
         def __init__(self):
             self.events_published = MockCounter()
             self.event_handler_errors = MockCounter()
             self.event_bus_health = MockGauge()
-    
+
     metrics = MockMetrics()
 
 logger = get_logger(__name__)
@@ -186,7 +186,7 @@ EventHandlerType = Callable[[DomainEvent], None | Awaitable[None]]
 
 class EventBusError(InfrastructureError):
     """Base exception for event bus operations."""
-    
+
     default_code = "EVENT_BUS_ERROR"
     status_code = 500
     retryable = True
@@ -198,7 +198,7 @@ class EventBusValidationError(ValidationError):
 
 class EventProcessingError(EventBusError):
     """Raised when event processing fails."""
-    
+
     default_code = "EVENT_PROCESSING_ERROR"
     retryable = True
 
@@ -381,58 +381,58 @@ class InMemoryEventBus(EventBus):
                 f"Failed to access event registry during initialization: {e}"
             ) from e
 
-    async def start(self) -> None:
-        """
-        Start the in-memory event bus and prepare for event processing.
+            async def start(self) -> None:
+                    """
+                    Start the in-memory event bus and prepare for event processing.
 
-        Validates registry connectivity and sets running state.
-        This is a lightweight operation for in-memory buses.
+                    Validates registry connectivity and sets running state.
+                    This is a lightweight operation for in-memory buses.
 
-        Raises:
-            EventBusError: If bus is already running or registry is unavailable
-        """
-        if self._running:
-            raise EventBusError("Event bus is already running")
+                    Raises:
+                        EventBusError: If bus is already running or registry is unavailable
+                    """
+                    if self._running:
+                        raise EventBusError("Event bus is already running")
 
-        try:
-            # Validate registry access
-            self._registry = get_registry()
-            self._running = True
-            self._start_time = datetime.now(datetime.UTC)
-            self._event_count = 0
+                    try:
+                        # Validate registry access
+                        self._registry = get_registry()
+                        self._running = True
+                        self._start_time = datetime.now(datetime.UTC)
+                        self._event_count = 0
 
-            logger.info(
-                "In-memory event bus started",
-                start_time=self._start_time.isoformat(),
-                handler_types=len(self._handlers) + len(self._async_handlers),
-            )
+                        logger.info(
+                            "In-memory event bus started",
+                            start_time=self._start_time.isoformat(),
+                            handler_types=len(self._handlers) + len(self._async_handlers),
+                        )
 
-        except Exception as e:
-            raise EventBusError(f"Failed to start in-memory event bus: {e}") from e
+                    except Exception as e:
+                        raise EventBusError(f"Failed to start in-memory event bus: {e}") from e
 
-    async def stop(self) -> None:
-        """
-        Stop the in-memory event bus gracefully.
+            async def stop(self) -> None:
+                    """
+                    Stop the in-memory event bus gracefully.
 
-        Cleans up state and logs statistics. Does not clear handler
-        registrations to allow restart without re-registration.
-        """
-        if not self._running:
-            return
+                    Cleans up state and logs statistics. Does not clear handler
+                    registrations to allow restart without re-registration.
+                    """
+                    if not self._running:
+                        return
 
-        self._running = False
-        stop_time = datetime.now(datetime.UTC)
+                    self._running = False
+                    stop_time = datetime.now(datetime.UTC)
 
-        uptime = (
-            (stop_time - self._start_time).total_seconds() if self._start_time else 0
-        )
+                    uptime = (
+                        (stop_time - self._start_time).total_seconds() if self._start_time else 0
+                    )
 
-        logger.info(
-            "In-memory event bus stopped",
-            uptime_seconds=uptime,
-            events_processed=self._event_count,
-            handler_registrations=len(self._handlers) + len(self._async_handlers),
-        )
+                    logger.info(
+                        "In-memory event bus stopped",
+                        uptime_seconds=uptime,
+                        events_processed=self._event_count,
+                        handler_registrations=len(self._handlers) + len(self._async_handlers),
+                    )
 
     async def publish(
         self, event: DomainEvent, correlation_id: str | None = None
@@ -508,34 +508,34 @@ class InMemoryEventBus(EventBus):
             set_correlation_id(event.metadata.correlation_id)
 
     def _collect_all_handlers(
-        self, event: DomainEvent, registration: "EventRegistration" | None
-    ) -> list[EventHandlerType]:
-        """Collect handlers from subscriptions and registry."""
-        handlers = []
+            self, event: DomainEvent, registration: EventRegistration | None
+        ) -> list[EventHandlerType]:
+            """Collect handlers from subscriptions and registry."""
+            handlers = []
 
-        # Get direct subscription handlers
-        handlers.extend(self._get_handlers_for_event(event))
+            # Get direct subscription handlers
+            handlers.extend(self._get_handlers_for_event(event))
 
-        # Add registry handlers
-        if registration and registration.handlers:
-            for handler_cls in registration.handlers:
-                try:
-                    handler_instance = handler_cls()
-                    if hasattr(handler_instance, "handle_event"):
-                        handlers.append(handler_instance.handle_event)
-                    else:
-                        logger.warning(
-                            "Registry handler missing handle_event method",
+            # Add registry handlers
+            if registration and registration.handlers:
+                for handler_cls in registration.handlers:
+                    try:
+                        handler_instance = handler_cls()
+                        if hasattr(handler_instance, "handle_event"):
+                            handlers.append(handler_instance.handle_event)
+                        else:
+                            logger.warning(
+                                "Registry handler missing handle_event method",
+                                handler_class=handler_cls.__name__,
+                            )
+                    except Exception as e:
+                        logger.exception(
+                            "Failed to instantiate registry handler",
                             handler_class=handler_cls.__name__,
+                            error=str(e),
                         )
-                except Exception as e:
-                    logger.exception(
-                        "Failed to instantiate registry handler",
-                        handler_class=handler_cls.__name__,
-                        error=str(e),
-                    )
 
-        return handlers
+            return handlers
 
     def _log_event_publication(
         self,
@@ -563,33 +563,33 @@ class InMemoryEventBus(EventBus):
         ).inc()
 
     async def _execute_handlers_by_priority(
-        self,
-        handlers: list[EventHandlerType],
-        event: DomainEvent,
-        registration: "EventRegistration" | None,
-        priority: EventPriority,
-    ) -> None:
-        """Execute handlers with priority-appropriate error handling."""
-        sync_handlers = [h for h in handlers if not asyncio.iscoroutinefunction(h)]
-        async_handlers = [h for h in handlers if asyncio.iscoroutinefunction(h)]
+            self,
+            handlers: list[EventHandlerType],
+            event: DomainEvent,
+            registration: EventRegistration | None,
+            priority: EventPriority,
+        ) -> None:
+            """Execute handlers with priority-appropriate error handling."""
+            sync_handlers = [h for h in handlers if not asyncio.iscoroutinefunction(h)]
+            async_handlers = [h for h in handlers if asyncio.iscoroutinefunction(h)]
 
-        # Execute sync handlers sequentially
-        for handler in sync_handlers:
-            self._execute_sync_handler(handler, event)
+            # Execute sync handlers sequentially
+            for handler in sync_handlers:
+                self._execute_sync_handler(handler, event)
 
-        # Execute async handlers concurrently
-        if async_handlers:
-            tasks = [
-                self._execute_async_handler_with_retry(handler, event, registration)
-                for handler in async_handlers
-            ]
+            # Execute async handlers concurrently
+            if async_handlers:
+                tasks = [
+                    self._execute_async_handler_with_retry(handler, event, registration)
+                    for handler in async_handlers
+                ]
 
-            # Critical events fail fast, others collect errors
-            if priority == EventPriority.CRITICAL:
-                await asyncio.gather(*tasks, return_exceptions=False)
-            else:
-                results = await asyncio.gather(*tasks, return_exceptions=True)
-                self._handle_async_execution_results(results, event, async_handlers)
+                # Critical events fail fast, others collect errors
+                if priority == EventPriority.CRITICAL:
+                    await asyncio.gather(*tasks, return_exceptions=False)
+                else:
+                    results = await asyncio.gather(*tasks, return_exceptions=True)
+                    self._handle_async_execution_results(results, event, handlers)
 
     def _handle_async_execution_results(
         self, results: list[Any], event: DomainEvent, handlers: list[EventHandlerType]
@@ -744,66 +744,66 @@ class InMemoryEventBus(EventBus):
             ).inc()
 
     async def _execute_async_handler_with_retry(
-        self,
-        handler: EventHandlerType,
-        event: DomainEvent,
-        registration: "EventRegistration" | None = None,
-    ) -> None:
-        """
-        Execute async handler with retry policy and exponential backoff.
+            self,
+            handler: EventHandlerType,
+            event: DomainEvent,
+            registration: EventRegistration | None = None,
+        ) -> None:
+            """
+            Execute async handler with retry policy and exponential backoff.
 
-        Implements configurable retry logic with exponential backoff,
-        max delay caps, and comprehensive error tracking.
-        """
-        retry_policy = (
-            registration.retry_policy if registration else RetryPolicy.no_retry()
-        )
-        handler_name = getattr(handler, "__name__", repr(handler))
-        event_type = event.__class__.__name__
+            Implements configurable retry logic with exponential backoff,
+            max delay caps, and comprehensive error tracking.
+            """
+            retry_policy = (
+                registration.retry_policy if registration else RetryPolicy.no_retry()
+            )
+            handler_name = getattr(handler, "__name__", repr(handler))
+            event_type = event.__class__.__name__
 
-        for attempt in range(retry_policy.max_retries + 1):
-            try:
-                await handler(event)
-                if attempt > 0:
-                    logger.info(
-                        "Handler succeeded after retry",
-                        handler=handler_name,
-                        event_type=event_type,
-                        attempt=attempt + 1,
-                    )
-                return
+            for attempt in range(retry_policy.max_retries + 1):
+                try:
+                    result = await handler(event)
+                    if attempt > 0:
+                        logger.info(
+                            "Handler succeeded after retry",
+                            handler=handler_name,
+                            event_type=event_type,
+                            attempt=attempt + 1,
+                        )
+                    return
 
-            except Exception as e:
-                if attempt < retry_policy.max_retries:
-                    delay = min(
-                        retry_policy.initial_delay
-                        * (retry_policy.backoff_multiplier**attempt),
-                        retry_policy.max_delay,
-                    )
+                except Exception as e:
+                    if attempt < retry_policy.max_retries:
+                        delay = min(
+                            retry_policy.initial_delay
+                            * (retry_policy.backoff_multiplier**attempt),
+                            retry_policy.max_delay,
+                        )
 
-                    logger.warning(
-                        f"Handler failed, retrying in {delay}s",
-                        handler=handler_name,
-                        event_type=event_type,
-                        attempt=attempt + 1,
-                        max_retries=retry_policy.max_retries,
-                        error=str(e),
-                        correlation_id=get_correlation_id(),
-                    )
+                        logger.warning(
+                            f"Handler failed, retrying in {delay}s",
+                            handler=handler_name,
+                            event_type=event_type,
+                            attempt=attempt + 1,
+                            max_retries=retry_policy.max_retries,
+                            error=str(e),
+                            correlation_id=get_correlation_id(),
+                        )
 
-                    await asyncio.sleep(delay)
-                else:
-                    logger.exception(
-                        "Handler failed after all retries",
-                        handler=handler_name,
-                        event_type=event_type,
-                        attempts=attempt + 1,
-                        error=str(e),
-                        correlation_id=get_correlation_id(),
-                    )
-                    raise EventProcessingError(
-                        f"Handler {handler_name} failed after {attempt + 1} attempts: {e}"
-                    ) from e
+                        await asyncio.sleep(delay)
+                    else:
+                        logger.exception(
+                            "Handler failed after all retries",
+                            handler=handler_name,
+                            event_type=event_type,
+                            attempts=attempt + 1,
+                            error=str(e),
+                            correlation_id=get_correlation_id(),
+                        )
+                        raise EventProcessingError(
+                            f"Handler {handler_name} failed after {attempt + 1} attempts: {e}"
+                        ) from e
 
     def get_statistics(self) -> dict[str, Any]:
         """
@@ -966,7 +966,7 @@ class DistributedEventBus(EventBus):
             await self._redis.ping()
             self._health_status = True
             self._running = True
-            self._start_time = datetime.now(datetime.UTC)
+            self._start_time = datetime.now()
 
             # Subscribe to event channels
             await self._subscribe_to_channels()
@@ -1027,7 +1027,7 @@ class DistributedEventBus(EventBus):
         # Cancel background tasks
         tasks = [self._subscriber_task, self._retry_processor_task]
         for task in tasks:
-            if task and not task.done():
+            if task and (asyncio.isfuture(task) or (hasattr(task, 'done') and not task.done())):
                 task.cancel()
                 with contextlib.suppress(asyncio.CancelledError):
                     await task
@@ -1041,7 +1041,7 @@ class DistributedEventBus(EventBus):
             logger.warning("Error closing Redis connections", error=str(e))
 
         uptime = (
-            (datetime.now(datetime.UTC) - self._start_time).total_seconds()
+            (datetime.now().astimezone() - self._start_time).total_seconds()
             if self._start_time
             else 0
         )
@@ -1091,7 +1091,7 @@ class DistributedEventBus(EventBus):
         event_data = event.to_dict()
         event_data["_bus_metadata"] = {
             "priority": priority.value,
-            "published_at": datetime.now(datetime.UTC).isoformat(),
+            "published_at": datetime.now().isoformat(),
             "correlation_id": get_correlation_id() or "",
             "retry_count": 0,
             "publisher_id": f"distributed_bus_{id(self)}",
@@ -1320,12 +1320,12 @@ class DistributedEventBus(EventBus):
         return handlers
 
     async def _execute_handler_with_retry(
-        self,
-        handler: EventHandlerType,
-        event: DomainEvent,
-        registration: "EventRegistration" | None,
-        bus_metadata: dict,
-    ) -> None:
+            self,
+            handler: EventHandlerType,
+            event: DomainEvent,
+            registration: "EventRegistration" | None,
+            bus_metadata: dict,
+        ) -> None:
         """
         Execute handler with distributed retry support.
 
@@ -1360,6 +1360,7 @@ class DistributedEventBus(EventBus):
                     retry_count=retry_count + 1,
                     error=str(e),
                     correlation_id=get_correlation_id(),
+                    exc_info=True,
                 )
             else:
                 # Final failure - move to dead letter queue

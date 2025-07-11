@@ -50,7 +50,7 @@ except ImportError:
         @staticmethod
         def validate_format(email: str) -> bool:
             return "@" in email and "." in email.split("@")[1]
-    
+
     class UUIDValidator:
         @staticmethod
         def validate_format(uuid_str: str) -> bool:
@@ -213,18 +213,15 @@ class DTO(ABC):
     def _validate_uuid(self, value: Any) -> UUID:
         """Enhanced UUID validation using utils."""
         try:
-            return UUIDValidator.validate(value)
+            return UUID(value)
         except ValueError as e:
             self._add_validation_error(str(e))
             return value if isinstance(value, UUID) else UUID('00000000-0000-0000-0000-000000000000')
 
     def _validate_email(self, email: str) -> str:
         """Enhanced email validation using utils."""
-        try:
-            return EmailValidator.validate(email)
-        except ValueError as e:
-            self._add_validation_error(str(e))
-
+        if not EmailValidator.validate_format(email):
+            self._add_validation_error(f"Invalid email format: {email}")
         return email
 
     def __eq__(self, other: Any) -> bool:
@@ -560,68 +557,74 @@ class UseCase(ABC, Generic[TRequest, TResponse]):
         """
 
     async def __call__(self, request: TRequest) -> TResponse:
-        """
-        Make use case callable with comprehensive error handling and logging.
+                """
+                Make use case callable with comprehensive error handling and logging.
 
-        Args:
-            request: Use case input data
+                Args:
+                    request: Use case input data
 
-        Returns:
-            TResponse: Use case result
-        """
-        start_time = time.time()
-        request.start_processing()
+                Returns:
+                    TResponse: Use case result
+                """
+                start_time = time.time()
+                request.start_processing()
 
-        try:
-            logger.info(
-                "Executing use case",
-                use_case=self.__class__.__name__,
-                request_id=request.request_id,
-                user_id=request.user_id,
-                correlation_id=request.correlation_id,
-            )
+                try:
+                    logger.info(
+                        "Executing use case",
+                        extra={
+                            "use_case": self.__class__.__name__,
+                            "request_id": request.request_id,
+                            "user_id": request.user_id,
+                            "correlation_id": request.correlation_id,
+                        }
+                    )
 
-            # Execute the use case
-            response = await self.execute(request)
+                    # Execute the use case
+                    response = await self.execute(request)
 
-            # Update timing
-            request.end_processing()
-            execution_time = time.time() - start_time
+                    # Update timing
+                    request.end_processing()
+                    execution_time = time.time() - start_time
 
-            # Set response metadata
-            response.set_request_metadata(request)
+                    # Set response metadata
+                    response.set_request_metadata(request)
 
-            # Update performance metrics
-            self._execution_count += 1
-            self._total_execution_time += execution_time
-            self._last_executed = datetime.utcnow()
+                    # Update performance metrics
+                    self._execution_count += 1
+                    self._total_execution_time += execution_time
+                    self._last_executed = datetime.utcnow()
 
-            logger.info(
-                "Use case executed successfully",
-                use_case=self.__class__.__name__,
-                request_id=request.request_id,
-                execution_time=execution_time,
-                success=response.success,
-            )
+                    logger.info(
+                        "Use case executed successfully",
+                        extra={
+                            "use_case": self.__class__.__name__,
+                            "request_id": request.request_id,
+                            "execution_time": execution_time,
+                            "success": response.success,
+                        }
+                    )
 
-            return response
+                    return response
 
-        except Exception as e:
-            # Update timing and error metrics
-            request.end_processing()
-            execution_time = time.time() - start_time
-            self._error_count += 1
-            self._total_execution_time += execution_time
+                except Exception as e:
+                    # Update timing and error metrics
+                    request.end_processing()
+                    execution_time = time.time() - start_time
+                    self._error_count += 1
+                    self._total_execution_time += execution_time
 
-            logger.exception(
-                "Use case execution failed",
-                use_case=self.__class__.__name__,
-                request_id=request.request_id,
-                error=str(e),
-                execution_time=execution_time,
-                error_type=type(e).__name__,
-            )
-            raise
+                    logger.exception(
+                        "Use case execution failed",
+                        extra={
+                            "use_case": self.__class__.__name__,
+                            "request_id": request.request_id,
+                            "error": str(e),
+                            "execution_time": execution_time,
+                            "error_type": type(e).__name__,
+                        }
+                    )
+                    raise
 
     def get_performance_stats(self) -> dict[str, Any]:
         """Get performance statistics for this use case."""
@@ -711,52 +714,58 @@ class ApplicationService(ABC):
 
     @asynccontextmanager
     async def operation_context(self, operation_name: str):
-        """
-        Context manager for tracking service operations.
+            """
+            Context manager for tracking service operations.
 
-        Args:
-            operation_name: Name of the operation being performed
-        """
-        start_time = time.time()
-        operation_id = uuid4()
-
-        logger.info(
-            "Starting service operation",
-            service=self.__class__.__name__,
-            operation=operation_name,
-            operation_id=operation_id,
-        )
-
-        try:
-            yield operation_id
-
-            execution_time = time.time() - start_time
-            self._operation_count += 1
-            self._total_operation_time += execution_time
+            Args:
+                operation_name: Name of the operation being performed
+            """
+            start_time = time.time()
+            operation_id = uuid4()
 
             logger.info(
-                "Service operation completed successfully",
-                service=self.__class__.__name__,
-                operation=operation_name,
-                operation_id=operation_id,
-                execution_time=execution_time,
+                "Starting service operation",
+                extra={
+                    "service": self.__class__.__name__,
+                    "operation": operation_name,
+                    "operation_id": operation_id,
+                }
             )
 
-        except Exception as e:
-            execution_time = time.time() - start_time
-            self._error_count += 1
-            self._total_operation_time += execution_time
+            try:
+                yield operation_id
 
-            logger.exception(
-                "Service operation failed",
-                service=self.__class__.__name__,
-                operation=operation_name,
-                operation_id=operation_id,
-                error=str(e),
-                execution_time=execution_time,
-                error_type=type(e).__name__,
-            )
-            raise
+                execution_time = time.time() - start_time
+                self._operation_count += 1
+                self._total_operation_time += execution_time
+
+                logger.info(
+                    "Service operation completed successfully",
+                    extra={
+                        "service": self.__class__.__name__,
+                        "operation": operation_name,
+                        "operation_id": operation_id,
+                        "execution_time": execution_time,
+                    }
+                )
+
+            except Exception as e:
+                execution_time = time.time() - start_time
+                self._error_count += 1
+                self._total_operation_time += execution_time
+
+                logger.exception(
+                    "Service operation failed",
+                    extra={
+                        "service": self.__class__.__name__,
+                        "operation": operation_name,
+                        "operation_id": operation_id,
+                        "error": str(e),
+                        "execution_time": execution_time,
+                        "error_type": type(e).__name__,
+                    }
+                )
+                raise
 
     def get_performance_stats(self) -> dict[str, Any]:
         """Get performance statistics for this service."""

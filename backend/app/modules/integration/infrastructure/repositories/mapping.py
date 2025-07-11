@@ -15,6 +15,7 @@ from app.core.infrastructure.repositories import BaseRepository
 from app.modules.integration.domain.entities import IntegrationMapping
 from app.modules.integration.domain.enums import MappingTransformation
 from app.modules.integration.infrastructure.models import MappingModel
+from app.core.infrastructure.repository import BaseRepository
 
 
 class MappingRepository(BaseRepository[IntegrationMapping, MappingModel]):

@@ -1,18 +1,20 @@
 """
 Rate Limit Port Interface
 
-Protocol for rate limiting and throttling operations.
+Port for rate limiting and throttling operations.
 """
 
-from typing import TYPE_CHECKING, Any, Protocol
+from abc import ABC, abstractmethod
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from ...value_objects.rate_limit_status import RateLimitStatus
 
 
-class IRateLimitPort(Protocol):
-    """Protocol for rate limiting operations."""
+class IRateLimitPort(ABC):
+    """Port for rate limiting operations."""
     
+    @abstractmethod
     async def check_rate_limit(
         self,
         identifier: str,
@@ -29,6 +31,7 @@ class IRateLimitPort(Protocol):
             RateLimitStatus value object containing limit status
         """
     
+    @abstractmethod
     async def increment_usage(
         self,
         identifier: str,
@@ -47,6 +50,7 @@ class IRateLimitPort(Protocol):
             New usage count
         """
     
+    @abstractmethod
     async def reset_rate_limit(
         self,
         identifier: str,
@@ -63,6 +67,7 @@ class IRateLimitPort(Protocol):
             True if reset successfully
         """
     
+    @abstractmethod
     async def get_rate_limit_status(
         self,
         identifier: str,

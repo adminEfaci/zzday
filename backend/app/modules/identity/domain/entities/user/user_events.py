@@ -9,6 +9,8 @@ from datetime import datetime
 from typing import Any
 from uuid import UUID
 
+from pydantic import Field
+
 from ...events import IdentityDomainEvent
 
 

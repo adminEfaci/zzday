@@ -1,11 +1,12 @@
 """
 Password Service Interface
 
-Protocol for comprehensive password management operations including validation,
+Port for comprehensive password management operations including validation,
 strength analysis, generation, and security checks.
 """
 
-from typing import TYPE_CHECKING, Any, Protocol
+from abc import ABC, abstractmethod
+from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
 if TYPE_CHECKING:
@@ -13,9 +14,10 @@ if TYPE_CHECKING:
     from ...value_objects.password_validation_result import PasswordValidationResult
 
 
-class IPasswordService(Protocol):
-    """Protocol for password management operations."""
+class IPasswordService(ABC):
+    """Port for password management operations."""
     
+    @abstractmethod
     async def validate_password(
         self,
         password: str,
@@ -33,8 +35,8 @@ class IPasswordService(Protocol):
         Returns:
             PasswordValidationResult value object containing validation details
         """
-        ...
     
+    @abstractmethod
     async def calculate_strength(self, password: str) -> "PasswordStrength":
         """
         Calculate password strength with detailed breakdown.
@@ -45,8 +47,8 @@ class IPasswordService(Protocol):
         Returns:
             PasswordStrength value object containing score and analysis
         """
-        ...
     
+    @abstractmethod
     async def generate_secure_password(
         self,
         length: int = 16,
@@ -66,8 +68,8 @@ class IPasswordService(Protocol):
         Returns:
             Generated secure password
         """
-        ...
     
+    @abstractmethod
     async def check_password_history(
         self,
         user_id: UUID,
@@ -85,8 +87,8 @@ class IPasswordService(Protocol):
         Returns:
             True if password is sufficiently different
         """
-        ...
     
+    @abstractmethod
     async def estimate_crack_time(self, password: str) -> dict[str, Any]:
         """
         Estimate time to crack password under various scenarios.
@@ -97,8 +99,8 @@ class IPasswordService(Protocol):
         Returns:
             Dict with entropy_bits, possible_combinations, crack_times
         """
-        ...
     
+    @abstractmethod
     async def suggest_improvements(self, password: str) -> list[str]:
         """
         Suggest improvements for password.
@@ -109,8 +111,8 @@ class IPasswordService(Protocol):
         Returns:
             List of improvement suggestions
         """
-        ...
     
+    @abstractmethod
     async def check_breach_status(self, password: str) -> tuple[bool, int]:
         """
         Check if password has been in known data breaches.
@@ -121,8 +123,8 @@ class IPasswordService(Protocol):
         Returns:
             Tuple of (is_breached, breach_count)
         """
-        ...
     
+    @abstractmethod
     async def validate_password_policy(
         self,
         password: str,
@@ -138,4 +140,3 @@ class IPasswordService(Protocol):
         Returns:
             Dict with validation results and policy details
         """
-        ...

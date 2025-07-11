@@ -6,14 +6,14 @@ handling policy enforcement and data lifecycle operations.
 
 from abc import ABC, abstractmethod
 from datetime import datetime
-from typing import Any, Protocol
+from typing import Any
 from uuid import UUID
 
 from app.modules.audit.domain.enums.audit_enums import RetentionPolicy
 from app.modules.audit.domain.value_objects.time_range import TimeRange
 
 
-class IAuditRetentionService(Protocol):
+class IAuditRetentionService(ABC):
     """
     Domain service interface for audit retention management.
     
@@ -21,6 +21,7 @@ class IAuditRetentionService(Protocol):
     audit data retention, archival, and deletion policies.
     """
 
+    @abstractmethod
     async def evaluate_retention_policy(
         self, audit_log_id: UUID, current_policy: RetentionPolicy
     ) -> dict[str, Any]:
@@ -31,31 +32,37 @@ class IAuditRetentionService(Protocol):
         data patterns, compliance requirements, and storage costs.
         """
 
+    @abstractmethod
     async def identify_records_for_archival(
         self, policy: RetentionPolicy, batch_size: int = 1000
     ) -> list[UUID]:
         """Identify audit records ready for archival."""
 
+    @abstractmethod
     async def identify_records_for_deletion(
         self, policy: RetentionPolicy, batch_size: int = 1000
     ) -> list[UUID]:
         """Identify audit records ready for deletion."""
 
+    @abstractmethod
     async def calculate_storage_impact(
         self, time_range: TimeRange, policy: RetentionPolicy
     ) -> dict[str, Any]:
         """Calculate storage impact of retention policy changes."""
 
+    @abstractmethod
     async def validate_retention_compliance(
         self, audit_log_id: UUID
     ) -> dict[str, Any]:
         """Validate that retention policies meet compliance requirements."""
 
+    @abstractmethod
     async def estimate_archival_size(
         self, audit_log_id: UUID, compression_ratio: float = 0.3
     ) -> dict[str, Any]:
         """Estimate size and cost of archiving audit data."""
 
+    @abstractmethod
     async def schedule_retention_maintenance(
         self, policy: RetentionPolicy, schedule_time: datetime
     ) -> dict[str, Any]:

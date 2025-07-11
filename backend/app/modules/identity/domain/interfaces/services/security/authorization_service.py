@@ -1,19 +1,21 @@
 """
 Authorization Service Interface
 
-Protocol for complex authorization and permission resolution.
+Port for complex authorization and permission resolution.
 """
 
-from typing import TYPE_CHECKING, Any, Protocol
+from abc import ABC, abstractmethod
+from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
 if TYPE_CHECKING:
     from ...value_objects.permission_result import PermissionResult
 
 
-class IAuthorizationService(Protocol):
-    """Protocol for authorization operations."""
+class IAuthorizationService(ABC):
+    """Port for authorization operations."""
     
+    @abstractmethod
     async def check_permission(
         self,
         user_id: UUID,
@@ -34,6 +36,7 @@ class IAuthorizationService(Protocol):
             PermissionResult value object containing authorization decision
         """
     
+    @abstractmethod
     async def get_effective_permissions(self, user_id: UUID) -> set[str]:
         """
         Get all effective permissions for user.
@@ -44,8 +47,8 @@ class IAuthorizationService(Protocol):
         Returns:
             Set of permission strings
         """
-        ...
     
+    @abstractmethod
     async def validate_access(
         self,
         user_id: UUID,
@@ -66,6 +69,7 @@ class IAuthorizationService(Protocol):
             Dict with access decision and conditions
         """
     
+    @abstractmethod
     async def calculate_permission_matrix(
         self,
         user_id: UUID,
@@ -82,6 +86,7 @@ class IAuthorizationService(Protocol):
             Dict mapping resources to action permissions
         """
     
+    @abstractmethod
     async def check_segregation_of_duties(
         self,
         user_id: UUID,
@@ -98,6 +103,7 @@ class IAuthorizationService(Protocol):
             Tuple of (is_compliant, reason)
         """
     
+    @abstractmethod
     def invalidate_permission_cache(self, user_id: UUID) -> None:
         """
         Invalidate permission cache for user.
@@ -105,4 +111,3 @@ class IAuthorizationService(Protocol):
         Args:
             user_id: User identifier
         """
-        ...

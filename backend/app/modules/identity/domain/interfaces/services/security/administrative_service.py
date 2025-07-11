@@ -1,17 +1,19 @@
 """
 Administrative Service Interface
 
-Protocol for administrative operations and policy enforcement.
+Port for administrative operations and policy enforcement.
 """
 
+from abc import ABC, abstractmethod
 from datetime import datetime
-from typing import Any, Protocol
+from typing import Any
 from uuid import UUID
 
 
-class IAdministrativeService(Protocol):
-    """Protocol for administrative operations."""
+class IAdministrativeService(ABC):
+    """Port for administrative operations."""
     
+    @abstractmethod
     async def enforce_user_policies(
         self,
         user_id: UUID,
@@ -29,8 +31,8 @@ class IAdministrativeService(Protocol):
         Returns:
             Dict containing policy results and requirements
         """
-        ...
     
+    @abstractmethod
     async def audit_admin_action(
         self,
         admin_user_id: UUID,
@@ -50,8 +52,8 @@ class IAdministrativeService(Protocol):
         Returns:
             Audit record ID
         """
-        ...
     
+    @abstractmethod
     async def validate_admin_privileges(
         self,
         user_id: UUID,
@@ -67,8 +69,8 @@ class IAdministrativeService(Protocol):
         Returns:
             True if user has all required permissions
         """
-        ...
     
+    @abstractmethod
     async def schedule_user_maintenance(
         self,
         user_id: UUID,
@@ -88,8 +90,8 @@ class IAdministrativeService(Protocol):
         Returns:
             Task ID for tracking
         """
-        ...
     
+    @abstractmethod
     async def generate_compliance_report(
         self,
         report_type: str,
@@ -107,4 +109,3 @@ class IAdministrativeService(Protocol):
         Returns:
             Generated report data
         """
-        ...

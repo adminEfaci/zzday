@@ -3,6 +3,7 @@
 Domain contract for permission data access that must be implemented by the infrastructure layer.
 """
 
+from abc import abstractmethod
 from typing import TYPE_CHECKING, Protocol
 from uuid import UUID
 
@@ -13,6 +14,7 @@ if TYPE_CHECKING:
 class IPermissionRepository(Protocol):
     """Repository interface for permission management."""
     
+    @abstractmethod
     async def save(self, permission: 'Permission') -> None:
         """Save permission entity (create or update).
         
@@ -21,6 +23,7 @@ class IPermissionRepository(Protocol):
         """
         ...
     
+    @abstractmethod
     async def find_by_id(self, permission_id: UUID) -> 'Permission' | None:
         """Find permission by ID.
         
@@ -32,6 +35,7 @@ class IPermissionRepository(Protocol):
         """
         ...
     
+    @abstractmethod
     async def find_by_code(self, code: str) -> 'Permission' | None:
         """Find permission by code.
         
@@ -43,6 +47,7 @@ class IPermissionRepository(Protocol):
         """
         ...
     
+    @abstractmethod
     async def find_all(self, include_inactive: bool = False) -> list['Permission']:
         """Find all permissions.
         
@@ -54,6 +59,7 @@ class IPermissionRepository(Protocol):
         """
         ...
     
+    @abstractmethod
     async def find_by_resource(self, resource: str) -> list['Permission']:
         """Find permissions for a resource.
         
@@ -65,6 +71,7 @@ class IPermissionRepository(Protocol):
         """
         ...
     
+    @abstractmethod
     async def find_by_parent(self, parent_id: UUID) -> list['Permission']:
         """Find child permissions of a parent.
         
@@ -76,6 +83,7 @@ class IPermissionRepository(Protocol):
         """
         ...
     
+    @abstractmethod
     async def find_system_permissions(self) -> list['Permission']:
         """Find all system permissions.
         
@@ -84,6 +92,7 @@ class IPermissionRepository(Protocol):
         """
         ...
     
+    @abstractmethod
     async def delete(self, permission_id: UUID) -> bool:
         """Delete permission.
         
@@ -95,6 +104,7 @@ class IPermissionRepository(Protocol):
         """
         ...
     
+    @abstractmethod
     async def exists(self, permission_id: UUID) -> bool:
         """Check if permission exists.
         
@@ -106,6 +116,7 @@ class IPermissionRepository(Protocol):
         """
         ...
     
+    @abstractmethod
     async def exists_by_code(self, code: str) -> bool:
         """Check if permission exists by code.
         

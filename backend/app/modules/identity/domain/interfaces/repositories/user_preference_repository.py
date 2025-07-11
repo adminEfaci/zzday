@@ -3,6 +3,7 @@
 Domain contract for user preference data access that must be implemented by the infrastructure layer.
 """
 
+from abc import abstractmethod
 from typing import Any, Protocol
 from uuid import UUID
 
@@ -10,6 +11,7 @@ from uuid import UUID
 class IUserPreferenceRepository(Protocol):
     """Repository interface for user preference management."""
     
+    @abstractmethod
     async def create(
         self, 
         user_id: UUID,
@@ -30,6 +32,7 @@ class IUserPreferenceRepository(Protocol):
         """
         ...
     
+    @abstractmethod
     async def find_by_user(self, user_id: UUID) -> dict[str, Any]:
         """Find all preferences for user.
         
@@ -41,6 +44,7 @@ class IUserPreferenceRepository(Protocol):
         """
         ...
     
+    @abstractmethod
     async def find_by_key(self, user_id: UUID, key: str) -> Any | None:
         """Find specific preference for user.
         
@@ -53,6 +57,7 @@ class IUserPreferenceRepository(Protocol):
         """
         ...
     
+    @abstractmethod
     async def find_by_category(
         self, 
         user_id: UUID, 
@@ -69,6 +74,7 @@ class IUserPreferenceRepository(Protocol):
         """
         ...
     
+    @abstractmethod
     async def set_preference(
         self, 
         user_id: UUID,
@@ -89,6 +95,7 @@ class IUserPreferenceRepository(Protocol):
         """
         ...
     
+    @abstractmethod
     async def update_preferences(
         self, 
         user_id: UUID,
@@ -105,6 +112,7 @@ class IUserPreferenceRepository(Protocol):
         """
         ...
     
+    @abstractmethod
     async def delete_preference(self, user_id: UUID, key: str) -> bool:
         """Delete specific preference.
         
@@ -117,6 +125,7 @@ class IUserPreferenceRepository(Protocol):
         """
         ...
     
+    @abstractmethod
     async def delete_all_preferences(self, user_id: UUID) -> int:
         """Delete all preferences for user.
         

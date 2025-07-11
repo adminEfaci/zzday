@@ -17,21 +17,22 @@ from ...value_objects.geolocation import Geolocation
 from ...value_objects.ip_address import IpAddress
 from ...value_objects.token import Token, TokenType
 from ...value_objects.user_agent import UserAgent
-from ...enums import SessionStatus, SessionType
-from ..entities.session.session_errors import (
+from .session_enums import SessionStatus, SessionType
+from .session_errors import (
     SessionExpiredError, InvalidTokenError, SessionAlreadyTerminatedError
 )
-from ..entities.session.session_events import (
+from .session_events import (
     SessionCreated, SessionExpired, SessionRevoked, TokenRefreshed, TokenRevoked
 )
-from ..entities.session.session_constants import (
+from .session_constants import (
     SESSION_TIMEOUTS, IDLE_TIMEOUTS, PRIVILEGE_ELEVATION_TIMEOUT,
     IMPOSSIBLE_TRAVEL_SPEED_KMH
 )
-from ..entities.session.session_mixins import RiskManagementMixin, RateLimitingMixin, SessionValidationMixin
+from .session_mixins import RiskManagementMixin, RateLimitingMixin, SessionValidationMixin
 
 
-# Additional Events
+# Additional Events (these would need to be defined in session_events.py)
+from pydantic import Field
 from ...events import IdentityDomainEvent
 
 

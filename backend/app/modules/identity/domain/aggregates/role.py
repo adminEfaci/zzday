@@ -11,7 +11,7 @@ from uuid import UUID, uuid4
 
 from app.core.domain.base import AggregateRoot
 
-from ..enums import RoleStatus, RoleType
+from ..role_enums import RoleStatus, RoleType
 from ..value_objects import RoleName
 from .role_events import (
     RoleCreated, RoleUpdated, RoleDeleted, RoleActivated, RoleDeactivated,

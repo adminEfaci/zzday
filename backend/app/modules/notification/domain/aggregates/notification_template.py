@@ -318,9 +318,8 @@ class NotificationTemplate(AggregateRoot):
 
         # Check required variables
         for var_name, var_def in self.variables.items():
-            if var_def.required and var_name not in provided_variables:
-                if var_def.default_value is None:
-                    missing_variables.append(var_name)
+            if var_def.required and var_name not in provided_variables and var_def.default_value is None:
+                missing_variables.append(var_name)
 
         # Validate provided variables
         for var_name, value in provided_variables.items():
@@ -622,6 +621,314 @@ class NotificationTemplate(AggregateRoot):
             "updated_at": self.updated_at.isoformat(),
         }
 
+    def validate_template_syntax(self, channel: NotificationChannel) -> list[str]:
+        """Validate template syntax for a specific channel.
+        
+        Args:
+            channel: Channel to validate
+            
+        Returns:
+            List of validation errors (empty if valid)
+        """
+        if channel not in self.channel_contents:
+            return [f"No content defined for channel {channel.value}"]
+        
+        errors = []
+        content = self.channel_contents[channel]
+        
+        # Extract variables from content
+        used_variables = content.extract_variables()
+        
+        # Check for undefined variables
+        for var in used_variables:
+            if var not in self.variables:
+                errors.append(f"Undefined variable: {{{var}}}")
+        
+        # Check for unmatched braces
+        if content.body.count('{') != content.body.count('}'):
+            errors.append("Unmatched braces in template body")
+        
+        if content.subject and content.subject.count('{') != content.subject.count('}'):
+            errors.append("Unmatched braces in template subject")
+        
+        # Channel-specific validation
+        if channel == NotificationChannel.HTML_EMAIL and content.html_body and content.html_body.count('<') != content.html_body.count('>'):
+            errors.append("Unmatched HTML tags in template")
+        
+        return errors
+    
+    def preview(
+        self, 
+        channel: NotificationChannel, 
+        sample_data: dict[str, Any] | None = None
+    ) -> dict[str, str]:
+        """Generate a preview of the template with sample data.
+        
+        Args:
+            channel: Channel to preview
+            sample_data: Optional sample data (uses defaults if not provided)
+            
+        Returns:
+            Preview content dictionary
+        """
+        if channel not in self.channel_contents:
+            raise InvalidTemplateError(
+                template_id=self.id,
+                template_name=self.name,
+                reason=f"No content defined for channel {channel.value}"
+            )
+        
+        # Generate sample data if not provided
+        if sample_data is None:
+            sample_data = self._generate_sample_data()
+        
+        # Render with sample data
+        try:
+            rendered = self.render_for_channel(channel, sample_data)
+        except Exception as e:
+            return {
+                "error": str(e),
+                "preview_data": sample_data
+            }
+        else:
+            return {
+                "subject": rendered.subject or "",
+                "body": rendered.body,
+                "html_body": rendered.html_body or "",
+                "preview_data": sample_data
+            }
+    
+    def _generate_sample_data(self) -> dict[str, Any]:
+        """Generate sample data based on variable definitions."""
+        sample_data = {}
+        
+        for var_name, var_def in self.variables.items():
+            if var_def.default_value is not None:
+                sample_data[var_name] = var_def.default_value
+            elif var_def.var_type == VariableType.STRING:
+                sample_data[var_name] = f"Sample {var_name}"
+            elif var_def.var_type == VariableType.NUMBER:
+                sample_data[var_name] = 123
+            elif var_def.var_type == VariableType.BOOLEAN:
+                sample_data[var_name] = True
+            elif var_def.var_type == VariableType.DATE:
+                sample_data[var_name] = datetime.utcnow().isoformat()
+            elif var_def.var_type == VariableType.LIST:
+                sample_data[var_name] = ["Item 1", "Item 2", "Item 3"]
+            else:
+                sample_data[var_name] = f"<{var_name}>"
+        
+        return sample_data
+    
+    def clone(self, new_name: str, cloned_by: UUID) -> 'NotificationTemplate':
+        """Create a clone of this template.
+        
+        Args:
+            new_name: Name for the cloned template
+            cloned_by: User creating the clone
+            
+        Returns:
+            Cloned template
+        """
+        clone = NotificationTemplate(
+            name=new_name,
+            template_type=self.template_type,
+            created_by=cloned_by,
+            description=f"Cloned from: {self.name}",
+            tags=self.tags.copy()
+        )
+        
+        # Copy channel contents
+        for channel, content in self.channel_contents.items():
+            clone.channel_contents[channel] = NotificationContent(
+                subject=content.subject,
+                body=content.body,
+                html_body=content.html_body,
+                attachments=content.attachments.copy() if content.attachments else None
+            )
+        
+        # Copy variable definitions
+        clone.variables = self.variables.copy()
+        
+        # Copy other settings
+        clone.required_channels = self.required_channels.copy()
+        clone.validation_rules = self.validation_rules.copy()
+        
+        # Mark as cloned
+        clone.add_metadata("cloned_from", str(self.id))
+        clone.add_metadata("cloned_at", datetime.utcnow().isoformat())
+        
+        return clone
+    
+    def add_localization(
+        self, 
+        locale: str, 
+        channel: NotificationChannel,
+        content: NotificationContent,
+        updated_by: UUID
+    ) -> None:
+        """Add localized content for a specific locale and channel.
+        
+        Args:
+            locale: Locale code (e.g., 'es-ES', 'fr-FR')
+            channel: Target channel
+            content: Localized content
+            updated_by: User making the update
+        """
+        if not hasattr(self, 'localizations'):
+            self.localizations = {}
+        
+        if locale not in self.localizations:
+            self.localizations[locale] = {}
+        
+        self.localizations[locale][channel] = content
+        
+        # Update version
+        self._increment_version(
+            updated_by, 
+            f"Added {locale} localization for {channel.value}"
+        )
+        
+        self.mark_modified()
+    
+    def render_localized(
+        self,
+        channel: NotificationChannel,
+        variables: dict[str, Any],
+        locale: str
+    ) -> NotificationContent:
+        """Render template with localization support.
+        
+        Args:
+            channel: Target channel
+            variables: Template variables
+            locale: Locale to use
+            
+        Returns:
+            Rendered content in specified locale
+        """
+        # Check if localized content exists
+        if (hasattr(self, 'localizations') and 
+            locale in self.localizations and 
+            channel in self.localizations[locale]):
+            content = self.localizations[locale][channel]
+        else:
+            # Fallback to default content
+            content = self.channel_contents.get(channel)
+            
+        if not content:
+            raise InvalidTemplateError(
+                template_id=self.id,
+                template_name=self.name,
+                reason=f"No content for channel {channel.value} in locale {locale}"
+            )
+        
+        # Validate and render
+        self.validate_variables(variables)
+        return content.render(self._prepare_variables(variables))
+    
+    def _prepare_variables(self, variables: dict[str, Any]) -> dict[str, Any]:
+        """Prepare variables for rendering with defaults and formatting."""
+        prepared = {}
+        
+        for var_name, var_def in self.variables.items():
+            if var_name in variables:
+                prepared[var_name] = var_def.format_value(variables[var_name])
+            elif var_def.default_value is not None:
+                prepared[var_name] = var_def.format_value(var_def.default_value)
+        
+        # Include any extra variables not in definitions
+        for var_name, value in variables.items():
+            if var_name not in prepared:
+                prepared[var_name] = str(value)
+        
+        return prepared
+    
+    def calculate_complexity_score(self) -> float:
+        """Calculate template complexity score for maintenance tracking.
+        
+        Returns:
+            Complexity score (0.0 to 1.0)
+        """
+        score = 0.0
+        
+        # Factor 1: Number of variables
+        var_complexity = min(len(self.variables) / 20.0, 0.3)
+        score += var_complexity
+        
+        # Factor 2: Number of channels
+        channel_complexity = min(len(self.channel_contents) / 5.0, 0.2)
+        score += channel_complexity
+        
+        # Factor 3: Content length
+        total_length = sum(
+            len(content.body) + len(content.subject or '') + len(content.html_body or '')
+            for content in self.channel_contents.values()
+        )
+        length_complexity = min(total_length / 5000.0, 0.2)
+        score += length_complexity
+        
+        # Factor 4: Conditional logic (simple check for if/else patterns)
+        has_conditionals = any(
+            '{% if' in content.body or '{%if' in content.body
+            for content in self.channel_contents.values()
+        )
+        if has_conditionals:
+            score += 0.2
+        
+        # Factor 5: Localization
+        if hasattr(self, 'localizations') and self.localizations:
+            score += min(len(self.localizations) / 10.0, 0.1)
+        
+        return min(score, 1.0)
+    
+    def get_missing_channels(self, desired_channels: list[NotificationChannel]) -> list[NotificationChannel]:
+        """Get list of channels that don't have content defined.
+        
+        Args:
+            desired_channels: Channels to check
+            
+        Returns:
+            List of missing channels
+        """
+        return [ch for ch in desired_channels if ch not in self.channel_contents]
+    
+    def estimate_rendering_cost(self, channel: NotificationChannel, recipient_count: int = 1) -> dict[str, Any]:
+        """Estimate the cost of rendering this template.
+        
+        Args:
+            channel: Target channel
+            recipient_count: Number of recipients
+            
+        Returns:
+            Cost estimation details
+        """
+        if channel not in self.channel_contents:
+            return {"error": f"No content for channel {channel.value}"}
+        
+        content = self.channel_contents[channel]
+        base_cost = 0.0
+        
+        # Estimate based on channel
+        if channel == NotificationChannel.SMS:
+            # SMS typically charged per 160 characters
+            segments = (len(content.body) + 159) // 160
+            base_cost = segments * 0.01  # $0.01 per segment
+        elif channel == NotificationChannel.EMAIL:
+            # Email typically charged per 1000 emails
+            base_cost = 0.001  # $0.001 per email
+        elif channel == NotificationChannel.PUSH:
+            # Push notifications typically have minimal cost
+            base_cost = 0.0001  # $0.0001 per notification
+        
+        return {
+            "channel": channel.value,
+            "unit_cost": base_cost,
+            "total_cost": base_cost * recipient_count,
+            "recipient_count": recipient_count,
+            "content_length": len(content.body)
+        }
+    
     def __str__(self) -> str:
         """String representation."""
         channels = ", ".join(ch.value for ch in self.channel_contents)

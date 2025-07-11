@@ -1,21 +1,43 @@
-"""
-Identity Domain Entities
+"""Identity domain entities package.
 
-This module contains all entity definitions for the identity domain.
-Entities represent objects with identity that can change over time while maintaining
-their conceptual identity.
+This package contains all domain entities that are not aggregate roots.
+Entities have identity and lifecycle but are not aggregate roots.
 """
 
-# Import all entities from subdirectories
-from .group import *
-from .session import *
-from .shared import *
-from .user import *
+# User entities
+from .user.emergency_contact import EmergencyContact
+from .user.login_attempt import LoginAttempt
+from .user.notification_setting import NotificationSetting
+from .user.password_history import PasswordHistory
+from .user.preference import Preference
+from .user.profile import Profile
+
+# Session entities
+from .session.partial_session import PartialSession
+from .session.security_event import SecurityEvent
+
+# Group entities
+from .group.group_member import GroupMember
+
+# Shared entities
+from .shared.base_entity import BaseEntity
 
 __all__ = [
-    # All exports are re-exported from subdirectories
+    # User entities
+    "EmergencyContact",
+    "LoginAttempt",
+    "NotificationSetting",
+    "PasswordHistory",
+    "Preference",
+    "Profile",
+    
+    # Session entities
+    "PartialSession",
+    "SecurityEvent",
+    
+    # Group entities
+    "GroupMember",
+    
+    # Shared
+    "BaseEntity",
 ]
-
-# Metadata
-__version__ = "1.0.0"
-__domain__ = "identity"

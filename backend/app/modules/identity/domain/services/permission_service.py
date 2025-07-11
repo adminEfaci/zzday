@@ -269,12 +269,9 @@ class PermissionEvaluationService:
             return True
         
         # Overlapping scopes with different constraints
-        if (perm1.scope and perm2.scope and 
-            perm1.scope.overlaps(perm2.scope) and
-            perm1.constraints != perm2.constraints):
-            return True
-        
-        return False
+        return (perm1.scope and perm2.scope and 
+                perm1.scope.overlaps(perm2.scope) and
+                perm1.constraints != perm2.constraints)
     
     async def _find_wildcard_matches(self, wildcard_permission: Permission) -> set[Permission]:
         """Find all permissions that match a wildcard permission."""
@@ -430,7 +427,7 @@ class PermissionPolicyService:
         # Find non-redundant permissions
         for i, permission in enumerate(permission_list):
             is_redundant = False
-            for j, other in enumerate(permission_list):
+            for j, _other in enumerate(permission_list):
                 if i != j and j in implications.get(i, set()):
                     is_redundant = True
                     break

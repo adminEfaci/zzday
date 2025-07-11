@@ -8,17 +8,17 @@ combining all queries, mutations, and subscriptions into a unified interface.
 import strawberry
 
 # Import mutation classes
-from .resolvers.mutations.audit_mutations import (
+from ..resolvers.mutations.audit_mutations import (
     AuditMutations as AuditMutationResolvers,
 )
-from .resolvers.queries.analytics_queries import AnalyticsQueries
+from ..resolvers.queries.analytics_queries import AnalyticsQueries
 
 # Import query classes
-from .resolvers.queries.audit_queries import AuditQueries as AuditQueryResolvers
-from .resolvers.queries.report_queries import ReportQueries
+from ..resolvers.queries.audit_queries import AuditQueries as AuditQueryResolvers
+from ..resolvers.queries.report_queries import ReportQueries
 
 # Import subscription classes
-from .resolvers.subscriptions.audit_subscriptions import (
+from ..resolvers.subscriptions.audit_subscriptions import (
     AuditSubscriptions as AuditSubscriptionResolvers,
 )
 

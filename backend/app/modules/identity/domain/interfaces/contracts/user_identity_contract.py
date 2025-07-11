@@ -1,10 +1,10 @@
 # domains/identity/domain/contracts/user_identity_contract.py
 
-from abc import ABC, abstractmethod
+from typing import Protocol
 from uuid import UUID
 
 
-class UserIdentityContract(ABC):
+class UserIdentityContract(Protocol):
     """
     Contract interface for user identity operations.
 
@@ -12,7 +12,6 @@ class UserIdentityContract(ABC):
     role, etc. without direct coupling to internal identity models.
     """
 
-    @abstractmethod
     def exists(self, user_id: UUID) -> bool:
         """
         Return True if the user exists and is not soft-deleted.
@@ -23,8 +22,8 @@ class UserIdentityContract(ABC):
         Returns:
             bool: True if user exists and is active, False otherwise
         """
+        ...
 
-    @abstractmethod
     def is_active(self, user_id: UUID) -> bool:
         """
         Return True if the user is active (not suspended/terminated).
@@ -35,8 +34,8 @@ class UserIdentityContract(ABC):
         Returns:
             bool: True if user is active, False if suspended/terminated/deactivated
         """
+        ...
 
-    @abstractmethod
     def get_roles(self, user_id: UUID) -> list[str]:
         """
         Return a list of roles for this user (e.g. ['admin', 'loader']).
@@ -50,8 +49,8 @@ class UserIdentityContract(ABC):
         Raises:
             UserNotFoundError: If user does not exist
         """
+        ...
 
-    @abstractmethod
     def get_email(self, user_id: UUID) -> str | None:
         """
         Return the user's email address, if present and allowed to share.
@@ -62,8 +61,8 @@ class UserIdentityContract(ABC):
         Returns:
             Optional[str]: User's email address or None if not available/not allowed
         """
+        ...
 
-    @abstractmethod
     def get_display_name(self, user_id: UUID) -> str | None:
         """
         Return the user's display name, if available.
@@ -74,8 +73,8 @@ class UserIdentityContract(ABC):
         Returns:
             Optional[str]: User's display name or None if not available
         """
+        ...
 
-    @abstractmethod
     def get_user_status(self, user_id: UUID) -> str | None:
         """
         Return the current status of the user.
@@ -86,8 +85,8 @@ class UserIdentityContract(ABC):
         Returns:
             Optional[str]: User status (active, suspended, deactivated, etc.)
         """
+        ...
 
-    @abstractmethod
     def has_permission(self, user_id: UUID, permission: str) -> bool:
         """
         Check if user has a specific permission.
@@ -99,8 +98,8 @@ class UserIdentityContract(ABC):
         Returns:
             bool: True if user has the permission, False otherwise
         """
+        ...
 
-    @abstractmethod
     def get_permissions(self, user_id: UUID) -> list[str]:
         """
         Get all permissions for the user (direct and inherited from roles).
@@ -111,3 +110,4 @@ class UserIdentityContract(ABC):
         Returns:
             List[str]: List of permission names
         """
+        ...

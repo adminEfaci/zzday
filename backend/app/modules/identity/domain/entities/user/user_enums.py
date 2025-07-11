@@ -191,6 +191,6 @@ __all__ = [
     'Language',
     'NotificationChannel',
     'Relationship',
-    'LoginFailureReason'
+    'LoginFailureReason',
     'TimeFormat'
 ]

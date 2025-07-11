@@ -6,11 +6,11 @@ Domain service for complex permission logic that doesn't belong to a single enti
 
 from typing import TYPE_CHECKING
 
-from .group_constants import GroupPermissionMatrix
-from .group_enums import GroupMemberRole
+from ...entities.group.group_constants import GroupPermissionMatrix
+from ...entities.group.group_enums import GroupMemberRole
 
 if TYPE_CHECKING:
-    from .group_member import GroupMember
+    from ...entities.group.group_member import GroupMember
 
 
 class GroupPermissionService:

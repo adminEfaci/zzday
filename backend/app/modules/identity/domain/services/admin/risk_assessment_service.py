@@ -12,7 +12,7 @@ from uuid import UUID
 from ...aggregates.user import User
 from ...enums import RiskLevel
 from ...errors import ValidationError
-from ...interfaces.repositories.user.user_repository import IUserRepository
+from ...interfaces.repositories.user_repository import IUserRepository
 from ...interfaces.services.security.risk_assessment_service import (
     IRiskAssessmentService,
 )

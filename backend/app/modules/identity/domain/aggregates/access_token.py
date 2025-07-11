@@ -13,7 +13,7 @@ from uuid import UUID, uuid4
 
 from ..enums import TokenStatus, RefreshStrategy
 from ..events import TokenFamilyRevoked, TokenIssued, TokenRefreshed, TokenRevoked
-from ...shared.base_entity import ExpirableAggregate, SecurityValidationMixin
+from ..entities.shared.base_entity import ExpirableEntity, SecurityValidationMixin
 
 
 @dataclass

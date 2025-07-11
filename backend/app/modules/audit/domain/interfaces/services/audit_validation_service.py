@@ -4,8 +4,7 @@ This module defines the interface for audit data validation,
 ensuring data integrity and business rule compliance.
 """
 
-from abc import ABC, abstractmethod
-from typing import Any
+from typing import Any, Protocol
 from uuid import UUID
 
 from app.modules.audit.domain.aggregates.audit_log import AuditLog
@@ -18,7 +17,7 @@ from app.modules.audit.domain.value_objects.resource_identifier import (
 )
 
 
-class IAuditValidationService(ABC):
+class IAuditValidationService(Protocol):
     """
     Domain service interface for audit validation operations.
     
@@ -26,7 +25,6 @@ class IAuditValidationService(ABC):
     multiple domain objects or requires external validation.
     """
 
-    @abstractmethod
     async def validate_audit_entry_creation(
         self,
         action: AuditAction,
@@ -41,29 +39,25 @@ class IAuditValidationService(ABC):
         security constraints, and data consistency checks.
         """
 
-    @abstractmethod
     async def validate_session_hierarchy(
         self, session: AuditSession, parent_session: AuditSession | None = None
     ) -> dict[str, Any]:
         """Validate audit session hierarchy and nesting rules."""
 
-    @abstractmethod
     async def validate_log_capacity(self, audit_log: AuditLog) -> dict[str, Any]:
         """Validate audit log capacity and performance constraints."""
+        ...
 
-    @abstractmethod
     async def validate_data_consistency(
         self, audit_log_id: UUID
     ) -> dict[str, Any]:
         """Validate data consistency within an audit log."""
 
-    @abstractmethod
     async def validate_temporal_ordering(
         self, audit_log_id: UUID
     ) -> dict[str, Any]:
         """Validate that audit entries maintain proper temporal ordering."""
 
-    @abstractmethod
     async def validate_security_constraints(
         self,
         user_id: UUID | None,
@@ -73,7 +67,6 @@ class IAuditValidationService(ABC):
     ) -> dict[str, Any]:
         """Validate security constraints for audit operations."""
 
-    @abstractmethod
     async def validate_compliance_requirements(
         self, audit_entry: AuditEntry
     ) -> dict[str, Any]:

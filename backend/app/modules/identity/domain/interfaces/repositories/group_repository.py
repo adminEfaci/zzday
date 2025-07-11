@@ -3,7 +3,6 @@
 Domain contract for group data access that must be implemented by the infrastructure layer.
 """
 
-from abc import abstractmethod
 from typing import Protocol
 from uuid import UUID
 
@@ -13,7 +12,6 @@ from app.modules.identity.domain.aggregates.group import Group
 class IGroupRepository(Protocol):
     """Repository interface for Group aggregate."""
     
-    @abstractmethod
     async def find_by_id(self, group_id: UUID) -> Group | None:
         """Find group by ID.
         
@@ -25,7 +23,6 @@ class IGroupRepository(Protocol):
         """
         ...
     
-    @abstractmethod
     async def find_by_name(self, name: str) -> Group | None:
         """Find group by name.
         
@@ -37,7 +34,6 @@ class IGroupRepository(Protocol):
         """
         ...
     
-    @abstractmethod
     async def save(self, group: Group) -> None:
         """Save group aggregate with all changes.
         
@@ -46,7 +42,6 @@ class IGroupRepository(Protocol):
         """
         ...
     
-    @abstractmethod
     async def delete(self, group_id: UUID) -> bool:
         """Hard delete group from storage.
         
@@ -58,7 +53,6 @@ class IGroupRepository(Protocol):
         """
         ...
     
-    @abstractmethod
     async def find_by_user(self, user_id: UUID, include_inactive: bool = False) -> list[Group]:
         """Find all groups a user belongs to.
         
@@ -71,7 +65,6 @@ class IGroupRepository(Protocol):
         """
         ...
     
-    @abstractmethod
     async def find_subgroups(self, parent_group_id: UUID) -> list[Group]:
         """Find all direct subgroups of a parent group.
         
@@ -83,7 +76,6 @@ class IGroupRepository(Protocol):
         """
         ...
     
-    @abstractmethod
     async def find_by_type(self, group_type: str, limit: int = 100) -> list[Group]:
         """Find groups by type.
         
@@ -96,7 +88,6 @@ class IGroupRepository(Protocol):
         """
         ...
     
-    @abstractmethod
     async def search(
         self, 
         query: str,
@@ -117,7 +108,6 @@ class IGroupRepository(Protocol):
         """
         ...
     
-    @abstractmethod
     async def count_by_status(self, status: str) -> int:
         """Count groups by status.
         
@@ -129,7 +119,6 @@ class IGroupRepository(Protocol):
         """
         ...
     
-    @abstractmethod
     async def find_public_groups(self, limit: int = 50) -> list[Group]:
         """Find all public groups.
         
@@ -141,7 +130,6 @@ class IGroupRepository(Protocol):
         """
         ...
     
-    @abstractmethod
     async def exists(self, group_id: UUID) -> bool:
         """Check if group exists.
         
@@ -153,7 +141,6 @@ class IGroupRepository(Protocol):
         """
         ...
     
-    @abstractmethod
     async def exists_by_name(self, name: str) -> bool:
         """Check if group exists by name.
         

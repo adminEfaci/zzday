@@ -3,7 +3,6 @@
 Domain contract for session data access that must be implemented by the infrastructure layer.
 """
 
-from abc import abstractmethod
 from typing import TYPE_CHECKING, Protocol
 from uuid import UUID
 
@@ -14,7 +13,6 @@ if TYPE_CHECKING:
 class ISessionRepository(Protocol):
     """Repository interface for Session entity."""
     
-    @abstractmethod
     async def find_by_id(self, session_id: UUID) -> 'Session' | None:
         """Find session by ID.
         
@@ -26,7 +24,6 @@ class ISessionRepository(Protocol):
         """
         ...
     
-    @abstractmethod
     async def save(self, session: 'Session') -> None:
         """Save session entity (create or update).
         
@@ -35,7 +32,6 @@ class ISessionRepository(Protocol):
         """
         ...
     
-    @abstractmethod
     async def invalidate_session(self, session_id: UUID) -> bool:
         """Invalidate a specific session.
         
@@ -47,7 +43,6 @@ class ISessionRepository(Protocol):
         """
         ...
     
-    @abstractmethod
     async def invalidate_all_user_sessions(
         self, 
         user_id: UUID, 
@@ -64,7 +59,6 @@ class ISessionRepository(Protocol):
         """
         ...
     
-    @abstractmethod
     async def find_active_sessions_by_user(self, user_id: UUID) -> list['Session']:
         """Find all active sessions for a user.
         
@@ -76,7 +70,6 @@ class ISessionRepository(Protocol):
         """
         ...
     
-    @abstractmethod
     async def cleanup_expired_sessions(self) -> int:
         """Remove expired sessions.
         
@@ -85,7 +78,6 @@ class ISessionRepository(Protocol):
         """
         ...
     
-    @abstractmethod
     async def count_active_sessions_by_user(self, user_id: UUID) -> int:
         """Count active sessions for a user.
         
@@ -97,7 +89,6 @@ class ISessionRepository(Protocol):
         """
         ...
     
-    @abstractmethod
     async def find_by_token(self, token: str) -> 'Session' | None:
         """Find session by access token.
         
@@ -109,7 +100,6 @@ class ISessionRepository(Protocol):
         """
         ...
     
-    @abstractmethod
     async def exists(self, session_id: UUID) -> bool:
         """Check if session exists.
         
@@ -121,7 +111,6 @@ class ISessionRepository(Protocol):
         """
         ...
     
-    @abstractmethod
     async def delete(self, session_id: UUID) -> bool:
         """Delete session.
         

@@ -5,14 +5,13 @@ Interface for managing compliance requirements
 and regulatory adherence for audit operations.
 """
 
-from abc import ABC, abstractmethod
-from typing import Any
+from typing import Any, Protocol
 
 from app.modules.audit.domain.entities.audit_entry import AuditEntry
 from app.modules.audit.domain.enums.audit_enums import ComplianceRegulation
 
 
-class IComplianceService(ABC):
+class IComplianceService(Protocol):
     """
     Interface for compliance management.
     
@@ -20,7 +19,6 @@ class IComplianceService(ABC):
     and compliance reporting for audit operations.
     """
 
-    @abstractmethod
     def validate_compliance(self, audit_entry: AuditEntry, regulations: list[ComplianceRegulation]) -> dict[str, Any]:
         """
         Validate an audit entry against compliance regulations.
@@ -32,8 +30,8 @@ class IComplianceService(ABC):
         Returns:
             Dictionary containing compliance validation results
         """
+        ...
 
-    @abstractmethod
     def check_data_retention_compliance(self, audit_entry: AuditEntry, regulation: ComplianceRegulation) -> bool:
         """
         Check if audit entry meets data retention compliance requirements.
@@ -45,8 +43,8 @@ class IComplianceService(ABC):
         Returns:
             True if compliant, False otherwise
         """
+        ...
 
-    @abstractmethod
     def check_right_to_deletion_compliance(self, audit_entry: AuditEntry, regulation: ComplianceRegulation) -> dict[str, Any]:
         """
         Check compliance with right to deletion requirements.
@@ -58,8 +56,8 @@ class IComplianceService(ABC):
         Returns:
             Dictionary containing deletion compliance analysis
         """
+        ...
 
-    @abstractmethod
     def generate_compliance_report(self, entries: list[AuditEntry], regulation: ComplianceRegulation) -> dict[str, Any]:
         """
         Generate a compliance report for a set of audit entries.
@@ -71,3 +69,4 @@ class IComplianceService(ABC):
         Returns:
             Dictionary containing compliance report data
         """
+        ...

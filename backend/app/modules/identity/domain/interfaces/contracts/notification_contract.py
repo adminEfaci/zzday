@@ -5,16 +5,14 @@ Contract for sending notifications to the notification module.
 This defines how the Identity domain communicates with the Notification module.
 """
 
-from abc import ABC, abstractmethod
 from datetime import datetime
-from typing import Any
+from typing import Any, Protocol
 from uuid import UUID
 
 
-class INotificationContract(ABC):
+class INotificationContract(Protocol):
     """Contract for sending notifications to the notification module."""
-    
-    @abstractmethod
+
     async def send_email_notification(
         self,
         user_id: UUID,
@@ -24,15 +22,15 @@ class INotificationContract(ABC):
     ) -> None:
         """
         Send email notification via notification module.
-        
+
         Args:
             user_id: User identifier
             template_name: Email template name
             template_data: Template variables
             priority: Email priority (low/normal/high)
         """
-    
-    @abstractmethod
+        ...
+
     async def send_sms_notification(
         self,
         user_id: UUID,
@@ -42,15 +40,15 @@ class INotificationContract(ABC):
     ) -> None:
         """
         Send SMS notification via notification module.
-        
+
         Args:
             user_id: User identifier
             phone_number: Recipient phone number
             message: SMS message content
             priority: SMS priority
         """
-    
-    @abstractmethod
+        ...
+
     async def send_push_notification(
         self,
         user_id: UUID,
@@ -61,7 +59,7 @@ class INotificationContract(ABC):
     ) -> None:
         """
         Send push notification via notification module.
-        
+
         Args:
             user_id: User identifier
             device_tokens: List of device tokens
@@ -69,8 +67,8 @@ class INotificationContract(ABC):
             body: Notification body
             data: Additional data payload
         """
-    
-    @abstractmethod
+        ...
+
     async def send_in_app_notification(
         self,
         user_id: UUID,
@@ -81,7 +79,7 @@ class INotificationContract(ABC):
     ) -> None:
         """
         Send in-app notification via notification module.
-        
+
         Args:
             user_id: User identifier
             notification_type: Type of notification
@@ -89,8 +87,8 @@ class INotificationContract(ABC):
             message: Notification message
             data: Additional notification data
         """
-    
-    @abstractmethod
+        ...
+
     async def schedule_notification(
         self,
         user_id: UUID,
@@ -100,13 +98,14 @@ class INotificationContract(ABC):
     ) -> str:
         """
         Schedule a future notification.
-        
+
         Args:
             user_id: User identifier
             notification_type: Type of notification (email/sms/push)
             scheduled_at: When to send the notification
             notification_data: Notification details
-            
+
         Returns:
             Scheduled notification ID
         """
+        ...

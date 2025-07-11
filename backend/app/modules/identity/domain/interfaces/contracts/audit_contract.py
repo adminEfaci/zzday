@@ -5,15 +5,13 @@ Contract for sending audit logs to the audit module.
 This defines how the Identity domain communicates with the Audit module.
 """
 
-from abc import ABC, abstractmethod
-from typing import Any
+from typing import Any, Protocol
 from uuid import UUID
 
 
-class IAuditContract(ABC):
+class IAuditContract(Protocol):
     """Contract for sending audit logs to the audit module."""
-    
-    @abstractmethod
+
     async def log_authentication_event(
         self,
         user_id: UUID,
@@ -25,7 +23,7 @@ class IAuditContract(ABC):
     ) -> None:
         """
         Log authentication-related events.
-        
+
         Args:
             user_id: User identifier
             event_type: Type of auth event (login/logout/mfa/password_reset)
@@ -34,8 +32,8 @@ class IAuditContract(ABC):
             user_agent: Client user agent string
             metadata: Additional event metadata
         """
-    
-    @abstractmethod
+        ...
+
     async def log_authorization_event(
         self,
         user_id: UUID,
@@ -46,7 +44,7 @@ class IAuditContract(ABC):
     ) -> None:
         """
         Log authorization decisions.
-        
+
         Args:
             user_id: User identifier
             resource: Resource being accessed
@@ -54,8 +52,8 @@ class IAuditContract(ABC):
             allowed: Whether access was allowed
             reason: Reason for denial if applicable
         """
-    
-    @abstractmethod
+        ...
+
     async def log_user_modification(
         self,
         user_id: UUID,
@@ -65,15 +63,15 @@ class IAuditContract(ABC):
     ) -> None:
         """
         Log user profile/setting modifications.
-        
+
         Args:
             user_id: User being modified
             modified_by: User making the changes
             changes: Dictionary of changed fields
             reason: Reason for modification
         """
-    
-    @abstractmethod
+        ...
+
     async def log_security_event(
         self,
         user_id: UUID | None,
@@ -84,7 +82,7 @@ class IAuditContract(ABC):
     ) -> None:
         """
         Log security-related events.
-        
+
         Args:
             user_id: Affected user (if applicable)
             event_type: Type of security event
@@ -92,8 +90,8 @@ class IAuditContract(ABC):
             details: Event details
             ip_address: Source IP address
         """
-    
-    @abstractmethod
+        ...
+
     async def log_compliance_event(
         self,
         user_id: UUID,
@@ -103,15 +101,15 @@ class IAuditContract(ABC):
     ) -> None:
         """
         Log compliance-related events.
-        
+
         Args:
             user_id: User identifier
             event_type: Type of compliance event (consent/data_export/deletion)
             details: Event details
             regulation: Applicable regulation (GDPR/CCPA/etc)
         """
-    
-    @abstractmethod
+        ...
+
     async def log_administrative_action(
         self,
         admin_id: UUID,
@@ -122,7 +120,7 @@ class IAuditContract(ABC):
     ) -> None:
         """
         Log administrative actions.
-        
+
         Args:
             admin_id: Administrator performing action
             action: Action performed
@@ -130,3 +128,4 @@ class IAuditContract(ABC):
             target_id: Target identifier
             details: Action details
         """
+        ...

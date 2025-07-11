@@ -1,0 +1,132 @@
+.
+├── __init__.py
+├── contracts
+│   ├── __init__.py
+│   ├── __pycache__
+│   │   ├── __init__.cpython-312.pyc
+│   │   ├── audit_actor_contract.cpython-312.pyc
+│   │   ├── audit_contract.cpython-312.pyc
+│   │   ├── mfa_status_contract.cpython-312.pyc
+│   │   ├── notification_contract.cpython-312.pyc
+│   │   ├── session_contract.cpython-312.pyc
+│   │   ├── user_contact_contract.cpython-312.pyc
+│   │   └── user_identity_contract.cpython-312.pyc
+│   ├── audit_actor_contract.py
+│   ├── audit_contract.py
+│   ├── mfa_status_contract.py
+│   ├── notification_contract.py
+│   ├── session_contract.py
+│   ├── user_contact_contract.py
+│   └── user_identity_contract.py
+├── folder_tree.txt
+├── repositories
+│   ├── __init__.py
+│   ├── __pycache__
+│   │   ├── __init__.cpython-312.pyc
+│   │   ├── access_token_repository.cpython-312.pyc
+│   │   ├── device_registration_repository.cpython-312.pyc
+│   │   ├── emergency_contact_repository.cpython-312.pyc
+│   │   ├── group_repository.cpython-312.pyc
+│   │   ├── login_attempt_repository.cpython-312.pyc
+│   │   ├── mfa_repository.cpython-312.pyc
+│   │   ├── notification_setting_repository.cpython-312.pyc
+│   │   ├── password_history_repository.cpython-312.pyc
+│   │   ├── permission_repository.cpython-312.pyc
+│   │   ├── role_repository.cpython-312.pyc
+│   │   ├── security_event_repository.cpython-312.pyc
+│   │   ├── session_repository.cpython-312.pyc
+│   │   ├── user_preference_repository.cpython-312.pyc
+│   │   ├── user_profile_repository.cpython-312.pyc
+│   │   └── user_repository.cpython-312.pyc
+│   ├── access_token_repository.py
+│   ├── device_registration_repository.py
+│   ├── emergency_contact_repository.py
+│   ├── group_repository.py
+│   ├── login_attempt_repository.py
+│   ├── mfa_repository.py
+│   ├── notification_setting_repository.py
+│   ├── password_history_repository.py
+│   ├── permission_repository.py
+│   ├── role_repository.py
+│   ├── security_event_repository.py
+│   ├── session_repository.py
+│   ├── user_preference_repository.py
+│   ├── user_profile_repository.py
+│   └── user_repository.py
+├── security.py
+└── services
+    ├── __init__.py
+    ├── __pycache__
+    │   └── __init__.cpython-312.pyc
+    ├── authentication
+    │   ├── __init__.py
+    │   ├── __pycache__
+    │   │   ├── __init__.cpython-312.pyc
+    │   │   ├── biometric_service.cpython-312.pyc
+    │   │   ├── mfa_service.cpython-312.pyc
+    │   │   ├── password_hasher.cpython-312.pyc
+    │   │   ├── password_service.cpython-312.pyc
+    │   │   └── token_generator.cpython-312.pyc
+    │   ├── biometric_service.py
+    │   ├── mfa_service.py
+    │   ├── password_hasher.py
+    │   ├── password_service.py
+    │   └── token_generator.py
+    ├── communication
+    │   ├── __init__.py
+    │   ├── __pycache__
+    │   │   ├── __init__.cpython-312.pyc
+    │   │   └── notification_service.cpython-312.pyc
+    │   └── notification_service.py
+    ├── compliance
+    │   ├── __init__.py
+    │   ├── __pycache__
+    │   │   ├── __init__.cpython-312.pyc
+    │   │   └── compliance_service.cpython-312.pyc
+    │   └── compliance_service.py
+    ├── infrastructure
+    │   ├── __init__.py
+    │   ├── __pycache__
+    │   │   ├── __init__.cpython-312.pyc
+    │   │   ├── cache_port.cpython-312.pyc
+    │   │   ├── configuration_port.cpython-312.pyc
+    │   │   ├── event_publisher_port.cpython-312.pyc
+    │   │   ├── file_storage_port.cpython-312.pyc
+    │   │   └── task_queue_port.cpython-312.pyc
+    │   ├── cache_port.py
+    │   ├── configuration_port.py
+    │   ├── event_publisher_port.py
+    │   ├── file_storage_port.py
+    │   └── task_queue_port.py
+    ├── monitoring
+    │   ├── __init__.py
+    │   ├── __pycache__
+    │   │   ├── __init__.cpython-312.pyc
+    │   │   ├── activity_service.cpython-312.pyc
+    │   │   ├── analytics_port.cpython-312.pyc
+    │   │   ├── audit_service.cpython-312.pyc
+    │   │   └── rate_limit_port.cpython-312.pyc
+    │   ├── activity_service.py
+    │   ├── analytics_port.py
+    │   ├── audit_service.py
+    │   └── rate_limit_port.py
+    └── security
+        ├── __init__.py
+        ├── __pycache__
+        │   ├── __init__.cpython-312.pyc
+        │   ├── administrative_service.cpython-312.pyc
+        │   ├── authorization_service.cpython-312.pyc
+        │   ├── device_service.cpython-312.pyc
+        │   ├── geolocation_service.cpython-312.pyc
+        │   ├── risk_assessment_service.cpython-312.pyc
+        │   ├── security_service.cpython-312.pyc
+        │   └── threat_intelligence_service.cpython-312.pyc
+        ├── administrative_service.py
+        ├── authorization_service.py
+        ├── device_service.py
+        ├── geolocation_service.py
+        ├── risk_assessment_service.py
+        ├── security_service.py
+        └── threat_intelligence_service.py
+
+19 directories, 111 files

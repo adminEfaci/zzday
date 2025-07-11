@@ -3,7 +3,6 @@
 Domain contract for security event data access that must be implemented by the infrastructure layer.
 """
 
-from abc import abstractmethod
 from datetime import datetime
 from typing import Protocol
 from uuid import UUID
@@ -14,7 +13,6 @@ from app.core.enums import EventType
 class ISecurityEventRepository(Protocol):
     """Repository interface for security event logging."""
     
-    @abstractmethod
     async def create(self, event_data: dict) -> UUID:
         """Create new security event.
         
@@ -33,7 +31,6 @@ class ISecurityEventRepository(Protocol):
         """
         ...
     
-    @abstractmethod
     async def find_by_user(
         self, 
         user_id: UUID, 
@@ -52,7 +49,6 @@ class ISecurityEventRepository(Protocol):
         """
         ...
     
-    @abstractmethod
     async def find_by_type(
         self, 
         event_type: EventType,
@@ -73,7 +69,6 @@ class ISecurityEventRepository(Protocol):
         """
         ...
     
-    @abstractmethod
     async def find_by_ip(
         self, 
         ip_address: str,
@@ -90,7 +85,6 @@ class ISecurityEventRepository(Protocol):
         """
         ...
     
-    @abstractmethod
     async def count_by_user_and_type(
         self, 
         user_id: UUID, 
@@ -109,7 +103,6 @@ class ISecurityEventRepository(Protocol):
         """
         ...
     
-    @abstractmethod
     async def cleanup_old_events(self, older_than: datetime) -> int:
         """Remove old security events.
         

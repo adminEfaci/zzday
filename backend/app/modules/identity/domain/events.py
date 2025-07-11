@@ -8,16 +8,16 @@ from datetime import datetime
 from typing import Any
 from uuid import UUID
 
-from pydantic import Field
-
 from app.core.events.types import DomainEvent
 
 
 class IdentityDomainEvent(DomainEvent):
     """Base class for all identity domain events."""
 
-    # Domain identifier for all identity events
-    domain: str = Field(default="identity", frozen=True)
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        # Domain identifier for all identity events
+        self.domain = "identity"
 
     def get_aggregate_id(self) -> str:
         """Get the aggregate ID for this event."""
@@ -70,8 +70,8 @@ class IdentityDomainEvent(DomainEvent):
             'SecurityAlertRaised', 'SuspiciousActivityDetected', 'TokenFamilyRevoked',
             'TokenIssued', 'TokenRefreshed', 'TokenRevoked'
         }
-        return (self.__class__.__name__ in audit_required_events or 
-                self.is_security_event() or 
+        return (self.__class__.__name__ in audit_required_events or
+                self.is_security_event() or
                 self.is_compliance_event())
 
     def get_risk_level(self) -> str:
@@ -86,7 +86,7 @@ class IdentityDomainEvent(DomainEvent):
         medium_risk_events = {
             'DeviceUntrusted', 'MFACodeVerificationFailed', 'SessionTerminated'
         }
-        
+
         event_name = self.__class__.__name__
         if event_name in critical_risk_events:
             return "critical"
@@ -273,7 +273,7 @@ class DeviceRegistered(IdentityDomainEvent):
     device_name: str
     device_type: str
     fingerprint: str
-    trusted: bool = Field(default=False)
+    trusted: bool = False
 
     def get_aggregate_id(self) -> str:
         return str(self.device_id)
@@ -284,7 +284,7 @@ class DeviceTrusted(IdentityDomainEvent):
     device_id: UUID
     user_id: UUID
     trusted_by: UUID | None = None
-    trust_method: str = Field(default="user_confirmation")
+    trust_method: str = "user_confirmation"
 
     def get_aggregate_id(self) -> str:
         return str(self.device_id)
@@ -555,7 +555,7 @@ class RoleUnassigned(IdentityDomainEvent):
     role_id: UUID
     role_name: str
     unassigned_by: UUID
-    reason: str = Field(default="manual_removal")
+    reason: str = "manual_removal"
 
     def get_aggregate_id(self) -> str:
         return str(self.user_id)
@@ -607,7 +607,7 @@ class PermissionRevoked(IdentityDomainEvent):
     permission_id: UUID
     permission_name: str
     revoked_by: UUID
-    reason: str = Field(default="manual_revocation")
+    reason: str = "manual_revocation"
 
     def get_aggregate_id(self) -> str:
         return str(self.user_id)
@@ -732,8 +732,8 @@ class ComplianceViolationDetected(IdentityDomainEvent):
     description: str
     regulation: str  # GDPR, SOX, HIPAA, etc.
     user_id: UUID | None = None
-    remediation_required: bool = Field(default=True)
-    auto_remediation_possible: bool = Field(default=False)
+    remediation_required: bool = True
+    auto_remediation_possible: bool = False
 
     def get_aggregate_id(self) -> str:
         return str(self.user_id) if self.user_id else "system"
@@ -743,28 +743,28 @@ class ComplianceViolationDetected(IdentityDomainEvent):
 __all__ = [
     # Base Events
     'IdentityDomainEvent',
-    
+
     # Session Events
     'SessionCreated',
     'SessionTerminated',
-    
+
     # Access Token Events
     'TokenFamilyRevoked',
     'TokenIssued',
     'TokenRefreshed',
     'TokenRevoked',
-    
+
     # MFA Device Events
     'MFACodeVerificationFailed',
     'MFADeviceCreated',
     'MFADeviceDisabled',
     'MFADeviceVerified',
-    
+
     # Device Registration Events
     'DeviceRegistered',
     'DeviceTrusted',
     'DeviceUntrusted',
-    
+
     # Permission Events
     'PermissionActivated',
     'PermissionCloned',
@@ -778,7 +778,7 @@ __all__ = [
     'PermissionMerged',
     'PermissionRevoked',
     'PermissionUpdated',
-    
+
     # Role Events
     'RoleActivated',
     'RoleAssigned',
@@ -792,22 +792,22 @@ __all__ = [
     'RolePermissionRevoked',
     'RoleUnassigned',
     'RoleUpdated',
-    
+
     # Legacy Role Permission Events
     'PermissionAddedToRole',
     'PermissionRemovedFromRole',
-    
+
     # Security Events
     'SecurityAlertRaised',
     'SuspiciousActivityDetected',
-    
+
     # IP Management Events
     'IPAllowlisted',
     'IPBlocklisted',
-    
+
     # Audit Events
     'AuditLogCreated',
-    
+
     # Compliance Events
     'ComplianceViolationDetected'
 ]

@@ -3,7 +3,6 @@
 Domain contract for user profile data access that must be implemented by the infrastructure layer.
 """
 
-from abc import abstractmethod
 from datetime import date
 from typing import Protocol
 from uuid import UUID
@@ -12,7 +11,6 @@ from uuid import UUID
 class IUserProfileRepository(Protocol):
     """Repository interface for user profile management."""
     
-    @abstractmethod
     async def create(
         self, 
         user_id: UUID,
@@ -41,7 +39,6 @@ class IUserProfileRepository(Protocol):
         """
         ...
     
-    @abstractmethod
     async def find_by_user(self, user_id: UUID) -> dict | None:
         """Find profile by user ID.
         
@@ -53,7 +50,6 @@ class IUserProfileRepository(Protocol):
         """
         ...
     
-    @abstractmethod
     async def update(
         self, 
         user_id: UUID,
@@ -82,7 +78,6 @@ class IUserProfileRepository(Protocol):
         """
         ...
     
-    @abstractmethod
     async def update_avatar(self, user_id: UUID, avatar_url: str) -> bool:
         """Update user avatar.
         
@@ -95,7 +90,6 @@ class IUserProfileRepository(Protocol):
         """
         ...
     
-    @abstractmethod
     async def delete_avatar(self, user_id: UUID) -> bool:
         """Delete user avatar.
         
@@ -107,7 +101,6 @@ class IUserProfileRepository(Protocol):
         """
         ...
     
-    @abstractmethod
     async def search_profiles(
         self, 
         query: str,
@@ -124,7 +117,6 @@ class IUserProfileRepository(Protocol):
         """
         ...
     
-    @abstractmethod
     async def delete_profile(self, user_id: UUID) -> bool:
         """Delete user profile.
         

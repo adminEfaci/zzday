@@ -14,17 +14,17 @@ class RiskLevel(IntEnum):
     MEDIUM = 2
     HIGH = 3
     CRITICAL = 4
-    
+
     def get_display_name(self) -> str:
         """Get human-readable display name."""
         display_names = {
             RiskLevel.LOW: "Low Risk",
-            RiskLevel.MEDIUM: "Medium Risk", 
+            RiskLevel.MEDIUM: "Medium Risk",
             RiskLevel.HIGH: "High Risk",
             RiskLevel.CRITICAL: "Critical Risk"
         }
         return display_names.get(self, f"Risk Level {self.value}")
-    
+
     def get_color_code(self) -> str:
         """Get color code for UI display."""
         colors = {
@@ -50,7 +50,7 @@ class UserStatus(Enum):
     LOCKED = "locked"
     TERMINATED = "terminated"
     DELETED = "deleted"
-    
+
     def get_display_name(self) -> str:
         """Get human-readable display name."""
         display_names = {
@@ -58,28 +58,28 @@ class UserStatus(Enum):
             self.ACTIVE: "Active",
             self.INACTIVE: "Inactive",
             self.SUSPENDED: "Suspended",
-            self.DEACTIVATED: "Deactivated", 
+            self.DEACTIVATED: "Deactivated",
             self.LOCKED: "Locked",
             self.TERMINATED: "Terminated",
             self.DELETED: "Deleted"
         }
         return display_names.get(self, str(self.value).title())
-    
+
     @property
     def is_active(self) -> bool:
         """Check if status allows user activity."""
         return self == self.ACTIVE
-    
+
     @property
     def can_login(self) -> bool:
         """Check if user can log in with this status."""
         return self in {self.ACTIVE}
-    
+
     @property
     def requires_verification(self) -> bool:
         """Check if status requires verification."""
         return self == self.PENDING_VERIFICATION
-    
+
     @property
     def is_recoverable(self) -> bool:
         """Check if account can be recovered/reactivated."""
@@ -94,7 +94,7 @@ class AccountType(Enum):
     ADMIN = "admin"
     SERVICE = "service"
     GUEST = "guest"
-    
+
     def get_display_name(self) -> str:
         """Get human-readable display name."""
         display_names = {
@@ -106,7 +106,7 @@ class AccountType(Enum):
             self.GUEST: "Guest Account"
         }
         return display_names.get(self, str(self.value).title())
-    
+
     @property
     def is_privileged(self) -> bool:
         """Check if account type has elevated privileges."""
@@ -122,15 +122,15 @@ class RoleStatus(Enum):
     ACTIVE = "active"
     INACTIVE = "inactive"
     DELETED = "deleted"
-    
+
     def get_display_name(self) -> str:
         display_names = {
             self.ACTIVE: "Active",
-            self.INACTIVE: "Inactive", 
+            self.INACTIVE: "Inactive",
             self.DELETED: "Deleted"
         }
         return display_names.get(self, self.value)
-    
+
     def is_usable(self) -> bool:
         return self == self.ACTIVE
 
@@ -143,18 +143,18 @@ class RoleType(Enum):
     TECHNICAL = "technical"
     ADMINISTRATIVE = "administrative"
     TEMPORARY = "temporary"
-    
+
     def get_display_name(self) -> str:
         display_names = {
             self.SYSTEM: "System Role",
             self.BUSINESS: "Business Role",
-            self.FUNCTIONAL: "Functional Role", 
+            self.FUNCTIONAL: "Functional Role",
             self.TECHNICAL: "Technical Role",
             self.ADMINISTRATIVE: "Administrative Role",
             self.TEMPORARY: "Temporary Role"
         }
         return display_names.get(self, self.value)
-    
+
     def is_system_managed(self) -> bool:
         return self in [self.SYSTEM, self.TECHNICAL]
 
@@ -173,7 +173,7 @@ class UserRole(Enum):
     DRIVER = "driver"
     LOADER = "loader"
     AUDITOR = "auditor"
-    
+
     def get_display_name(self) -> str:
         display_names = {
             self.SUPER_ADMIN: "Super Administrator",
@@ -189,7 +189,7 @@ class UserRole(Enum):
             self.AUDITOR: "Auditor"
         }
         return display_names.get(self, self.value)
-    
+
     def get_hierarchy_level(self) -> int:
         levels = {
             self.GUEST: 1,
@@ -205,7 +205,7 @@ class UserRole(Enum):
             self.SERVICE_ACCOUNT: 0
         }
         return levels.get(self, 0)
-    
+
     def to_role_type(self) -> RoleType:
         """Convert to RoleType."""
         mapping = {
@@ -215,17 +215,17 @@ class UserRole(Enum):
             self.GUEST: RoleType.SYSTEM
         }
         return mapping.get(self, RoleType.BUSINESS)
-    
+
     @property
     def is_privileged(self) -> bool:
         """Check if role has elevated privileges."""
         return self in {self.ADMIN, self.SUPER_ADMIN, self.MANAGER, self.SUPERVISOR}
-    
+
     @property
     def is_service_account(self) -> bool:
         """Check if this is a service account role."""
         return self == self.SERVICE_ACCOUNT
-    
+
     def get_permissions_level(self) -> int:
         """Get numeric permission level for comparison."""
         levels = {
@@ -250,7 +250,7 @@ class InheritanceMode(Enum):
     SELECTIVE = "selective"
     ADDITIVE = "additive"
     SUBTRACTIVE = "subtractive"
-    
+
     def get_display_name(self) -> str:
         display_names = {
             self.FULL: "Full (inherits all parent permissions)",
@@ -272,7 +272,7 @@ class AssignmentStatus(Enum):
     EXPIRED = "expired"
     REVOKED = "revoked"
     SUSPENDED = "suspended"
-    
+
     def is_effective(self) -> bool:
         """Check if assignment is currently effective."""
         return self == self.ACTIVE
@@ -284,7 +284,7 @@ class AssignmentType(Enum):
     INHERITED = "inherited"
     TEMPORARY = "temporary"
     CONDITIONAL = "conditional"
-    
+
     def is_revocable(self) -> bool:
         """Check if assignment can be revoked."""
         return self in {self.DIRECT, self.TEMPORARY, self.CONDITIONAL}
@@ -309,7 +309,7 @@ class PermissionType(Enum):
     EXPORT = "export"
     IMPORT = "import"
     CUSTOM = "custom"
-    
+
     def get_display_name(self) -> str:
         display_names = {
             self.CREATE: "Create",
@@ -327,16 +327,16 @@ class PermissionType(Enum):
             self.CUSTOM: "Custom"
         }
         return display_names.get(self, self.value)
-    
+
     def is_write_operation(self) -> bool:
         """Check if permission type is a write operation."""
         write_ops = {self.CREATE, self.UPDATE, self.DELETE, self.IMPORT, self.CONFIGURE}
         return self in write_ops
-    
+
     def is_read_operation(self) -> bool:
         """Check if permission type is a read operation."""
         return self in {self.READ, self.AUDIT, self.EXPORT}
-    
+
     def is_dangerous(self) -> bool:
         """Check if permission type is potentially dangerous."""
         return self in {self.DELETE, self.CONFIGURE, self.EXECUTE}
@@ -363,7 +363,7 @@ class ResourceType(Enum):
     INVOICE = "invoice"
     PICKUP = "pickup"
     DELIVERY = "delivery"
-    
+
     def get_display_name(self) -> str:
         display_names = {
             self.USER: "User",
@@ -386,13 +386,13 @@ class ResourceType(Enum):
             self.DELIVERY: "Delivery"
         }
         return display_names.get(self, self.value)
-    
+
     def get_category(self) -> str:
         """Get resource category."""
         identity_resources = {self.USER, self.ROLE, self.PERMISSION, self.GROUP, self.SESSION}
         system_resources = {self.AUDIT_LOG, self.CONFIGURATION, self.API_KEY, self.REPORT, self.NOTIFICATION}
         business_resources = {self.ROUTE, self.VEHICLE, self.FACILITY, self.CUSTOMER, self.CONTRACT, self.INVOICE, self.PICKUP, self.DELIVERY}
-        
+
         if self in identity_resources:
             return "identity"
         elif self in system_resources:
@@ -401,7 +401,7 @@ class ResourceType(Enum):
             return "business"
         else:
             return "other"
-    
+
     def is_sensitive(self) -> bool:
         """Check if resource type contains sensitive data."""
         sensitive = {self.USER, self.AUDIT_LOG, self.CONFIGURATION, self.API_KEY, self.SESSION}
@@ -412,7 +412,7 @@ class PermissionEffect(Enum):
     """Permission effect (allow/deny) for fine-grained control."""
     ALLOW = "allow"
     DENY = "deny"
-    
+
     def get_display_name(self) -> str:
         return self.value.title()
 
@@ -426,11 +426,11 @@ class PermissionScope(Enum):
     PROJECT = "project"
     RESOURCE = "resource"
     SELF = "self"
-    
+
     def get_display_name(self) -> str:
         """Get human-readable display name."""
         return self.value.title()
-    
+
     def get_hierarchy_level(self) -> int:
         """Get hierarchy level for scope comparison."""
         levels = {
@@ -448,8 +448,27 @@ class PermissionScope(Enum):
 # =============================================================================
 # Authentication and Security
 # =============================================================================
+class MfaDeviceStatus(Enum):
+    """MFA device status enumeration."""
+    PENDING_VERIFICATION = "pending_verification"
+    ACTIVE = "active"
+    DISABLED = "disabled"
 
-class MFAMethod(Enum):
+    def get_display_name(self) -> str:
+        """Get human-readable display name."""
+        display_names = {
+            self.PENDING_VERIFICATION: "Pending Verification",
+            self.ACTIVE: "Active",
+            self.DISABLED: "Disabled"
+        }
+        return display_names.get(self, str(self.value).title())
+
+    @property
+    def is_active(self) -> bool:
+        """Check if device is active."""
+        return self == self.ACTIVE
+
+class MfaMethod(Enum):
     """Multi-factor authentication method enumeration."""
     TOTP = "totp"  # Time-based One-Time Password
     SMS = "sms"
@@ -460,7 +479,7 @@ class MFAMethod(Enum):
     PUSH_NOTIFICATION = "push_notification"
     API_KEY = "api_key"
     CERTIFICATE = "certificate"
-    
+
     def get_display_name(self) -> str:
         """Get human-readable display name."""
         display_names = {
@@ -475,22 +494,22 @@ class MFAMethod(Enum):
             self.CERTIFICATE: "Digital Certificate"
         }
         return display_names.get(self, str(self.value).title())
-    
+
     def is_secure_method(self) -> bool:
         """Check if this is considered a secure MFA method."""
         secure_methods = [self.TOTP, self.HARDWARE_TOKEN, self.BIOMETRIC, self.CERTIFICATE]
         return self in secure_methods
-    
+
     @property
     def requires_device(self) -> bool:
         """Check if method requires a physical device."""
         return self in {self.TOTP, self.HARDWARE_TOKEN, self.BIOMETRIC}
-    
+
     @property
     def is_phishing_resistant(self) -> bool:
         """Check if method is resistant to phishing attacks."""
         return self in {self.HARDWARE_TOKEN, self.BIOMETRIC, self.CERTIFICATE}
-    
+
     @property
     def security_level(self) -> int:
         """Get numeric security level for comparison."""
@@ -517,7 +536,7 @@ class AuthenticationMethod(Enum):
     BIOMETRIC = "biometric"
     API_KEY = "api_key"
     CERTIFICATE = "certificate"
-    
+
     def get_display_name(self) -> str:
         """Get human-readable display name."""
         display_names = {
@@ -552,7 +571,7 @@ class LoginFailureReason(Enum):
     RATE_LIMITED = "rate_limited"
     MAINTENANCE_MODE = "maintenance_mode"
     UNKNOWN = "unknown"
-    
+
     def get_display_name(self) -> str:
         """Get human-readable display name."""
         display_names = {
@@ -576,7 +595,7 @@ class LoginFailureReason(Enum):
             self.UNKNOWN: "Unknown Error"
         }
         return display_names.get(self, str(self.value).title())
-    
+
     @property
     def is_security_related(self) -> bool:
         """Check if failure reason is security-related."""
@@ -584,7 +603,7 @@ class LoginFailureReason(Enum):
             self.SUSPICIOUS_ACTIVITY, self.IP_BLOCKED,
             self.TOO_MANY_ATTEMPTS, self.ACCOUNT_LOCKED
         }
-    
+
     @property
     def is_user_error(self) -> bool:
         """Check if failure is due to user error."""
@@ -601,7 +620,7 @@ class LoginAttemptStatus(Enum):
     BLOCKED = "blocked"
     CHALLENGED = "challenged"
     EXPIRED = "expired"
-    
+
     def get_display_name(self) -> str:
         """Get human-readable display name."""
         display_names = {
@@ -620,7 +639,7 @@ class VerificationStatus(Enum):
     VERIFIED = "verified"
     FAILED = "failed"
     EXPIRED = "expired"
-    
+
     def get_display_name(self) -> str:
         """Get human-readable display name."""
         display_names = {
@@ -642,7 +661,7 @@ class SessionStatus(Enum):
     EXPIRED = "expired"
     TERMINATED = "terminated"
     SUSPENDED = "suspended"
-    
+
     def get_display_name(self) -> str:
         """Get human-readable display name."""
         return self.value.title()
@@ -655,7 +674,7 @@ class SessionType(Enum):
     API = "api"
     ADMIN = "admin"
     SERVICE = "service"
-    
+
     def get_display_name(self) -> str:
         """Get human-readable display name."""
         display_names = {
@@ -674,16 +693,16 @@ class TokenStatus(Enum):
     EXPIRED = "expired"
     REVOKED = "revoked"
     SUSPENDED = "suspended"
-    
+
     def get_display_name(self) -> str:
         """Get human-readable display name."""
         return self.value.title()
-    
+
     @property
     def is_active(self) -> bool:
         """Check if status allows token usage."""
         return self == self.ACTIVE
-    
+
     @property
     def is_terminal(self) -> bool:
         """Check if status is terminal (cannot be changed)."""
@@ -695,7 +714,7 @@ class RefreshStrategy(Enum):
     ROTATE = "rotate"  # Generate new refresh token on each use
     REUSE = "reuse"    # Reuse refresh token until expiry
     FAMILY = "family"  # Token family tracking with automatic revocation
-    
+
     def get_display_name(self) -> str:
         """Get human-readable display name."""
         display_names = {
@@ -704,7 +723,7 @@ class RefreshStrategy(Enum):
             self.FAMILY: "Family Tracking"
         }
         return display_names.get(self, str(self.value).title())
-    
+
     def get_description(self) -> str:
         """Get strategy description."""
         descriptions = {
@@ -733,7 +752,7 @@ class SecurityEventType(Enum):
     UNUSUAL_LOCATION = "unusual_location"
     IMPOSSIBLE_TRAVEL = "impossible_travel"
     NEW_DEVICE = "new_device"
-    
+
     def get_display_name(self) -> str:
         """Get human-readable display name."""
         display_names = {
@@ -761,7 +780,7 @@ class SecurityEventStatus(Enum):
     FALSE_POSITIVE = "false_positive"
     ESCALATED = "escalated"
     MITIGATED = "mitigated"
-    
+
     def get_display_name(self) -> str:
         """Get human-readable display name."""
         display_names = {
@@ -795,7 +814,7 @@ class DeviceType(Enum):
     SERVER = "server"
     UNKNOWN = "unknown"
     OTHER = "other"
-    
+
     def get_display_name(self) -> str:
         """Get human-readable display name."""
         display_names = {
@@ -826,7 +845,7 @@ class DevicePlatform(Enum):
     LINUX = "linux"
     WEB = "web"
     UNKNOWN = "unknown"
-    
+
     def get_display_name(self) -> str:
         """Get human-readable display name."""
         display_names = {
@@ -851,7 +870,7 @@ class ComplianceStatus(Enum):
     NON_COMPLIANT = "non_compliant"
     UNDER_REVIEW = "under_review"
     REMEDIATION_REQUIRED = "remediation_required"
-    
+
     def get_display_name(self) -> str:
         """Get human-readable display name."""
         display_names = {
@@ -870,7 +889,7 @@ class DataClassification(Enum):
     CONFIDENTIAL = "confidential"
     RESTRICTED = "restricted"
     TOP_SECRET = "top_secret"
-    
+
     def get_display_name(self) -> str:
         """Get human-readable display name."""
         display_names = {
@@ -881,7 +900,7 @@ class DataClassification(Enum):
             self.TOP_SECRET: "Top Secret"
         }
         return display_names.get(self, str(self.value).title())
-    
+
     def get_security_level(self) -> int:
         """Get numeric security level."""
         levels = {
@@ -914,7 +933,7 @@ class AuditAction(Enum):
     MFA_ENABLE = "mfa_enable"
     MFA_DISABLE = "mfa_disable"
     SECURITY_ALERT = "security_alert"
-    
+
     def get_display_name(self) -> str:
         """Get human-readable display name."""
         display_names = {
@@ -947,7 +966,7 @@ class NotificationType(Enum):
     SUSPICIOUS_ACTIVITY = "suspicious_activity"
     COMPLIANCE_VIOLATION = "compliance_violation"
     SYSTEM_MAINTENANCE = "system_maintenance"
-    
+
     def get_display_name(self) -> str:
         """Get human-readable display name."""
         display_names = {
@@ -997,20 +1016,20 @@ def get_enum_choices(enum_class) -> list[tuple[str, str]]:
 
 def compare_enum_hierarchy(enum_class, value1: Any, value2: Any, hierarchy_method: str = "get_hierarchy_level") -> int:
     """Compare two enum values by their hierarchy level.
-    
+
     Returns:
         -1 if value1 < value2
-        0 if value1 == value2  
+        0 if value1 == value2
         1 if value1 > value2
     """
     try:
         member1 = enum_class(value1)
         member2 = enum_class(value2)
-        
+
         if hasattr(member1, hierarchy_method) and hasattr(member2, hierarchy_method):
             level1 = getattr(member1, hierarchy_method)()
             level2 = getattr(member2, hierarchy_method)()
-            
+
             if level1 < level2:
                 return -1
             if level1 > level2:
@@ -1026,54 +1045,55 @@ def compare_enum_hierarchy(enum_class, value1: Any, value2: Any, hierarchy_metho
 __all__ = [
     # Base Types
     'RiskLevel',
-    
+
     # User and Account Management
     'AccountType',
     'UserRole',
     'UserStatus',
-    
+
     # Role Management
     'AssignmentStatus',
     'AssignmentType',
     'InheritanceMode',
     'RoleStatus',
     'RoleType',
-    
+
     # Permission Management
     'PermissionEffect',
     'PermissionScope',
     'PermissionType',
     'ResourceType',
-    
+
     # Authentication and Security
     'AuthenticationMethod',
     'LoginAttemptStatus',
     'LoginFailureReason',
-    'MFAMethod',
+    'MfaMethod',
+    'MfaDeviceStatus',
     'VerificationStatus',
-    
+
     # Sessions and Tokens
     'RefreshStrategy',
     'SessionStatus',
     'SessionType',
     'TokenStatus',
-    
+
     # Security Events and Monitoring
     'SecurityEventStatus',
     'SecurityEventType',
-    
+
     # Devices and Platforms
     'DevicePlatform',
     'DeviceType',
-    
+
     # Compliance and Data Classification
     'ComplianceStatus',
     'DataClassification',
-    
+
     # Audit and Notifications
     'AuditAction',
     'NotificationType',
-    
+
     # Utility functions
     'compare_enum_hierarchy',
     'get_all_enum_values',

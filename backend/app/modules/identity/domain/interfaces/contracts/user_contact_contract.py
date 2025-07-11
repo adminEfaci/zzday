@@ -1,11 +1,10 @@
 # domains/identity/domain/contracts/user_contact_contract.py
 
-from abc import ABC, abstractmethod
-from typing import Any
+from typing import Any, Protocol
 from uuid import UUID
 
 
-class UserContactContract(ABC):
+class UserContactContract(Protocol):
     """
     Contract interface for user contact operations.
 
@@ -13,7 +12,6 @@ class UserContactContract(ABC):
     decoupled way without coupling to internal user models.
     """
 
-    @abstractmethod
     def get_email(self, user_id: UUID) -> str | None:
         """
         Return the user's primary email address.
@@ -24,8 +22,8 @@ class UserContactContract(ABC):
         Returns:
             Optional[str]: User's primary email address or None if not available
         """
+        ...
 
-    @abstractmethod
     def get_phone(self, user_id: UUID) -> str | None:
         """
         Return the user's primary phone number, if available.
@@ -36,8 +34,8 @@ class UserContactContract(ABC):
         Returns:
             Optional[str]: User's primary phone number or None if not available
         """
+        ...
 
-    @abstractmethod
     def get_notification_preferences(self, user_id: UUID) -> dict[str, Any]:
         """
         Return a dict with notification preferences.
@@ -67,8 +65,8 @@ class UserContactContract(ABC):
                     }
                 }
         """
+        ...
 
-    @abstractmethod
     def get_verified_email(self, user_id: UUID) -> str | None:
         """
         Return the user's verified email address only.
@@ -79,8 +77,8 @@ class UserContactContract(ABC):
         Returns:
             Optional[str]: Verified email address or None if not verified
         """
+        ...
 
-    @abstractmethod
     def get_verified_phone(self, user_id: UUID) -> str | None:
         """
         Return the user's verified phone number only.
@@ -91,8 +89,8 @@ class UserContactContract(ABC):
         Returns:
             Optional[str]: Verified phone number or None if not verified
         """
+        ...
 
-    @abstractmethod
     def is_email_verified(self, user_id: UUID) -> bool:
         """
         Check if the user's email is verified.
@@ -103,8 +101,8 @@ class UserContactContract(ABC):
         Returns:
             bool: True if email is verified, False otherwise
         """
+        ...
 
-    @abstractmethod
     def is_phone_verified(self, user_id: UUID) -> bool:
         """
         Check if the user's phone is verified.
@@ -115,8 +113,8 @@ class UserContactContract(ABC):
         Returns:
             bool: True if phone is verified, False otherwise
         """
+        ...
 
-    @abstractmethod
     def get_emergency_contacts(self, user_id: UUID) -> list[dict[str, Any]]:
         """
         Get emergency contacts for the user.
@@ -138,8 +136,8 @@ class UserContactContract(ABC):
                     }
                 ]
         """
+        ...
 
-    @abstractmethod
     def get_contact_methods(self, user_id: UUID) -> list[str]:
         """
         Get available contact methods for the user.
@@ -150,8 +148,8 @@ class UserContactContract(ABC):
         Returns:
             List[str]: Available contact methods ['email', 'sms', 'phone', 'push']
         """
+        ...
 
-    @abstractmethod
     def can_receive_notifications(self, user_id: UUID, notification_type: str) -> bool:
         """
         Check if user can receive notifications of a specific type.
@@ -163,8 +161,8 @@ class UserContactContract(ABC):
         Returns:
             bool: True if user can receive this type of notification
         """
+        ...
 
-    @abstractmethod
     def get_preferred_language(self, user_id: UUID) -> str:
         """
         Get the user's preferred language for communications.
@@ -175,8 +173,8 @@ class UserContactContract(ABC):
         Returns:
             str: Language code (e.g., 'en', 'es', 'fr') defaults to 'en'
         """
+        ...
 
-    @abstractmethod
     def get_timezone(self, user_id: UUID) -> str:
         """
         Get the user's timezone for time-sensitive communications.
@@ -187,8 +185,8 @@ class UserContactContract(ABC):
         Returns:
             str: Timezone string (e.g., 'America/New_York') defaults to 'UTC'
         """
+        ...
 
-    @abstractmethod
     def is_in_quiet_hours(self, user_id: UUID) -> bool:
         """
         Check if user is currently in quiet hours (do not disturb).
@@ -199,8 +197,8 @@ class UserContactContract(ABC):
         Returns:
             bool: True if currently in quiet hours, False otherwise
         """
+        ...
 
-    @abstractmethod
     def get_contact_summary(self, user_id: UUID) -> dict[str, Any]:
         """
         Get a comprehensive summary of user contact information.
@@ -225,3 +223,4 @@ class UserContactContract(ABC):
                     "can_receive_notifications": bool
                 }
         """
+        ...

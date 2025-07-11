@@ -1,6 +1,6 @@
 """Application layer k8 classes."""
 
-from app.core.application.base import (
+from .base import (
     DTO,
     ApplicationService,
     Request,

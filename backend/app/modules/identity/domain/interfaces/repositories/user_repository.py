@@ -3,7 +3,6 @@
 Domain contract for user data access that must be implemented by the infrastructure layer.
 """
 
-from abc import abstractmethod
 from typing import TYPE_CHECKING, Protocol
 from uuid import UUID
 
@@ -14,7 +13,6 @@ if TYPE_CHECKING:
 class IUserRepository(Protocol):
     """Repository interface for User aggregate."""
     
-    @abstractmethod
     async def find_by_id(self, user_id: UUID) -> 'User' | None:
         """Find user by ID.
         
@@ -26,7 +24,6 @@ class IUserRepository(Protocol):
         """
         ...
     
-    @abstractmethod
     async def find_by_email(self, email: str) -> 'User' | None:
         """Find user by email address.
         
@@ -38,7 +35,6 @@ class IUserRepository(Protocol):
         """
         ...
     
-    @abstractmethod
     async def save(self, user: 'User') -> None:
         """Save user aggregate (create or update).
         
@@ -47,7 +43,6 @@ class IUserRepository(Protocol):
         """
         ...
     
-    @abstractmethod
     async def delete(self, user_id: UUID) -> bool:
         """Delete user by ID.
         
@@ -59,7 +54,6 @@ class IUserRepository(Protocol):
         """
         ...
     
-    @abstractmethod
     async def find_by_username(self, username: str) -> 'User' | None:
         """Find user by username.
         
@@ -71,7 +65,6 @@ class IUserRepository(Protocol):
         """
         ...
     
-    @abstractmethod
     async def exists_by_email(self, email: str) -> bool:
         """Check if user exists by email.
         
@@ -83,7 +76,6 @@ class IUserRepository(Protocol):
         """
         ...
     
-    @abstractmethod
     async def find_all(
         self, 
         include_inactive: bool = False,
@@ -102,7 +94,6 @@ class IUserRepository(Protocol):
         """
         ...
     
-    @abstractmethod
     async def count_active_users(self) -> int:
         """Count active users.
         
@@ -111,7 +102,6 @@ class IUserRepository(Protocol):
         """
         ...
     
-    @abstractmethod
     async def exists(self, user_id: UUID) -> bool:
         """Check if user exists.
         
@@ -123,7 +113,6 @@ class IUserRepository(Protocol):
         """
         ...
     
-    @abstractmethod
     async def search(
         self,
         query: str,

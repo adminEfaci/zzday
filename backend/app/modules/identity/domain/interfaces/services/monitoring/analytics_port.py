@@ -1,18 +1,16 @@
 """
 Analytics Port Interface
 
-Port for analytics and event tracking operations.
+Protocol for analytics and event tracking operations.
 """
 
-from abc import ABC, abstractmethod
-from typing import Any
+from typing import Any, Protocol
 from uuid import UUID
 
 
-class IAnalyticsPort(ABC):
-    """Port for analytics tracking."""
+class IAnalyticsPort(Protocol):
+    """Protocol for analytics tracking."""
     
-    @abstractmethod
     async def track_user_event(
         self,
         event_name: str,
@@ -28,7 +26,6 @@ class IAnalyticsPort(ABC):
             properties: Event properties
         """
     
-    @abstractmethod
     async def track_authentication_attempt(
         self,
         user_id: UUID | None,
@@ -46,7 +43,6 @@ class IAnalyticsPort(ABC):
             context: Additional context
         """
     
-    @abstractmethod
     async def track_profile_completion(
         self,
         user_id: UUID,
@@ -60,7 +56,6 @@ class IAnalyticsPort(ABC):
             completion_percentage: Completion percentage (0-100)
         """
     
-    @abstractmethod
     async def track_security_event(
         self,
         event_type: str,

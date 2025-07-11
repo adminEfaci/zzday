@@ -1,0 +1,74 @@
+.
+├── __init__.py
+├── admin
+│   ├── __init__.py
+│   ├── __pycache__
+│   │   ├── __init__.cpython-312.pyc
+│   │   ├── administrative_service.cpython-312.pyc
+│   │   ├── authorization_service.cpython-312.pyc
+│   │   ├── device_service.cpython-312.pyc
+│   │   ├── mfa_service.cpython-312.pyc
+│   │   ├── password_service.cpython-312.pyc
+│   │   ├── risk_assessment_service.cpython-312.pyc
+│   │   └── security_service.cpython-312.pyc
+│   ├── administrative_service.py
+│   ├── authorization_service.py
+│   ├── device_service.py
+│   ├── mfa_service.py
+│   ├── password_service.py
+│   ├── risk_assessment_service.py
+│   └── security_service.py
+├── folder_tree.txt
+├── group
+│   └── group_permission_service.py
+├── mfa
+│   └── README_MFA_REFACTORING_PLAN.md
+├── NEW_access_token_services.py
+├── new_emergency_service.py
+├── new_permission.py
+├── New_preference_servicec.py
+├── New_user_sec_service.py
+├── role
+│   ├── __init__.py
+│   ├── __pycache__
+│   │   ├── __init__.cpython-312.pyc
+│   │   ├── role_factory.cpython-312.pyc
+│   │   └── role_service.cpython-312.pyc
+│   ├── role_factory.py
+│   └── role_service.py
+├── session
+│   ├── __init__.py
+│   ├── __pycache__
+│   │   ├── __init__.cpython-312.pyc
+│   │   └── session_service.cpython-312.pyc
+│   └── session_service.py
+└── user
+    ├── __init__.py
+    ├── __pycache__
+    │   ├── __init__.cpython-312.pyc
+    │   ├── activity_service.cpython-312.pyc
+    │   ├── authentication_service.cpython-312.pyc
+    │   ├── factory_service.cpython-312.pyc
+    │   ├── mfa_service.cpython-312.pyc
+    │   ├── notification_service.cpython-312.pyc
+    │   ├── password_service.cpython-312.pyc
+    │   ├── preference_service.cpython-312.pyc
+    │   ├── profile_service.cpython-312.pyc
+    │   ├── registration_service.cpython-312.pyc
+    │   └── user_domain_service.cpython-312.pyc
+    ├── activity_service.py
+    ├── authentication_service.py
+    ├── factory_service.py
+    ├── mfa_service.py
+    ├── NEW_user_auth_services.py
+    ├── NEW_user_contact_services.py
+    ├── NEW_user_permission_services.py
+    ├── NEW_user_security_services.py
+    ├── notification_service.py
+    ├── password_service.py
+    ├── preference_service.py
+    ├── profile_service.py
+    ├── registration_service.py
+    └── user_domain_service.py
+
+11 directories, 61 files

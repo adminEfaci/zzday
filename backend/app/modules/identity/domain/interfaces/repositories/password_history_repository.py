@@ -3,7 +3,6 @@
 Domain contract for password history tracking that must be implemented by the infrastructure layer.
 """
 
-from abc import abstractmethod
 from typing import Protocol
 from uuid import UUID
 
@@ -11,7 +10,6 @@ from uuid import UUID
 class IPasswordHistoryRepository(Protocol):
     """Repository interface for password history management."""
     
-    @abstractmethod
     async def create(
         self, 
         user_id: UUID,
@@ -30,7 +28,6 @@ class IPasswordHistoryRepository(Protocol):
         """
         ...
     
-    @abstractmethod
     async def find_recent_passwords(
         self, 
         user_id: UUID,
@@ -47,7 +44,6 @@ class IPasswordHistoryRepository(Protocol):
         """
         ...
     
-    @abstractmethod
     async def is_password_reused(
         self, 
         user_id: UUID,
@@ -66,7 +62,6 @@ class IPasswordHistoryRepository(Protocol):
         """
         ...
     
-    @abstractmethod
     async def count_password_changes(
         self, 
         user_id: UUID
@@ -81,7 +76,6 @@ class IPasswordHistoryRepository(Protocol):
         """
         ...
     
-    @abstractmethod
     async def cleanup_old_history(
         self, 
         user_id: UUID,

@@ -12,7 +12,7 @@ from uuid import UUID, uuid4
 
 from app.core.domain.base import AggregateRoot
 
-from .role_enums import PermissionType, ResourceType
+from ..enums import PermissionType, ResourceType
 from ...value_objects.permission_scope import PermissionScope
 from .permission_events import (
     PermissionCreated, PermissionUpdated, PermissionDeleted,

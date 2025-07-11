@@ -1,0 +1,129 @@
+.
+├── __init__.py
+├── all
+│   ├── __init___1.py
+│   ├── __init___2.py
+│   ├── __init___3.py
+│   ├── __init___4.py
+│   ├── __init___5.py
+│   ├── __init___6.py
+│   ├── __init___7.py
+│   ├── __init___8.py
+│   ├── __init___9.py
+│   ├── __init__.py
+│   ├── _1.DS_Store
+│   ├── _2.DS_Store
+│   ├── access_token_repository.py
+│   ├── activity_service.py
+│   ├── administrative_service.py
+│   ├── analytics_port.py
+│   ├── audit_actor_contract.py
+│   ├── audit_contract.py
+│   ├── audit_service.py
+│   ├── authorization_service.py
+│   ├── biometric_service.py
+│   ├── cache_port.py
+│   ├── compliance_service.py
+│   ├── configuration_port.py
+│   ├── device_registration_repository.py
+│   ├── device_service.py
+│   ├── emergency_contact_repository.py
+│   ├── event_publisher_port.py
+│   ├── file_storage_port.py
+│   ├── folder_tree.txt
+│   ├── geolocation_service.py
+│   ├── group_repository.py
+│   ├── login_attempt_repository.py
+│   ├── mfa_repository.py
+│   ├── mfa_service.py
+│   ├── mfa_status_contract.py
+│   ├── notification_contract.py
+│   ├── notification_service.py
+│   ├── notification_setting_repository.py
+│   ├── password_hasher.py
+│   ├── password_history_repository.py
+│   ├── password_service.py
+│   ├── permission_repository.py
+│   ├── rate_limit_port.py
+│   ├── risk_assessment_service.py
+│   ├── role_repository.py
+│   ├── security_event_repository.py
+│   ├── security_service.py
+│   ├── security.py
+│   ├── session_contract.py
+│   ├── session_repository.py
+│   ├── task_queue_port.py
+│   ├── threat_intelligence_service.py
+│   ├── token_generator.py
+│   ├── user_contact_contract.py
+│   ├── user_identity_contract.py
+│   ├── user_preference_repository.py
+│   ├── user_profile_repository.py
+│   └── user_repository.py
+├── contracts
+│   ├── __init__.py
+│   ├── audit_actor_contract.py
+│   ├── audit_contract.py
+│   ├── mfa_status_contract.py
+│   ├── notification_contract.py
+│   ├── session_contract.py
+│   ├── user_contact_contract.py
+│   └── user_identity_contract.py
+├── folder_tree.txt
+├── repositories
+│   ├── __init__.py
+│   ├── access_token_repository.py
+│   ├── device_registration_repository.py
+│   ├── emergency_contact_repository.py
+│   ├── group_repository.py
+│   ├── login_attempt_repository.py
+│   ├── mfa_repository.py
+│   ├── notification_setting_repository.py
+│   ├── password_history_repository.py
+│   ├── permission_repository.py
+│   ├── role_repository.py
+│   ├── security_event_repository.py
+│   ├── session_repository.py
+│   ├── user_preference_repository.py
+│   ├── user_profile_repository.py
+│   └── user_repository.py
+└── services
+    ├── __init__.py
+    ├── authentication
+    │   ├── __init__.py
+    │   ├── biometric_service.py
+    │   ├── mfa_service.py
+    │   ├── password_hasher.py
+    │   ├── password_service.py
+    │   └── token_generator.py
+    ├── communication
+    │   ├── __init__.py
+    │   └── notification_service.py
+    ├── compliance
+    │   ├── __init__.py
+    │   └── compliance_service.py
+    ├── infrastructure
+    │   ├── __init__.py
+    │   ├── cache_port.py
+    │   ├── configuration_port.py
+    │   ├── event_publisher_port.py
+    │   ├── file_storage_port.py
+    │   └── task_queue_port.py
+    ├── monitoring
+    │   ├── __init__.py
+    │   ├── activity_service.py
+    │   ├── analytics_port.py
+    │   ├── audit_service.py
+    │   └── rate_limit_port.py
+    └── security
+        ├── __init__.py
+        ├── administrative_service.py
+        ├── authorization_service.py
+        ├── device_service.py
+        ├── geolocation_service.py
+        ├── risk_assessment_service.py
+        ├── security_service.py
+        ├── security.py
+        └── threat_intelligence_service.py
+
+11 directories, 116 files

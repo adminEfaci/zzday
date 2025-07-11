@@ -10,15 +10,15 @@ from datetime import UTC, datetime, timedelta
 from typing import Any
 from uuid import UUID, uuid4
 
-from ...entities.user.user_events import BackupCodeGenerated, BackupCodeUsed, MFAEnabled
-from ..enums import MFAMethod
+from ..entities.user.user_events import BackupCodeGenerated, BackupCodeUsed, MFAEnabled
+from ..enums import MfaMethod
 from ..events import (
     MFACodeVerificationFailed,
     MFADeviceCreated,
     MFADeviceDisabled,
     MFADeviceVerified,
 )
-from ...shared.base_entity import IdentityAggregate, SecurityValidationMixin
+from ..entities.shared.base_entity import IdentityEntity, SecurityValidationMixin
 
 
 # Create missing value object classes locally
@@ -73,7 +73,7 @@ class MFADevice(IdentityAggregate, SecurityValidationMixin):
     
     id: UUID
     user_id: UUID
-    method: MFAMethod
+    method: MfaMethod
     device_name: DeviceName
     secret: MFASecret
     backup_codes: list[BackupCode] = field(default_factory=list)
@@ -108,16 +108,16 @@ class MFADevice(IdentityAggregate, SecurityValidationMixin):
     def create(
         cls,
         user_id: UUID,
-        method: MFAMethod,
+        method: MfaMethod,
         device_name: str | DeviceName,
         generate_backup_codes: bool = True
     ) -> 'MFADevice':
         """Create a new MFA device."""
         # Generate secret based on device type
-        if method == MFAMethod.TOTP:
+        if method == MfaMethod.TOTP:
             # Generate TOTP secret using value object
             secret = MFASecret.generate_totp()
-        elif method == MFAMethod.SMS:
+        elif method == MfaMethod.SMS:
             # For SMS, create empty secret
             secret = MFASecret(value="", algorithm="sms")
         else:
@@ -226,15 +226,15 @@ class MFADevice(IdentityAggregate, SecurityValidationMixin):
     def _verify_code_internal(self, code: str) -> bool:
         """Internal code verification logic."""
         # Basic verification logic based on method type
-        if self.method == MFAMethod.TOTP:
+        if self.method == MfaMethod.TOTP:
             # For TOTP, check if code is 6 digits
             # In production, would use pyotp library to verify against secret
             return len(code) == 6 and code.isdigit()
-        elif self.method == MFAMethod.SMS:
+        elif self.method == MfaMethod.SMS:
             # For SMS, would check against stored code sent to phone
             # This is a simplified check
             return len(code) == 6 and code.isdigit()
-        elif self.method == MFAMethod.EMAIL:
+        elif self.method == MfaMethod.EMAIL:
             # For email, would check against stored code sent to email
             return len(code) == 6 and code.isdigit()
         else:

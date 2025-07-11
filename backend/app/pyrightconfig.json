@@ -1,0 +1,38 @@
+{
+  "include": [
+    "."
+  ],
+  "exclude": [
+    "**/__pycache__",
+    "**/.venv",
+    "**/node_modules",
+    "**/.pytest_cache",
+    "**/.mypy_cache",
+    "**/alembic",
+    "**/tests"
+  ],
+  "venvPath": ".",
+  "venv": ".venv",
+  "extraPaths": [
+    ".",
+    "./app",
+    "./app/core",
+    "./app/modules",
+    "./app/shared"
+  ],
+  "typeCheckingMode": "basic",
+  "useLibraryCodeForTypes": true,
+  "reportMissingImports": "none",
+  "reportMissingTypeStubs": "none",
+  "reportMissingModuleSource": "none",
+  "reportImportCycles": "none",
+  "reportUnusedImport": "none",
+  "reportUnusedClass": "none",
+  "reportUnusedFunction": "none",
+  "reportUnusedVariable": "none",
+  "reportDuplicateImport": "none",
+  "reportWildcardImportFromLibrary": "none",
+  "pythonPath": ".venv/bin/python",
+  "autoSearchPaths": true,
+  "stubPath": ".venv/lib/python*/site-packages"
+}

@@ -5,13 +5,12 @@ Interface for managing audit record integrity,
 including hash verification and tamper detection.
 """
 
-from abc import ABC, abstractmethod
-from typing import Any
+from typing import Any, Protocol
 
 from app.modules.audit.domain.entities.audit_entry import AuditEntry
 
 
-class IAuditIntegrityService(ABC):
+class IAuditIntegrityService(Protocol):
     """
     Interface for audit record integrity management.
     
@@ -19,7 +18,6 @@ class IAuditIntegrityService(ABC):
     for audit records to ensure data integrity and compliance.
     """
 
-    @abstractmethod
     def verify_integrity(self, audit_entry: AuditEntry) -> bool:
         """
         Verify the integrity of an audit entry.
@@ -33,8 +31,8 @@ class IAuditIntegrityService(ABC):
         Raises:
             AuditIntegrityError: If integrity check fails
         """
+        ...
 
-    @abstractmethod
     def verify_chain_integrity(self, audit_entries: list[AuditEntry]) -> bool:
         """
         Verify the integrity of a chain of audit entries.
@@ -45,8 +43,8 @@ class IAuditIntegrityService(ABC):
         Returns:
             True if chain integrity is valid, False otherwise
         """
+        ...
 
-    @abstractmethod
     def detect_tampering(self, audit_entry: AuditEntry) -> dict[str, Any]:
         """
         Detect potential tampering in an audit entry.
@@ -57,8 +55,8 @@ class IAuditIntegrityService(ABC):
         Returns:
             Dictionary containing tampering analysis results
         """
+        ...
 
-    @abstractmethod
     def calculate_hash(self, audit_entry: AuditEntry) -> str:
         """
         Calculate the integrity hash for an audit entry.
@@ -69,3 +67,4 @@ class IAuditIntegrityService(ABC):
         Returns:
             Calculated hash string
         """
+        ...

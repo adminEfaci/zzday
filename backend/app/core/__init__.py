@@ -22,7 +22,7 @@ Key Features:
 """
 
 # Application layer
-from app.core.application.base import (
+from .application.base import (
     DTO,
     ApplicationService,
     Request,
@@ -31,10 +31,10 @@ from app.core.application.base import (
 )
 
 # Configuration management
-from app.core.config import Settings, get_settings, settings
+from .config import Settings, get_settings, settings
 
 # CQRS components
-from app.core.cqrs.base import (
+from .cqrs.base import (
     Command,
     CommandBus,
     CommandHandler,
@@ -42,10 +42,12 @@ from app.core.cqrs.base import (
     QueryBus,
     QueryHandler,
 )
-from app.core.domain.base import AggregateRoot, DomainService, Entity, ValueObject
+
+# Domain layer
+from .domain.base import AggregateRoot, DomainService, Entity, ValueObject
 
 # Domain specifications
-from app.core.domain.specification import (
+from .domain.specification import (
     AndSpecification,
     FalseSpecification,
     NotSpecification,
@@ -55,7 +57,7 @@ from app.core.domain.specification import (
 )
 
 # Error hierarchy
-from app.core.errors import (
+from .errors import (
     ApplicationError,
     ConfigurationError,
     ConflictError,
@@ -71,7 +73,7 @@ from app.core.errors import (
 )
 
 # Event system
-from app.core.events.bus import (
+from .events.bus import (
     DistributedEventBus,
     EventBus,
     HybridEventBus,
@@ -80,18 +82,32 @@ from app.core.events.bus import (
 )
 
 # Infrastructure - Repository pattern
-from app.core.infrastructure.repository import (
+from .infrastructure.repository import (
     BaseRepository,
-    CachedRepository,
+    CacheableRepository,
     EventSourcedRepository,
+    ReadOnlyRepository,
+    Repository,
+    RepositoryFactory,
+    SQLRepository,
+    SpecificationRepository,
 )
 
-# Security utilities
-from app.core.security import (
+# Security services and utilities
+from .security import (
+    CryptographyService,
+    MaskingService,
+    PasswordService,
+    SecurityAuditService,
+    SecurityService,
+    TokenService,
+    create_security_service,
+    # Backward compatibility functions
     create_access_token,
     create_refresh_token,
     decode_token,
     generate_secret_key,
+    generate_secure_key,
     generate_token,
     generate_verification_code,
     hash_password,
@@ -104,66 +120,89 @@ from app.core.security import (
 __all__ = [
     # ===== APPLICATION LAYER =====
     "DTO",
-    # ===== DOMAIN LAYER =====
-    "AggregateRoot",
-    # ===== SPECIFICATIONS =====
-    "AndSpecification",
-    # ===== ERROR HANDLING =====
-    "ApplicationError",
     "ApplicationService",
-    # ===== INFRASTRUCTURE =====
-    "BaseRepository",
-    "CachedRepository",
+    "Request",
+    "Response",
+    "UseCase",
+    
+    # ===== CONFIGURATION =====
+    "Settings",
+    "get_settings",
+    "settings",
+    
     # ===== CQRS =====
     "Command",
     "CommandBus",
     "CommandHandler",
-    "ConfigurationError",
-    "ConflictError",
-    # ===== EVENT SYSTEM =====
-    "DistributedEventBus",
-    "DomainError",
-    "DomainService",
-    "Entity",
-    "EventBus",
-    "EventSourcedRepository",
-    "ExternalServiceError",
-    "EzzDayError",
-    "FalseSpecification",
-    "ForbiddenError",
-    "HybridEventBus",
-    "InMemoryEventBus",
-    "InfrastructureError",
-    "NotFoundError",
-    "NotSpecification",
-    "OrSpecification",
     "Query",
     "QueryBus",
     "QueryHandler",
-    "RateLimitError",
-    "Request",
-    "Response",
-    # ===== CONFIGURATION =====
-    "Settings",
+    
+    # ===== DOMAIN LAYER =====
+    "AggregateRoot",
+    "DomainService",
+    "Entity",
+    "ValueObject",
+    
+    # ===== SPECIFICATIONS =====
+    "AndSpecification",
+    "FalseSpecification",
+    "NotSpecification",
+    "OrSpecification",
     "Specification",
     "TrueSpecification",
+    
+    # ===== ERROR HANDLING =====
+    "ApplicationError",
+    "ConfigurationError",
+    "ConflictError",
+    "DomainError",
+    "ExternalServiceError",
+    "EzzDayError",
+    "ForbiddenError",
+    "InfrastructureError",
+    "NotFoundError",
+    "RateLimitError",
     "UnauthorizedError",
-    "UseCase",
     "ValidationError",
-    "ValueObject",
-    # ===== SECURITY =====
-    "create_access_token",
+    
+    # ===== EVENT SYSTEM =====
+    "DistributedEventBus",
+    "EventBus",
+    "HybridEventBus",
+    "InMemoryEventBus",
     "create_event_bus",
+    
+    # ===== INFRASTRUCTURE =====
+    "BaseRepository",
+    "CacheableRepository",
+    "EventSourcedRepository",
+    "ReadOnlyRepository",
+    "Repository",
+    "RepositoryFactory",
+    "SQLRepository",
+    "SpecificationRepository",
+    
+    # ===== SECURITY SERVICES =====
+    "CryptographyService",
+    "MaskingService",
+    "PasswordService",
+    "SecurityAuditService",
+    "SecurityService",
+    "TokenService",
+    "create_security_service",
+    
+    # ===== SECURITY UTILITIES (Backward Compatibility) =====
+    "create_access_token",
     "create_refresh_token",
     "decode_token",
     "generate_secret_key",
+    "generate_secure_key",
     "generate_token",
     "generate_verification_code",
-    "get_settings",
     "hash_password",
     "is_token_expired",
     "mask_email",
     "mask_phone",
-    "settings",
     "verify_password",
 ]
